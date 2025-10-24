@@ -1,0 +1,119 @@
+@use './_variables' as *;
+@use './_mixins' as *;
+
+.navBar {
+	position: fixed;
+	left: 0;
+	right: 0;
+
+	align-items: center;
+	z-index: 1000;
+
+	@include flex-center;
+
+	.brand {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		
+		.brand-logo {
+			max-height: 200px;
+			width: auto;
+			transition: all 1s ease-in-out;
+		}
+	}
+
+	&.other {
+		padding: 0.5rem 1rem;
+		border-bottom: 1px solid rgb(136, 125, 5);
+		animation: fromBottomToTop 0.4s ease-out forwards;
+		height: calc($navbar-height/2);
+
+		.brand {
+			.brand-logo {
+				max-height: 100px;
+				width: auto;
+				transition: all 0.1s ease-in-out;
+			}
+		}
+	}
+
+	&.is-home {
+		padding: 1.5rem 1rem;
+		background: transparent;
+		animation: fromTopToBottom 1s ease-out forwards;
+		height: calc($navbar-height);
+		.brand {
+			.brand-logo {
+				max-height: 200px;
+				width: auto;
+			}
+		}
+	}
+}
+
+.navLink {
+	text-decoration: none;
+	font-weight: 600;
+	color: $color-light;
+	transition: color 0.2s;
+}
+
+.navLink.active {
+	color: $color-gold;
+}
+
+.navLink.is-home {
+	font-size: 1.5rem;
+}
+
+.navLink.other {
+	font-size: 1rem;
+}
+
+.brand .treeIcon {
+	line-height: 1;
+}
+
+.brand .name {
+	font-family: $font-family-serif;
+	letter-spacing: 0.05em;
+	color: $color-gold;
+	font-weight: 700;
+}
+
+.brand.is-home .treeIcon {
+	font-size: 3rem;
+}
+
+.brand.other .treeIcon {
+	font-size: 1.8rem;
+}
+
+.brand.is-home .name {
+	font-size: 2.5rem;
+}
+
+.brand.other .name {
+	font-size: 1.4rem;
+}
+
+@keyframes fromTopToBottom {
+	0% {
+		top: 0px;
+	}
+	100% {
+		top: calc(100% - $navbar-height);
+	}
+}
+
+@keyframes fromBottomToTop {
+	0% {
+		top: calc(100% - $navbar-height);
+	}
+	100% {
+		top: 0px;
+		border-width: 100%;
+		border-opacity: 1;
+	}
+}

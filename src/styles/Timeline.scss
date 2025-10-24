@@ -1,0 +1,233 @@
+@use './variables' as *;
+
+.timeline {
+	position: relative;
+	top: 0;
+	margin: 0 auto;
+	height: calc(100% - ($navbar-height/2) - $timeline-header-height);
+	margin-top: calc($navbar-height/2);
+	overflow: hidden;
+	padding: 0 1rem;
+}
+
+.timelineHeader {
+	position: relative;
+	margin-top: 20px;
+	width: 100%;
+	height: $timeline-header-height;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	opacity: 0;
+	animation-name: wrapperFromTopToBottom;
+	animation-duration: 0.5s;
+	animation-delay: 0.8s;
+	animation-fill-mode: forwards;
+}
+
+.actions {
+	display: flex;
+	gap: 0.5rem;
+}
+
+.actionButton {
+	background: $color-dark-gray;
+	color: $color-light;
+	border: 1px solid $color-medium-gray;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 0.9rem;
+}
+
+.showHidden {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	background: transparent;
+	border: none;
+	color: $color-light;
+	font-size: 0.9rem;
+	cursor: pointer;
+
+	&.hide {
+		display: none;
+	}
+}
+
+.groupFilter {
+	display: flex;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+}
+
+.pill {
+	border: 1px solid $color-medium-gray;
+	border-radius: 9999px;
+	padding: 0.25rem 0.75rem;
+	font-size: 0.8rem;
+	font-weight: 600;
+	cursor: pointer;
+	color: $color-light;
+	background: transparent;
+	transition: background 0.2s, color 0.2s;
+}
+
+.pill.active {
+	background: $color-light;
+	color: $color-dark;
+}
+
+.timeline-wrapper {
+	margin-top: 70px;
+}
+
+.timeline-event-wrapper {
+	// padding: 2rem;
+	max-width: 800px;
+	margin: 0 auto;
+	opacity: 0;
+	margin-top: 10px;
+	position: relative;
+	animation-name: wrapperFromTopToBottom;
+	animation-duration: 0.5s;
+	animation-delay: 0.8s;
+	animation-fill-mode: forwards;
+}
+
+.event {
+	position: relative;
+	margin-bottom: 2rem;
+}
+
+.event:last-child .line {
+	bottom: 50%;
+}
+
+.line {
+	position: absolute;
+	left: 90px;
+	top: 16px;
+	bottom: -2rem;
+	width: 2px;
+	background-color: $color-medium-gray;
+	z-index: 0;
+}
+
+.row {
+	display: flex;
+	align-items: flex-start;
+}
+
+.date {
+	width: 90px;
+	text-align: right;
+	padding-right: 1rem;
+}
+
+.date .year {
+	font-weight: 600;
+}
+
+.date .diff {
+	font-size: 0.75rem;
+	color: $color-dim;
+}
+
+.marker {
+	width: 20px;
+	position: relative;
+}
+
+.marker .diamond {
+	width: 12px;
+	height: 12px;
+	background-color: $color-medium-gray;
+	transform: rotate(45deg);
+	position: absolute;
+	left: 4px;
+	top: 4px;
+	z-index: 1;
+}
+
+.cardWrapper {
+	flex: 1;
+	margin-left: 1rem;
+}
+
+.card {
+	background-color: rgba(30, 41, 59, 0.8);
+	border-radius: 8px;
+	color: $color-light;
+	overflow: hidden;
+	display: flex;
+	width: 100%;
+}
+
+.info {
+	padding: 1rem;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+}
+
+.groupLabel {
+	align-self: flex-start;
+	background-color: var(--group-color, $color-medium-gray);
+	color: #ffffff;
+	padding: 0.2rem 0.5rem;
+	border-radius: 12px;
+	font-size: 0.7rem;
+	font-weight: 600;
+	margin-bottom: 0.5rem;
+}
+
+.title {
+	margin: 0;
+	font-size: 1rem;
+	font-weight: 600;
+}
+
+.subtitle {
+	font-size: 0.8rem;
+	color: $color-dim;
+	margin-top: 0.25rem;
+}
+
+.description {
+	font-size: 0.75rem;
+	color: $color-light-gray;
+	margin-top: 0.5rem;
+	line-height: 1.4;
+}
+
+.editButton {
+	background: none;
+	border: none;
+	color: $color-blue;
+	font-size: 0.75rem;
+	cursor: pointer;
+	padding: 0;
+}
+
+.editRow {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: 0.5rem;
+}
+
+.image {
+	width: 35%;
+	background-size: cover;
+	background-position: center;
+}
+
+@keyframes wrapperFromTopToBottom {
+	0% {
+		transform: translateY(100%);
+	}
+	100% {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
