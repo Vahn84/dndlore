@@ -1,4 +1,6 @@
 /* Global styles for dark theme */
+
+
 body {
   margin: 0;
   background-color: #0f1724;
@@ -17,3 +19,4 @@ input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+

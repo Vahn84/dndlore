@@ -22,28 +22,32 @@ const NavBar: React.FC = () => {
 			{/* History link */}
 			<NavLink
 				to="/history"
+				style={{ textAlign: 'right' }}
 				className={({ isActive }) => {
 					const base = `navLink ${onHome ? 'is-home' : 'other'}`;
 					return isActive ? `${base} active` : base;
 				}}
 			>
-				HISTORY
+				TIMELINE
 			</NavLink>
 			{/* Brand in the center */}
 
-			<NavLink to="/" className={`navLink brand ${onHome ? 'is-home' : 'other'}`}>
+			<NavLink
+				to="/"
+				className={`navLink brand ${onHome ? 'is-home' : 'other'}`}
+			>
 				<img className="brand-logo" src={logo} alt="Aetherium Logo" />
 			</NavLink>
 
-			{/* Campaign link */}
+			{/* Lore link */}
 			<NavLink
-				to="/campaign"
+				to="/lore"
 				className={({ isActive }) => {
 					const base = `navLink ${onHome ? 'is-home' : 'other'}`;
 					return isActive ? `${base} active` : base;
 				}}
 			>
-				CAMPAIGN
+				LORE LIBRARY
 			</NavLink>
 		</nav>
 	);

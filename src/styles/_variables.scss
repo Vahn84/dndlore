@@ -1,11 +1,23 @@
-$color-dark: #0f172a;
-$color-dark-gray: #1e293b;
-$color-medium-gray: #334155;
+@use 'sass:color';
+@import './iconly-font/css/style.css';
+@import './iconly-font/css/bulk-style.css';
+
+@import url('https://fonts.googleapis.com/css2?family=Faculty+Glyphic&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Red+Rose:wght@300..700&display=swap');
+
+$color-dark: rgba(14, 15, 15, 1);
+$color-dark-translucent: color.change($color-dark, $alpha: 0.8);
+$color-dark-gray: rgba(27, 29, 30, 1);
+$color-medium-gray: #494949;
 $color-light: #e2e8f0;
-$color-light-gray: #cbd5e1;
-$color-gold: #d0b373;
+$color-light-gray: #d5d5d5;
+$color-dark-gold: rgb(153, 126, 67);
+$color-gold: rgba(208, 179, 115, 1);
 $color-blue: #60a5fa;
 $color-dim: #94a3b8;
 $navbar-height: 260px;
 $timeline-header-height: 30px;
 $font-family-serif: 'serif';
+$menu-bg: $color-dark-gray;
+$menu-border: $color-dark-gold;
+
+$font-family-sans: 'Montserrat', sans-serif;

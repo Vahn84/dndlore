@@ -1,0 +1,281 @@
+@use './variables' as *;
+@use './mixins' as *;
+
+.datepick {
+	position: relative;
+}
+
+.datepick__label {
+	@include formlabel();
+}
+
+.datepick__inputWrap {
+	position: relative;
+
+	.modal__input.datepill {
+		@include input-icon-fld();
+	}
+
+	&:focus-within {
+		.datepill__icon svg {
+			color: $color-gold;
+		}
+	}
+
+	.datepill__icon {
+		@include input-icon-start();
+	}
+
+	.datepill__icon-end {
+		@include input-icon-end(0.4rem);
+		width: 30px;
+		height: 30px;
+	}
+}
+
+.datepick__inputWrap.is-disabled {
+	opacity: 0.6;
+	pointer-events: none;
+}
+
+/* pill input with icon */
+
+/* date field pill */
+.datefield,
+.modal__select.datepill {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	width: 100%;
+	text-align: left;
+	padding: 0.625rem 0.75rem;
+	border-radius: 10px;
+	background: var(--surface-2);
+	border: 1px solid var(--surface-3);
+	line-height: 1.25;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+	&:hover {
+		border-color: var(--surface-4);
+	}
+	&:focus-visible {
+		outline: none;
+		box-shadow: 0 0 0 2px var(--focus);
+	}
+}
+
+.datefield__icon {
+	display: inline-flex;
+	opacity: 0.9;
+}
+
+.dp-pop {
+	position: absolute;
+	top: 0;
+	right: 0;
+	transform: translate(100%, calc(-100% + 64px));
+	font-size: 0.8rem;
+	background: $color-dark-gray;
+	border-radius: 8px;
+	z-index: 3;
+}
+
+.dp-pop__panel {
+	/* matches your modal popover visual */
+	background: var(--surface-2);
+	border: 1px solid var(--surface-3);
+	border-radius: 12px;
+	box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+	padding: 12px;
+	min-width: 360px;
+	max-width: 420px;
+	display: grid;
+	grid-template-rows: auto auto 1fr;
+	gap: 10px;
+
+	.dp-pop__head {
+		display: flex;
+
+		.dp-pop__navbtn {
+			background: transparent;
+			border: none;
+			color: $color-light-gray;
+			@include flex-center();
+		}
+
+		.dp-pop__headmain {
+			display: flex;
+			font-size: 0.6rem;
+			align-items: flex-start;
+
+			input,
+			select {
+				background: transparent;
+				font-size: 0.6rem;
+				border-color: $color-medium-gray;
+				text-align: center;
+				margin-top: 0;
+			}
+		}
+	}
+}
+
+.dp-pop__grid {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 6px;
+
+	.dp-pop__weekcell {
+		text-align: center;
+	}
+}
+
+/* --- Date picker popover: header, selectors, and day grid --- */
+.dp-pop__toolbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+/* Left/Right chevrons + double chevrons */
+.dp-pop__nav {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+.dp-pop__nav button {
+	appearance: none;
+	border: 1px solid var(--surface-3);
+	background: transparent;
+	border-radius: 8px;
+	width: 32px;
+	height: 32px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: background 0.15s ease, border-color 0.15s ease,
+		box-shadow 0.15s ease;
+}
+.dp-pop__nav button:hover {
+	background: var(--surface-3);
+	border-color: var(--surface-4);
+}
+.dp-pop__nav button:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 2px var(--focus);
+}
+
+/* Month/Year/Era selectors */
+.dp-pop__selectors {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+.dp-pop__panel select {
+	appearance: none;
+	background: var(--surface-2);
+	border: 1px solid var(--surface-3);
+	border-radius: 10px;
+	padding: 0.5rem 1.9rem 0.5rem 0.75rem; /* room for chevron */
+	font: inherit;
+	line-height: 1.25;
+	color: inherit;
+	cursor: pointer;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease,
+		background 0.15s ease;
+	background-repeat: no-repeat;
+	background-position: right 0.6rem center;
+	background-size: 12px 12px;
+	/* caret */
+	background-image: none;
+}
+.dp-pop__panel select:hover {
+	border-color: var(--surface-4);
+	background: var(--surface-2);
+}
+.dp-pop__panel select:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 2px var(--focus);
+}
+
+/* Caption like "Pri 10000 DE" */
+.dp-pop__caption {
+	text-align: center;
+	font-weight: 600;
+	letter-spacing: 0.2px;
+}
+
+/* Weekday row */
+.dp-pop__dow {
+	display: contents; /* keep grid alignment */
+}
+.dp-pop__dow > * {
+	text-align: center;
+	font-size: 0.75rem;
+	font-weight: 600;
+	opacity: 0.7;
+	padding: 4px 0 6px;
+	text-transform: uppercase;
+}
+
+/* Day cells */
+.dp-pop__grid {
+	padding-top: 4px;
+}
+.dp-pop__grid button,
+.dp-pop__day {
+	appearance: none;
+	border: 1px solid transparent;
+	background: transparent;
+	border-radius: 10px;
+	width: 40px;
+	height: 36px;
+	line-height: 36px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font: inherit;
+	color: inherit;
+	cursor: pointer;
+	transition: background 0.12s ease, border-color 0.12s ease,
+		box-shadow 0.12s ease;
+}
+.dp-pop__grid button:hover,
+.dp-pop__day:hover {
+	background: var(--surface-3);
+	border-color: var(--surface-4);
+}
+.dp-pop__grid button:focus-visible,
+.dp-pop__day:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 2px var(--focus);
+}
+.dp-pop__grid .is-outside,
+.dp-pop__day.is-outside {
+	opacity: 0.45;
+}
+.dp-pop__grid .is-disabled,
+.dp-pop__day.is-disabled,
+.dp-pop__grid button[disabled] {
+	opacity: 0.35;
+	pointer-events: none;
+}
+.dp-pop__grid .is-selected,
+.dp-pop__day.is-selected,
+.dp-pop__grid button[aria-current='date'] {
+	background: var(--focus);
+	color: $color-dark-gold; /* good contrast on focus color */
+	border-color: transparent;
+	box-shadow: 0 0 0 2px $color-dark-gold inset;
+}
+
+/* Make the grid cells compact on small screens */
+@media (max-width: 420px) {
+	.dp-pop__grid button,
+	.dp-pop__day {
+		width: 36px;
+		height: 32px;
+		line-height: 32px;
+	}
+}

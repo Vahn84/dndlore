@@ -1,4 +1,5 @@
 declare module '*.scss';
+declare module '*.css';
 // src/types/assets.d.ts
 declare module '*.png' {
 	const src: string;

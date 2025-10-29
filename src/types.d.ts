@@ -1,6 +1,5 @@
-
 export interface Group {
-	id: string;
+	_id: string;
 	name: string;
 	color: string;
 	/**
@@ -79,8 +78,10 @@ export interface EventDate {
 	day: number;
 }
 
+type DetailLevel = 'Year' | 'Month' | 'Day';
+
 export interface Event {
-	id: string;
+	_id: string;
 	groupId: string;
 	title: string;
 	/**
@@ -102,4 +103,42 @@ export interface Event {
 	 * Manual order position. If undefined the order will be computed from index.
 	 */
 	order?: number;
+	startEraId?: string;
+	startYear?: number;
+	startMonthIndex?: number | null;
+	startDay?: number | null;
+
+	endEraId?: string;
+	endYear?: number;
+	endMonthIndex?: number | null;
+	endDay?: number | null;
+	detailLevel?: DetailLevel;
+	icon?: string;
+}
+
+export interface PageBlock {
+	type: 'rich' | 'image';
+	// TipTap JSON
+	rich?: any;
+	// retro-compat (vecchi seed):
+	text?: string;
+	url?: string;
+	hidden?: boolean;
+}
+
+export interface Page {
+	_id: string;
+	title: string;
+	/** Type of lore page: place, history, myth, people or campaign. */
+	type: 'place' | 'history' | 'myth' | 'people' | 'campaign';
+	/** Optional banner image URL. */
+	bannerUrl?: string;
+	/** Array of content blocks. */
+	content: PageBlock[];
+	/** If true, the entire page is hidden from public users. */
+	hidden?: boolean;
+	/** Indexes of blocks that are hidden from public users. */
+	hiddenSections?: number[];
+	/** If true, this page is a draft and not published yet. */
+	draft?: boolean;
 }

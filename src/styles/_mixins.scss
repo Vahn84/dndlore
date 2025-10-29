@@ -1,34 +1,218 @@
+@use './variables' as *;
+@use 'sass:color';
+
+@mixin thin-font() {
+	font-family: $font-family-sans;
+	font-weight: 300;
+}
+
+@mixin regular-font() {
+	font-family: $font-family-sans;
+	font-weight: 400;
+}
+
+@mixin bold-font() {
+	font-family: $font-family-sans;
+	font-weight: 700;
+}
+
 @mixin flex-center {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+	display: flex;
+	justify-content: center;
+	align-items: center;
 }
 
 @mixin flex-column {
-  display: flex;
-  flex-direction: column;
+	display: flex;
+	flex-direction: column;
 }
 
 @mixin flex-row {
-  display: flex;
-  flex-direction: row;
+	display: flex;
+	flex-direction: row;
 }
 
 @mixin flex-space-between {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
 }
 
 @mixin flex-space-around {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
+	display: flex;
+	justify-content: space-around;
+	align-items: center;
 }
 
-
 @mixin ellipsis {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+@mixin rounded-button($radius: 6px) {
+	border-radius: $radius;
+	padding: 0.5rem 1rem;
+	border: none;
+	cursor: pointer;
+
+	.icon {
+		font-size: 1rem;
+		display: flex;
+
+		&.iconly-Hide:before {
+			padding-top: 1px;
+		}
+	}
+	span {
+		display: flex;
+	}
+}
+
+@mixin button--primary-btn() {
+	@include rounded-button();
+	background-color: $color-gold;
+	color: $color-dark;
+	font-weight: bold;
+	transition: background-color 0.3s ease;
+	margin-top: 1rem;
+	&:hover {
+		background-color: color.adjust(
+			$color-gold,
+			$lightness: -50%,
+			$alpha: 1
+		);
+		color: $color-light;
+	}
+}
+
+@mixin button--secondary-btn {
+	@include button--primary-btn();
+	background-color: $color-dark-gray;
+	color: $color-dim;
+	&:hover {
+		background-color: color.adjust(
+			$color-dark-gray,
+			$lightness: 10%,
+			$alpha: 1
+		);
+		color: $color-light;
+	}
+}
+
+@mixin floating-button(
+	$radius: 5px,
+	$background-color: $color-gold,
+	$color: $color-dark,
+	$hover-background-color: $color-dark-gold,
+	$hover-color: $color-light
+) {
+	position: fixed;
+	bottom: 2rem;
+	left: 2rem;
+	background: $background-color;
+	color: $color;
+	border: none;
+	padding: 0.6rem 1rem;
+	border-radius: $radius;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+	font-weight: 600;
+	cursor: pointer;
+	display: flex;
+	width: 3rem;
+	height: 3rem;
+	font-size: 1.5rem;
+	align-items: center;
+	justify-content: center;
+	transition: background-color 0.3s ease, color 0.3s ease;
+	&:hover {
+		background-color: $hover-background-color;
+		color: $hover-color;
+	}
+}
+
+@mixin formfield() {
+	@include regular-font();
+	width: 100%;
+	margin-top: 0.25rem;
+	color: $color-light-gray;
+	background: $color-dark;
+	border-radius: 6px;
+	padding: 0.5rem;
+	border: 1px solid $color-dark; /* <- no visible border */
+	font-size: 0.75rem;
+
+	&:focus,
+	&:focus-visible {
+		border-color: $color-dark-gold;
+		box-shadow: none;
+		background: transparent;
+		outline: none;
+	}
+}
+
+@mixin formlabel($display: block, $font-size: 0.8rem) {
+	font-size: $font-size;
+	gap: 0.4rem;
+	@if $display == flex {
+		@include flex-center();
+	} @else {
+		display: $display;
+	}
+}
+
+@mixin input-icon-fld($cursor: pointer) {
+	position: relative;
+	padding-left: 2rem !important;
+	cursor: $cursor;
+
+	&:focus {
+		border-color: $color-dark-gold;
+		box-shadow: none;
+		background: transparent;
+		outline: none;
+	}
+}
+
+@mixin input-icon($top: 0.5rem) {
+	position: absolute;
+	width: 25px;
+	height: 25px;
+	top: $top;
+	font-size: 1rem;
+	color: $color-light-gray;
+}
+
+@mixin input-icon-start($top: 0.5rem, $left: 0.3rem) {
+	@include flex-center();
+	@include input-icon($top);
+	left: $left;
+}
+
+@mixin input-icon-end($top: 0.6rem, $right: 0.4rem) {
+	@include flex-center();
+	@include input-icon($top);
+	right: $right;
+	background: none;
+	border: none;
+	cursor: pointer;
+
+	&:hover {
+		color: color.adjust($color-light-gray, $alpha: 0);
+	}
+}
+
+@mixin icon-square-btn() {
+	background: $color-dark-translucent;
+	border: none;
+	font-size: 1rem;
+	cursor: pointer;
+	color: $color-light-gray;
+	width: 35px;
+	height: 35px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	border-radius: 6px;
+	transition: background 0.15s ease, color 0.15s ease;
 }

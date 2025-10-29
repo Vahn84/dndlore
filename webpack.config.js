@@ -1,5 +1,6 @@
 const path = require('path');
 const webpack = require('webpack');
+const Dotenv = require('dotenv-webpack');
 
 module.exports = {
 	entry: './src/index.tsx',
@@ -38,7 +39,7 @@ module.exports = {
 				test: /\.(png|jpe?g|gif|svg|webp|avif)$/i,
 				type: 'asset/resource',
 				generator: {
-					filename: 'static/media/[name][hash][ext][query]'
+					filename: 'static/media/[name][hash][ext][query]',
 				},
 			},
 			{
@@ -61,8 +62,15 @@ module.exports = {
 	},
 	plugins: [
 		// DefinePlugin can be extended later for env vars
-		new webpack.DefinePlugin({
-			'process.env': JSON.stringify(process.env),
+		new Dotenv({
+			path: path.resolve(
+				__dirname,
+				process.env.NODE_ENV === 'production'
+					? '.env.production'
+					: '.env.development'
+			),
+			systemvars: true, // opzionale: permette override con env di sistema
+			allowEmptyValues: true, // opzionale
 		}),
 	],
 };

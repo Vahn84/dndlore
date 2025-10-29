@@ -1,0 +1,68 @@
+@use './variables' as *;
+
+.loreList {
+  padding: 2rem;
+  color: $color-light;
+}
+
+.listTitle {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.createPageButton {
+  background-color: $color-blue;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 1rem;
+}
+
+.pageList {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.pageListItem {
+  cursor: pointer;
+}
+
+.pageCard {
+  background: rgba(30, 41, 59, 0.6);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.pageCard .thumb {
+  width: 100%;
+  height: 120px;
+  background-size: cover;
+  background-position: center;
+}
+
+.pageCard .meta {
+  padding: 0.75rem;
+}
+
+.pageCard .pageTitle {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.draftBadge {
+  display: inline-block;
+  margin-top: 0.25rem;
+  padding: 0.1rem 0.5rem;
+  background: $color-orange;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 0.7rem;
+}

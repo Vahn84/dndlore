@@ -1,522 +1,714 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Modal from 'react-modal';
-import { Event, Group, TimeSystemConfig, Era, Month } from '../types';
+import { Event, Group, TimeSystemConfig } from '../types';
+import { useAppStore } from '../store/appStore';
+import Api from '../Api';
+import AssetsManagerModal from './AssetsManagerModal';
+import { Calendar, CalendarBlank, Trash } from 'phosphor-react';
+import DatePicker from './DatePicker';
+import { _changeIcon, ICONS } from './Icons';
 
 interface EventModalProps {
-  event: Event | null;
-  groups: Group[];
-  timeSystem: TimeSystemConfig;
-  onSave: (data: Omit<Event, 'id'> & { id?: string }) => void;
-  onClose: () => void;
+	event: Event | null;
+	groups?: Group[]; // optional: fallback to store
+	timeSystem?: TimeSystemConfig; // optional: fallback to store
+	onSave?: (data: Omit<Event, '_id'> & { _id?: string }) => void; // optional: fallback to store actions
+	onClose: () => void;
 }
 
 // Set the root element for accessibility (required by react-modal)
 Modal.setAppElement('#root');
 
-const EventModal: React.FC<EventModalProps> = ({ event, groups, timeSystem, onSave, onClose }) => {
-  // Local state for form fields
-  const [title, setTitle] = useState(event?.title || '');
-  const [groupId, setGroupId] = useState(event?.groupId || (groups[0]?.id ?? ''));
-  const [description, setDescription] = useState(event?.description || '');
-  const [color, setColor] = useState(
-    event?.color || groups.find(g => g.id === (event?.groupId || groups[0]?.id))?.color || '#475569'
-  );
-  const [bannerUrl, setBannerUrl] = useState(event?.bannerUrl || '');
-  // Hidden flag
-  const [hidden, setHidden] = useState<boolean>(event?.hidden ?? false);
+const makeTSDefaults = (): TimeSystemConfig => ({
+	name: '',
+	months: [],
+	weekdays: [],
+	eras: [],
+	hoursPerDay: 24,
+	minutesPerHour: 60,
+	epochWeekday: 0,
+	weekdaysResetEachMonth: false,
+	erasStartOnZeroYear: false,
+	dateFormats: {
+		year: 'YYYY [E]',
+		yearMonth: 'YYYY MMMM',
+		yearMonthDay: 'YYYY MMMM D',
+		yearMonthDayTime: 'YYYY MMMM D HH:mm',
+	},
+});
 
-  // Date fields for start and end. We break the formatted date into its parts
-  // using the provided time system configuration. If parsing fails, default to
-  // the first era and current year 0 with no month/day.
-  const parseDateString = (
-    dateStr: string | undefined,
-    ts: TimeSystemConfig
-  ): { eraId: string; year: string; monthIndex: string; day: string } => {
-    if (!dateStr) {
-      return {
-        eraId: ts.eras[0]?.id ?? '',
-        year: '',
-        monthIndex: '',
-        day: '',
-      };
-    }
-    // Attempt to find the era by abbreviation in the string
-    let eraId = ts.eras[0]?.id ?? '';
-    ts.eras.forEach(era => {
-      if (dateStr.includes(era.abbreviation)) {
-        eraId = era.id;
-      }
-    });
-    // Extract the first number as year
-    const yearMatch = dateStr.match(/(-?\d+)/);
-    const year = yearMatch ? yearMatch[0] : '';
-    // Find the month by matching month names
-    let monthIndex: string = '';
-    ts.months.forEach((m, idx) => {
-      if (dateStr.includes(m.name)) {
-        monthIndex = String(idx);
-      }
-    });
-    // Extract day by matching ordinal or numeric day before month name
-    let day = '';
-    const dayMatch = dateStr.match(/(\d+)(?:st|nd|rd|th)?/);
-    if (dayMatch) {
-      day = dayMatch[1];
-    }
-    return { eraId, year, monthIndex, day };
-  };
+const EventModal: React.FC<EventModalProps> = ({
+	event,
+	groups,
+	timeSystem,
+	onSave,
+	onClose,
+}) => {
+	// ---- Store fallbacks ----
+	const storeGroups = useAppStore((s) => s.data.groups.data);
+	const storeTS = useAppStore((s) => s.data.timeSystem.data);
+	const createEvent = useAppStore((s) => s.createEvent);
+	const updateEvent = useAppStore((s) => s.updateEvent);
 
-  // Initialize start and end date parts using the provided timeSystem
-  const initialStart = parseDateString(event?.startDate, timeSystem);
-  const initialEnd = parseDateString(event?.endDate, timeSystem);
+	const effectiveGroups = useMemo<Group[]>(
+		() => (groups && groups.length ? groups : storeGroups),
+		[groups, storeGroups]
+	);
+	const ts: TimeSystemConfig = useMemo(
+		() => timeSystem || storeTS || makeTSDefaults(),
+		[timeSystem, storeTS]
+	);
 
-  const [startEraId, setStartEraId] = useState(initialStart.eraId);
-  const [startYear, setStartYear] = useState<string>(initialStart.year);
-  const [startMonthIndex, setStartMonthIndex] = useState<string>(initialStart.monthIndex);
-  const [startDay, setStartDay] = useState<string>(initialStart.day);
+	// -------- Local state for form fields --------
+	const [title, setTitle] = useState(event?.title || '');
+	const [groupId, setGroupId] = useState(
+		event?.groupId || (effectiveGroups[0]?._id ?? '')
+	);
+	const [description, setDescription] = useState(event?.description || '');
+	const [color, setColor] = useState(
+		event?.color ||
+			effectiveGroups.find(
+				(g) => g._id === (event?.groupId || effectiveGroups[0]?._id)
+			)?.color ||
+			'#475569'
+	);
+	const [bannerUrl, setBannerUrl] = useState(event?.bannerUrl || '');
+	const [hidden, setHidden] = useState<boolean>(event?.hidden ?? false);
 
-  const [endEnabled, setEndEnabled] = useState<boolean>(!!event?.endDate);
-  const [endEraId, setEndEraId] = useState(initialEnd.eraId);
-  const [endYear, setEndYear] = useState<string>(initialEnd.year);
-  const [endMonthIndex, setEndMonthIndex] = useState<string>(initialEnd.monthIndex);
-  const [endDay, setEndDay] = useState<string>(initialEnd.day);
+	const [assetOpen, setAssetOpen] = useState(false);
 
-  // Helper to format a date using the current time system formats. Only supports
-  // replacing era abbreviation/name, year, month name/number, and day.
-  const formatDateString = (
-    eraId: string,
-    year: string,
-    monthIndex: string,
-    day: string,
-    format: string
-  ): string => {
-    const era = timeSystem.eras.find(e => e.id === eraId);
-    const eraAbbr = era?.abbreviation ?? '';
-    const eraName = era?.name ?? '';
-    const monthIdxNum = monthIndex === '' ? -1 : parseInt(monthIndex, 10);
-    const month = monthIdxNum >= 0 ? timeSystem.months[monthIdxNum] : undefined;
-    const monthNumber = monthIdxNum >= 0 ? monthIdxNum + 1 : undefined;
-    const monthName = month?.name ?? '';
-    const dayNum = day ? parseInt(day, 10) : undefined;
-    // Helper ordinal
-    const ordinal = (n: number): string => {
-      const s = ['th', 'st', 'nd', 'rd'];
-      const v = n % 100;
-      return n + (s[(v - 20) % 10] || s[v] || s[0]);
-    };
-    let result = format;
-    // Replace era codes first (E for abbreviation, EE for name)
-    result = result.replace(/EE/g, eraName);
-    result = result.replace(/E/g, eraAbbr);
-    // Replace year codes (SYYYY not implemented separately; treat as YYYY)
-    result = result.replace(/YYYY/g, year);
-    result = result.replace(/YY/g, year.slice(-2));
-    // Replace month codes
-    if (month) {
-      result = result.replace(/MMMM/g, monthName);
-      result = result.replace(/MM/g, monthNumber!.toString().padStart(2, '0'));
-      result = result.replace(/M/g, monthNumber!.toString());
-    } else {
-      // If month undefined, remove month tokens entirely
-      result = result.replace(/MMMM|MMM|MM|M/g, '');
-    }
-    // Replace day codes
-    if (dayNum !== undefined) {
-      result = result.replace(/D\^/g, ordinal(dayNum));
-      result = result.replace(/DD/g, dayNum.toString().padStart(2, '0'));
-      result = result.replace(/D/g, dayNum.toString());
-    } else {
-      result = result.replace(/D\^|DDD|DD|D/g, '');
-    }
-    // Remove extra spaces and commas
-    return result
-      .replace(/\s+,/g, ',')
-      .replace(/,\s*,/g, ',')
-      .replace(/\s{2,}/g, ' ')
-      .trim();
-  };
+	// If the URL is absolute, use it; otherwise prefix with API base
+	const resolveAssetUrl = Api.resolveAssetUrl;
+	// Keep defaults in sync if `event` or lists arrive later
+	useEffect(() => {
+		setTitle(event?.title || '');
+		setGroupId(event?.groupId || (effectiveGroups[0]?._id ?? ''));
+		setDescription(event?.description || '');
+		setBannerUrl(event?.bannerUrl || '');
+		setHidden(event?.hidden ?? false);
+		// set color from event or selected group
+		if (!event || !event.color) {
+			const selected = effectiveGroups.find(
+				(g) => g._id === (event?.groupId || effectiveGroups[0]?._id)
+			);
+			if (selected?.color) setColor(selected.color);
+		} else {
+			setColor(event.color);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [event, effectiveGroups]);
 
-  // Update color when group changes (if no custom event color)
-  useEffect(() => {
-    if (!event || !event.color) {
-      const selected = groups.find(g => g.id === groupId);
-      if (selected) {
-        setColor(selected.color);
-      }
-    }
-  }, [groupId]);
+	// -------- Date parsing/formatting helpers --------
+	const parseDateString = (
+		dateStr: string | undefined,
+		t: TimeSystemConfig
+	): { eraId: string; year: string; monthIndex: string; day: string } => {
+		if (!dateStr) {
+			return {
+				eraId: t.eras[0]?.id ?? '',
+				year: '',
+				monthIndex: '',
+				day: '',
+			};
+		}
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result;
-        if (typeof result === 'string') {
-          setBannerUrl(result);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+		// Era: try to match abbreviation; fallback to first era
+		let eraId = t.eras[0]?.id ?? '';
+		for (const era of t.eras) {
+			const abbr = era.abbreviation?.trim();
+			if (!abbr) continue;
+			const re = new RegExp(`(?:^|[ ,])${abbr}(?:$|[ ,])`);
+			if (re.test(dateStr)) {
+				eraId = era.id;
+				break;
+			}
+		}
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Format the start and end date strings based on the selected values and time system
-    let formattedStart = '';
-    let formattedEnd: string | undefined = undefined;
-    // Always require a year; convert to string
-    const sYear = startYear.trim();
-    if (sYear !== '') {
-      // Determine which format to use. If month selected use yearMonthDay or yearMonth format; else year format
-      if (startMonthIndex === '') {
-        formattedStart = formatDateString(
-          startEraId,
-          sYear,
-          '',
-          '',
-          timeSystem.dateFormats.year
-        );
-      } else {
-        // month selected; include day if provided
-        if (startDay !== '') {
-          formattedStart = formatDateString(
-            startEraId,
-            sYear,
-            startMonthIndex,
-            startDay,
-            timeSystem.dateFormats.yearMonthDay
-          );
-        } else {
-          formattedStart = formatDateString(
-            startEraId,
-            sYear,
-            startMonthIndex,
-            '',
-            timeSystem.dateFormats.yearMonth
-          );
-        }
-      }
-    }
-    if (endEnabled) {
-      const eYear = endYear.trim();
-      if (eYear !== '') {
-        if (endMonthIndex === '') {
-          formattedEnd = formatDateString(
-            endEraId,
-            eYear,
-            '',
-            '',
-            timeSystem.dateFormats.year
-          );
-        } else {
-          if (endDay !== '') {
-            formattedEnd = formatDateString(
-              endEraId,
-              eYear,
-              endMonthIndex,
-              endDay,
-              timeSystem.dateFormats.yearMonthDay
-            );
-          } else {
-            formattedEnd = formatDateString(
-              endEraId,
-              eYear,
-              endMonthIndex,
-              '',
-              timeSystem.dateFormats.yearMonth
-            );
-          }
-        }
-      }
-    }
-    const data: Omit<Event, 'id'> & { id?: string } = {
-      id: event?.id,
-      groupId,
-      title,
-      startDate: formattedStart,
-      endDate: formattedEnd,
-      description,
-      bannerUrl: bannerUrl || undefined,
-      color,
-      hidden,
-    };
-    onSave(data);
-  };
+		// Month: detect by name (word boundary)
+		let monthIndex: string = '';
+		let monthIdxNum = -1;
+		for (let idx = 0; idx < t.months.length; idx++) {
+			const name = t.months[idx]?.name;
+			if (!name) continue;
+			const re = new RegExp(`\\b${name}\\b`);
+			if (re.test(dateStr)) {
+				monthIndex = String(idx);
+				monthIdxNum = idx;
+				break;
+			}
+		}
 
-  return (
-    <Modal
-      isOpen={true}
-      onRequestClose={onClose}
-      contentLabel="Event Editor"
-      style={{
-        overlay: {
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
-          zIndex: 1000,
-        },
-        content: {
-          top: '50%',
-          left: '50%',
-          right: 'auto',
-          bottom: 'auto',
-          marginRight: '-50%',
-          transform: 'translate(-50%, -50%)',
-          backgroundColor: '#1e293b',
-          border: '1px solid #334155',
-          borderRadius: '8px',
-          padding: '1.5rem',
-          width: '350px',
-          maxHeight: '90vh',
-          overflowY: 'auto',
-          color: '#f0f4fc',
-        },
-      }}
-    >
-      <h2 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '1.25rem' }}>{event ? 'Edit Event' : 'Create Event'}</h2>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        {/* Group selection */}
-        <label style={{ fontSize: '0.9rem' }}>
-          Group
-          <select
-            value={groupId}
-            onChange={e => setGroupId(e.target.value)}
-            style={{ width: '100%', padding: '0.4rem', marginTop: '0.25rem', background: '#0f1724', color: '#f0f4fc', border: '1px solid #334155', borderRadius: '4px' }}
-          >
-            {groups
-              .sort((a, b) => a.order - b.order)
-              .map(g => (
-                <option key={g.id} value={g.id} style={{ color: g.color }}>
-                  {g.name}
-                </option>
-              ))}
-          </select>
-        </label>
-        {/* Title */}
-        <label style={{ fontSize: '0.9rem' }}>
-          Title
-          <input
-            type="text"
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            style={{ width: '100%', padding: '0.4rem', marginTop: '0.25rem', background: '#0f1724', color: '#f0f4fc', border: '1px solid #334155', borderRadius: '4px' }}
-            required
-          />
-        </label>
-        {/* Start date selectors */}
-        <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
-          <legend style={{ fontSize: '0.9rem', marginBottom: '0.25rem' }}>Start Date</legend>
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            {/* Era */}
-            <div style={{ flex: '0 0 45%' }}>
-              <label style={{ fontSize: '0.8rem' }}>Era
-                <select
-                  value={startEraId}
-                  onChange={e => setStartEraId(e.target.value)}
-                  style={{ width: '100%', padding: '0.3rem', marginTop: '0.25rem', background: '#0f1724', color: '#f0f4fc', border: '1px solid #334155', borderRadius: '4px' }}
-                >
-                  {timeSystem.eras.map(era => (
-                    <option key={era.id} value={era.id}>{era.abbreviation}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            {/* Year */}
-            <div style={{ flex: '0 0 45%' }}>
-              <label style={{ fontSize: '0.8rem' }}>Year
-                <input
-                  type="number"
-                  value={startYear}
-                  onChange={e => setStartYear(e.target.value)}
-                  style={{ width: '100%', padding: '0.3rem', marginTop: '0.25rem', background: '#0f1724', color: '#f0f4fc', border: '1px solid #334155', borderRadius: '4px' }}
-                  placeholder="9000"
-                />
-              </label>
-            </div>
-            {/* Month */}
-            <div style={{ flex: '0 0 45%' }}>
-              <label style={{ fontSize: '0.8rem' }}>Month
-                <select
-                  value={startMonthIndex}
-                  onChange={e => setStartMonthIndex(e.target.value)}
-                  style={{ width: '100%', padding: '0.3rem', marginTop: '0.25rem', background: '#0f1724', color: '#f0f4fc', border: '1px solid #334155', borderRadius: '4px' }}
-                >
-                  <option value="">-- none --</option>
-                  {timeSystem.months.map((m, idx) => (
-                    <option key={m.id} value={idx}>{m.name}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            {/* Day */}
-            <div style={{ flex: '0 0 45%' }}>
-              <label style={{ fontSize: '0.8rem' }}>Day
-                <input
-                  type="number"
-                  value={startDay}
-                  onChange={e => {
-                    // ensure day does not exceed month length
-                    const val = e.target.value;
-                    const idx = startMonthIndex === '' ? -1 : parseInt(startMonthIndex, 10);
-                    if (idx >= 0) {
-                      const max = timeSystem.months[idx]?.days || 30;
-                      if (val === '') {
-                        setStartDay('');
-                      } else if (/^\d+$/.test(val) && parseInt(val, 10) >= 1 && parseInt(val, 10) <= max) {
-                        setStartDay(val);
-                      }
-                    } else {
-                      setStartDay('');
-                    }
-                  }}
-                  style={{ width: '100%', padding: '0.3rem', marginTop: '0.25rem', background: '#0f1724', color: '#f0f4fc', border: '1px solid #334155', borderRadius: '4px' }}
-                  placeholder="1"
-                  disabled={startMonthIndex === ''}
-                />
-              </label>
-            </div>
-          </div>
-        </fieldset>
-        {/* End date selectors */}
-        <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
-          <legend style={{ fontSize: '0.9rem', marginBottom: '0.25rem' }}>End Date</legend>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-            <input
-              type="checkbox"
-              checked={endEnabled}
-              onChange={e => setEndEnabled(e.target.checked)}
-            />
-            <span style={{ fontSize: '0.8rem' }}>Set end date</span>
-          </div>
-          {endEnabled && (
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              {/* Era */}
-              <div style={{ flex: '0 0 45%' }}>
-                <label style={{ fontSize: '0.8rem' }}>Era
-                  <select
-                    value={endEraId}
-                    onChange={e => setEndEraId(e.target.value)}
-                    style={{ width: '100%', padding: '0.3rem', marginTop: '0.25rem', background: '#0f1724', color: '#f0f4fc', border: '1px solid #334155', borderRadius: '4px' }}
-                  >
-                  {timeSystem.eras.map(era => (
-                    <option key={era.id} value={era.id}>{era.abbreviation}</option>
-                  ))}
-                  </select>
-                </label>
-              </div>
-              {/* Year */}
-              <div style={{ flex: '0 0 45%' }}>
-                <label style={{ fontSize: '0.8rem' }}>Year
-                  <input
-                    type="number"
-                    value={endYear}
-                    onChange={e => setEndYear(e.target.value)}
-                    style={{ width: '100%', padding: '0.3rem', marginTop: '0.25rem', background: '#0f1724', color: '#f0f4fc', border: '1px solid #334155', borderRadius: '4px' }}
-                    placeholder="8500"
-                  />
-                </label>
-              </div>
-              {/* Month */}
-              <div style={{ flex: '0 0 45%' }}>
-                <label style={{ fontSize: '0.8rem' }}>Month
-                  <select
-                    value={endMonthIndex}
-                    onChange={e => setEndMonthIndex(e.target.value)}
-                    style={{ width: '100%', padding: '0.3rem', marginTop: '0.25rem', background: '#0f1724', color: '#f0f4fc', border: '1px solid #334155', borderRadius: '4px' }}
-                  >
-                    <option value="">-- none --</option>
-                    {timeSystem.months.map((m, idx) => (
-                      <option key={m.id} value={idx}>{m.name}</option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              {/* Day */}
-              <div style={{ flex: '0 0 45%' }}>
-                <label style={{ fontSize: '0.8rem' }}>Day
-                  <input
-                    type="number"
-                    value={endDay}
-                    onChange={e => {
-                      const val = e.target.value;
-                      const idx = endMonthIndex === '' ? -1 : parseInt(endMonthIndex, 10);
-                      if (idx >= 0) {
-                        const max = timeSystem.months[idx]?.days || 30;
-                        if (val === '') {
-                          setEndDay('');
-                        } else if (/^\d+$/.test(val) && parseInt(val, 10) >= 1 && parseInt(val, 10) <= max) {
-                          setEndDay(val);
-                        }
-                      } else {
-                        setEndDay('');
-                      }
-                    }}
-                    style={{ width: '100%', padding: '0.3rem', marginTop: '0.25rem', background: '#0f1724', color: '#f0f4fc', border: '1px solid #334155', borderRadius: '4px' }}
-                    placeholder="1"
-                    disabled={endMonthIndex === ''}
-                  />
-                </label>
-              </div>
-            </div>
-          )}
-        </fieldset>
-        {/* Color picker */}
-        <label style={{ fontSize: '0.9rem' }}>
-          Color
-          <input
-            type="color"
-            value={color}
-            onChange={e => setColor(e.target.value)}
-            style={{ width: '100%', padding: '0.2rem', marginTop: '0.25rem', height: '2rem', background: '#0f1724', border: '1px solid #334155', borderRadius: '4px' }}
-          />
-        </label>
-        {/* Description */}
-        <label style={{ fontSize: '0.9rem' }}>
-          Description
-          <textarea
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-            style={{ width: '100%', padding: '0.4rem', marginTop: '0.25rem', background: '#0f1724', color: '#f0f4fc', border: '1px solid #334155', borderRadius: '4px', minHeight: '80px' }}
-          />
-        </label>
-        {/* Banner upload */}
-        <label style={{ fontSize: '0.9rem' }}>
-          Banner Image
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            style={{ width: '100%', marginTop: '0.25rem', color: '#f0f4fc' }}
-          />
-        </label>
-        {bannerUrl && (
-          <div style={{ marginTop: '0.5rem' }}>
-            <img src={bannerUrl} alt="Banner preview" style={{ maxWidth: '100%', borderRadius: '4px' }} />
-          </div>
-        )}
-        {/* Hidden toggle */}
-        <label style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <input type="checkbox" checked={hidden} onChange={e => setHidden(e.target.checked)} />
-          Hidden (DM only)
-        </label>
-        {/* Actions */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{ padding: '0.5rem 1rem', background: '#334155', color: '#f0f4fc', border: 'none', borderRadius: '4px' }}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            style={{ padding: '0.5rem 1rem', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px' }}
-          >
-            {event ? 'Update' : 'Create'}
-          </button>
-        </div>
-      </form>
-    </Modal>
-  );
+		// Day: only if a month was detected; capture a number following the month name
+		let day = '';
+		if (monthIdxNum >= 0) {
+			const name = t.months[monthIdxNum].name;
+			const re = new RegExp(`${name}\\s+(\\d{1,2})`);
+			const m = dateStr.match(re);
+			if (m) day = m[1];
+		}
+
+		// Year: choose the last number if a day is present, otherwise the first number
+		let year = '';
+		const nums = dateStr.match(/-?\d+/g) || [];
+		if (nums.length > 0) {
+			year = day ? nums[nums.length - 1] : nums[0] ? nums[0] : '0';
+		}
+
+		return { eraId, year, monthIndex, day };
+	};
+
+	const initialStart = useMemo(() => {
+		if (event) {
+			const parsed = parseDateString(event.startDate, ts);
+			return {
+				eraId: event.startEraId ?? parsed.eraId ?? ts.eras[0]?.id ?? '',
+				year:
+					event.startYear !== undefined
+						? String(event.startYear)
+						: parsed.year,
+				monthIndex:
+					event.startMonthIndex !== undefined &&
+					event.startMonthIndex !== null
+						? String(event.startMonthIndex)
+						: parsed.monthIndex,
+				day:
+					event.startDay !== undefined && event.startDay !== null
+						? String(event.startDay)
+						: parsed.day,
+			};
+		}
+		return parseDateString(undefined, ts);
+	}, [event, ts]);
+
+	const initialEnd = useMemo(() => {
+		if (event) {
+			const parsed = parseDateString(event.endDate, ts);
+			return {
+				eraId: event.endEraId ?? parsed.eraId ?? ts.eras[0]?.id ?? '',
+				year:
+					event.endYear !== undefined
+						? String(event.endYear)
+						: parsed.year,
+				monthIndex:
+					event.endMonthIndex !== undefined &&
+					event.endMonthIndex !== null
+						? String(event.endMonthIndex)
+						: parsed.monthIndex,
+				day:
+					event.endDay !== undefined && event.endDay !== null
+						? String(event.endDay)
+						: parsed.day,
+			};
+		}
+
+		return parseDateString(undefined, ts);
+	}, [event, ts]);
+
+	const [startEraId, setStartEraId] = useState(initialStart.eraId);
+	const [startYear, setStartYear] = useState<string>(initialStart.year);
+	const [startMonthIndex, setStartMonthIndex] = useState<string>(
+		initialStart.monthIndex
+	);
+	const [startDay, setStartDay] = useState<string>(initialStart.day);
+
+	const [endEnabled, setEndEnabled] = useState<boolean>(!!event?.endDate);
+	const [endEraId, setEndEraId] = useState(initialEnd.eraId);
+	const [endYear, setEndYear] = useState<string>(initialEnd.year);
+	const [endMonthIndex, setEndMonthIndex] = useState<string>(
+		initialEnd.monthIndex
+	);
+	const [endDay, setEndDay] = useState<string>(initialEnd.day);
+	const [icon, setIcon] = useState<string>(event?.icon || 'calendar');
+
+	useEffect(() => {
+		setStartEraId(initialStart.eraId);
+		setStartYear(initialStart.year);
+		setStartMonthIndex(initialStart.monthIndex);
+		setStartDay(initialStart.day);
+		setEndEnabled(!!event?.endDate);
+		setEndEraId(initialEnd.eraId);
+		setEndYear(initialEnd.year);
+		setEndMonthIndex(initialEnd.monthIndex);
+		setEndDay(initialEnd.day);
+		console.log('ENDERAID', initialEnd.eraId);
+		console.log('STARTERAID', initialStart.eraId);
+	}, [initialStart, initialEnd, event?.endDate]);
+
+	// Ensure an era is selected once the time system is available
+	useEffect(() => {
+		if (ts.eras.length > 0) {
+			if (!startEraId) setStartEraId(ts.eras[0].id);
+			if (endEnabled && !endEraId) setEndEraId(ts.eras[0].id);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [ts.eras.length, startEraId, endEraId, endEnabled]);
+
+	const formatDateString = (
+		eraId: string,
+		year: string,
+		monthIndex: string,
+		day: string,
+		format: string
+	): string => {
+		const era = ts.eras.find((e) => e.id === eraId) || ts.eras[0];
+		const eraAbbr = era?.abbreviation ?? '';
+		const eraName = era?.name ?? '';
+		const monthIdxNum = monthIndex === '' ? -1 : parseInt(monthIndex, 10);
+		const month = monthIdxNum >= 0 ? ts.months[monthIdxNum] : undefined;
+		const monthNumber = monthIdxNum >= 0 ? monthIdxNum + 1 : undefined;
+		const monthName = month?.name ?? '';
+		const dayNum = day ? parseInt(day, 10) : undefined;
+		const ordinal = (n: number): string => {
+			const s = ['th', 'st', 'nd', 'rd'];
+			const v = n % 100;
+			return n + (s[(v - 20) % 10] || s[v] || s[0]);
+		};
+
+		const tokenRE = /(D\^|DD|D|YYYY|YY|MMMM|MM|M|EE|E)/g;
+		let out = format.replace(tokenRE, (token) => {
+			switch (token) {
+				case 'EE':
+					return eraName;
+				case 'E':
+					return eraAbbr;
+				case 'YYYY':
+					return year;
+				case 'YY':
+					return year.slice(-2);
+				case 'MMMM':
+					return month ? monthName : '';
+				case 'MM':
+					return month && monthNumber !== undefined
+						? monthNumber.toString().padStart(2, '0')
+						: '';
+				case 'M':
+					return month && monthNumber !== undefined
+						? String(monthNumber)
+						: '';
+				case 'D^':
+					return dayNum !== undefined ? ordinal(dayNum) : '';
+				case 'DD':
+					return dayNum !== undefined
+						? dayNum.toString().padStart(2, '0')
+						: '';
+				case 'D':
+					return dayNum !== undefined ? String(dayNum) : '';
+				default:
+					return token;
+			}
+		});
+
+		out = out
+			.replace(/\s+,/g, ',')
+			.replace(/,\s*,/g, ',')
+			.replace(/\s{2,}/g, ' ')
+			.replace(/,\s*$/g, '')
+			.trim();
+
+		return out;
+	};
+
+	// Update color when group changes (if event has no custom color)
+	useEffect(() => {
+		if (!event || !event.color) {
+			const selected = effectiveGroups.find((g) => g._id === groupId);
+			if (selected?.color) setColor(selected.color);
+		}
+	}, [groupId, event, effectiveGroups]);
+
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+		let formattedStart = '';
+		let formattedEnd: string | undefined = undefined;
+		const sYear = startYear.trim();
+		if (sYear !== '') {
+			if (startMonthIndex === '') {
+				formattedStart = formatDateString(
+					startEraId,
+					sYear,
+					'',
+					'',
+					ts.dateFormats.year
+				);
+			} else {
+				if (startDay !== '') {
+					formattedStart = formatDateString(
+						startEraId,
+						sYear,
+						startMonthIndex,
+						startDay,
+						ts.dateFormats.yearMonthDay
+					);
+				} else {
+					formattedStart = formatDateString(
+						startEraId,
+						sYear,
+						startMonthIndex,
+						'',
+						ts.dateFormats.yearMonth
+					);
+				}
+			}
+		}
+		if (endEnabled) {
+			const eYear = endYear.trim();
+			if (eYear !== '') {
+				if (endMonthIndex === '') {
+					formattedEnd = formatDateString(
+						endEraId,
+						eYear,
+						'',
+						'',
+						ts.dateFormats.year
+					);
+				} else {
+					if (endDay !== '') {
+						formattedEnd = formatDateString(
+							endEraId,
+							eYear,
+							endMonthIndex,
+							endDay,
+							ts.dateFormats.yearMonthDay
+						);
+					} else {
+						formattedEnd = formatDateString(
+							endEraId,
+							eYear,
+							endMonthIndex,
+							'',
+							ts.dateFormats.yearMonth
+						);
+					}
+				}
+			}
+		}
+
+		const clearingEnd = !!event?.endDate && !endEnabled;
+
+		const payload: any = {
+			_id: event?._id,
+			groupId,
+			title,
+			detailLevel: 'Year',
+			icon,
+			// formatted strings (for display/search)
+			startDate: formattedStart || undefined,
+			// structured fields (for reliable re-hydration)
+			startEraId: startEraId || undefined,
+			startYear: sYear ? parseInt(sYear, 10) : undefined,
+			startMonthIndex:
+				startMonthIndex !== '' ? parseInt(startMonthIndex, 10) : undefined,
+			startDay: startDay !== '' ? parseInt(startDay, 10) : undefined,
+			description,
+			bannerUrl: bannerUrl || undefined,
+			color,
+			hidden,
+		};
+
+		if (endEnabled) {
+			// send composed end date
+			payload.endDate = formattedEnd;
+			payload.endEraId = endEraId || undefined;
+			payload.endYear = endYear.trim() ? parseInt(endYear.trim(), 10) : undefined;
+			payload.endMonthIndex =
+				endMonthIndex !== '' ? parseInt(endMonthIndex, 10) : undefined;
+			payload.endDay = endDay !== '' ? parseInt(endDay, 10) : undefined;
+		} else if (clearingEnd) {
+			// explicitly clear end date on the server
+			payload.endDate = null;
+			payload.endEraId = null;
+			payload.endYear = null;
+			payload.endMonthIndex = null;
+			payload.endDay = null;
+		}
+
+		try {
+			if (onSave) {
+				onSave(payload);
+			} else {
+				if (payload._id) {
+					const { _id, ...rest } = payload as any;
+					await updateEvent({
+						_id: _id,
+						...(rest as Partial<Event>),
+					});
+				} else {
+					const { _id, ...rest } = payload as any;
+					await createEvent(rest as Omit<Event, '_id'>);
+				}
+			}
+			onClose();
+		} catch (err) {
+			// eslint-disable-next-line no-console
+			console.error('Failed to save event', err);
+		}
+	};
+
+	const resolveIcon = (icon: string): React.ReactNode => {
+		return ICONS[icon] || <CalendarBlank />;
+	};
+
+	const changeIcon = () => {
+		setIcon(_changeIcon(icon));
+	};
+
+	return (
+		<>
+			<Modal
+				isOpen={true}
+				onRequestClose={onClose}
+				contentLabel="Event Editor"
+				className="modal__content modal__content--event"
+				overlayClassName="modal__overlay"
+			>
+				<div className="modal__body">
+					<div className="modal__body_content">
+						<form onSubmit={handleSubmit}>
+							<div style={{ position: 'relative' }}>
+								<div
+									className="bannerPreview"
+									style={{
+										backgroundImage: `${
+											bannerUrl && bannerUrl.length > 0
+												? 'url(' +
+												  resolveAssetUrl(bannerUrl) +
+												  ')'
+												: ''
+										}`,
+									}}
+								>
+									{bannerUrl && bannerUrl.length > 0 && (
+										<button
+											style={{
+												position: 'absolute',
+												right: '10px',
+												top: '10px',
+											}}
+											className="trash-btn"
+											type="button"
+											onClick={() => setBannerUrl('')}
+											title="Delete month"
+										>
+											<Trash color="white" />
+										</button>
+									)}
+									{!bannerUrl && (
+										<div className="modal__assets_manager">
+											<button
+												type="button"
+												onClick={() =>
+													setAssetOpen(true)
+												}
+											>
+												Add Image
+											</button>
+										</div>
+									)}
+									{/* Title */}
+									<div className="modal__title_wrapper">
+										<span
+											className="icon_square-btn"
+											onClick={changeIcon}
+										>
+											{resolveIcon(icon)}
+										</span>
+										<input
+											type="text"
+											value={title}
+											onChange={(e) =>
+												setTitle(e.target.value)
+											}
+											className="modal__input"
+											placeholder="Set the Event Title"
+											required
+										/>
+									</div>
+								</div>
+							</div>
+
+							<div className="modal__form_wrapper">
+								{/* Group selection */}
+
+								<fieldset
+									style={{
+										border: 'none',
+										padding: 0,
+										margin: 0,
+									}}
+								>
+									<div
+										style={{
+											display: 'flex',
+											gap: '0.5rem',
+											flexWrap: 'wrap',
+										}}
+									>
+										<div style={{ flex: '65%' }}>
+											<label className="form-label">
+												Group
+												<select
+													value={groupId}
+													onChange={(e) =>
+														setGroupId(
+															e.target.value
+														)
+													}
+													className="modal__select"
+												>
+													{[...effectiveGroups]
+														.sort(
+															(a, b) =>
+																(a.order ?? 0) -
+																(b.order ?? 0)
+														)
+														.map((g) => (
+															<option
+																key={g._id}
+																value={g._id}
+																style={{
+																	color: g.color,
+																}}
+															>
+																{g.name}
+															</option>
+														))}
+												</select>
+											</label>
+										</div>
+										{/* Color picker */}
+										<div style={{ flex: '30%' }}>
+											<label
+												className="form-label color-picker"
+												style={{}}
+											>
+												Color
+												<input
+													type="color"
+													value={color}
+													onChange={(e) =>
+														setColor(e.target.value)
+													}
+													className="form-input"
+												/>
+											</label>
+										</div>
+									</div>
+								</fieldset>
+
+								{/* Start date selectors */}
+
+								<DatePicker
+									ts={timeSystem} // your TimeSystemConfig
+									label="Start"
+									value={{
+										eraId: startEraId,
+										year: startYear,
+										monthIndex: startMonthIndex || '0',
+										day: startDay || '1',
+									}}
+									onChange={(parts) => {
+										if (!parts) return; // Start required
+										setStartEraId(parts.eraId);
+										setStartYear(parts.year);
+										setStartMonthIndex(parts.monthIndex);
+										setStartDay(parts.day);
+									}}
+								/>
+								<DatePicker
+									ts={timeSystem}
+									label="End"
+									placeholder="Pick a date (optional)"
+									clearable
+									value={{
+										eraId: endEraId,
+										year: endYear,
+										monthIndex: endMonthIndex || '0',
+										day: endDay || '1',
+									}}
+									onChange={(parts) => {
+										if (!parts) {
+											setEndEnabled(false);
+											setEndEraId(timeSystem?.eras[0]?.id || '');
+											setEndYear('');
+											setEndMonthIndex('');
+											setEndDay('');
+											return;
+										}
+										setEndEraId(parts.eraId);
+										setEndYear(parts.year);
+										setEndMonthIndex(parts.monthIndex);
+										setEndDay(parts.day);
+										// Enable end date when any meaningful part is present
+										const hasAny = Boolean(
+											(parts.year && parts.year.trim()) ||
+											(parts.monthIndex && parts.monthIndex.trim()) ||
+											(parts.day && parts.day.trim())
+										);
+										setEndEnabled(hasAny);
+									}}
+								/>
+
+								<div className="checkbox-wrapper">
+									<input
+										className="input-checkbox input-checkbox-light"
+										type="checkbox"
+										id="hidden-checkbox"
+										checked={hidden}
+										onChange={(e) => {
+											setHidden(e.target.checked);
+											console.log(
+												'HIDDEN',
+												e.target.checked
+											);
+										}}
+									/>
+
+									<label
+										className="input-checkbox-btn"
+										htmlFor="hidden-checkbox"
+									></label>
+									<span className="form-label">
+										Hidden (DM only)
+									</span>
+								</div>
+
+								<div
+									style={{
+										display: 'flex',
+										justifyContent: 'flex-end',
+										gap: '0.5rem',
+										marginTop: '1rem',
+									}}
+								>
+									<button
+										type="button"
+										onClick={onClose}
+										className="btn-muted"
+									>
+										Cancel
+									</button>
+									<button
+										type="submit"
+										className="btn-primary"
+									>
+										{event ? 'Update' : 'Create'}
+									</button>
+								</div>
+							</div>
+						</form>
+					</div>
+				</div>
+			</Modal>
+			<AssetsManagerModal
+				isOpen={assetOpen}
+				onClose={() => setAssetOpen(false)}
+				onSelect={(asset) => {
+					setBannerUrl(asset.url);
+					setAssetOpen(false);
+				}}
+			/>
+		</>
+	);
 };
 
 export default EventModal;

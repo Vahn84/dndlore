@@ -1,0 +1,55 @@
+@use './variables' as *;
+
+.loreHome {
+  padding: 2rem;
+  text-align: center;
+  color: $color-light;
+}
+
+.loreTitle {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.loreSubtitle {
+  font-size: 1rem;
+  color: $color-dim;
+  margin-bottom: 2rem;
+}
+
+.categoryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.categoryCard {
+  background: rgba(30, 41, 59, 0.6);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border: 1px solid transparent;
+  color: $color-light;
+}
+
+.categoryCard:hover {
+  background: rgba(51, 65, 85, 0.8);
+  border-color: $color-blue;
+}
+
+.categoryCard .icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.categoryCard .label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}

@@ -1,0 +1,62 @@
+@use './variables' as *;
+
+.rt-block {
+  position: relative;
+  border-radius: 10px;
+  padding: .75rem .9rem;
+  transition: background .18s ease, border-color .18s ease;
+
+  // blockquote come card grigio (primo screenshot)
+  .rt-content blockquote {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 10px;
+    padding: .9rem 1rem;
+    margin: .6rem 0;
+    font-style: italic;
+  }
+
+  .rt-content ul {
+    padding-left: 1.25rem;
+    li { list-style: disc; margin: .25rem 0; }
+  }
+
+  // invisibile agli utenti, ma DM vede gli strumenti solo on-hover
+  .rt-sideTools {
+    position: absolute; top: .5rem; right: .5rem;
+    display: flex; gap: .25rem; opacity: 0; pointer-events: none;
+    transition: opacity .15s ease;
+    button {
+      pointer-events: all;
+      background: rgba(0,0,0,.45);
+      border: 1px solid rgba(255,255,255,.18);
+      color: #fff; border-radius: 8px; padding: .25rem .4rem; font-size: .8rem;
+    }
+  }
+  &:hover .rt-sideTools { opacity: 1; }
+}
+
+// Bubble e Floating menu (toolbox contestuali)
+.rt-bubble, .rt-float {
+  background: rgba(0,0,0,.75);
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 10px;
+  padding: .25rem;
+  .btns {
+    display: flex; gap: .25rem;
+    button {
+      background: transparent; color: #fff;
+      border: 1px solid transparent;
+      border-radius: 8px; padding: .25rem .5rem;
+      &.active { background: rgba(255,255,255,.14); }
+    }
+  }
+}
+
+// Evidenza blocco hidden SOLO per DM (bordo viola tratteggiato + “Secret”)
+.rt-hidden {
+  outline: 2px dashed #8b5cf6; // viola
+  outline-offset: 6px;
+  box-shadow: inset 0 0 0 1px rgba(139,92,246,.35);
+  background: rgba(139,92,246,.07);
+}

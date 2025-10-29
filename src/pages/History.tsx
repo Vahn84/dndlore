@@ -5,6 +5,7 @@ import '../styles/History.scss';
 const History: React.FC = () => {
 	return (
 		<div className="history">
+			<div className="overlay"></div>
 			<Timeline />
 		</div>
 	);
