@@ -2,18 +2,35 @@
 @use 'sass:color';
 
 @mixin thin-font() {
-	font-family: $font-family-sans;
+	font-family: $font-family-title;
 	font-weight: 300;
 }
 
 @mixin regular-font() {
-	font-family: $font-family-sans;
+	font-family: $font-family-title;
 	font-weight: 400;
 }
 
 @mixin bold-font() {
-	font-family: $font-family-sans;
+	font-family: $font-family-title;
 	font-weight: 700;
+	letter-spacing: 0.2em;
+	text-transform: uppercase;
+}
+
+@mixin title-font() {
+	font-family: $font-family-title;
+	font-weight: 700;
+}
+@mixin spaced-title-font() {
+	font-family: $font-family-title;
+	font-weight: 700;
+	letter-spacing: 0.2em;
+}
+
+@mixin text-font() {
+	font-family: $font-family-text;
+	font-weight: 400;
 }
 
 @mixin flex-center {

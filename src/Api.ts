@@ -28,6 +28,19 @@ class Api {
 				}
 				return config;
 			});
+			Api.instance.interceptors.response.use(
+				(response) => response,
+				(error) => {
+					if(error.response && error.response.status === 401) {
+						// Optionally handle unauthorized errors globally
+						// e.g., redirect to login page
+						Api.logout()
+						
+					}
+					// Optionally handle global errors here
+					return Promise.reject(error);
+				}
+			);
 		}
 		return Api.instance;
 	}
@@ -52,6 +65,7 @@ class Api {
 	 */
 	static logout() {
 		localStorage.removeItem('token');
+		localStorage.clear();
 	}
 
 	/**
@@ -145,11 +159,11 @@ class Api {
 
 	static async createPage(payload: {
 		title: string;
+		subtitle?: string;
 		type: 'place' | 'history' | 'myth' | 'people' | 'campaign';
 		bannerUrl?: string;
-		content: any[];
+		blocks: any[];
 		hidden?: boolean;
-		hiddenSections?: any[];
 		draft?: boolean;
 	}) {
 		const res = await Api.client.post('/pages', payload);
@@ -158,6 +172,7 @@ class Api {
 
 	static async updatePage(payload: Partial<Page>) {
 		const { _id, ...rest } = payload;
+		console.log('Updating page:', payload);
 		const res = await Api.client.put(`/pages/${_id}`, rest);
 		return res.data;
 	}

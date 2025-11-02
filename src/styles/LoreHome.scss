@@ -1,55 +1,292 @@
 @use './variables' as *;
+@use './mixins' as *;
 
 .loreHome {
-  padding: 2rem;
-  text-align: center;
-  color: $color-light;
+	background-size: cover !important;
+	background-position: center center !important;
+
+	.bgLayer {
+		position: absolute;
+		inset: 0;
+		background: inherit;
+		background-size: cover;
+		background-position: center;
+		pointer-events: none;
+		filter: blur(0px);
+		transform: translateZ(0);
+		will-change: filter;
+		z-index: 0;
+	}
+
+	&.offset-container {
+		height: auto;
+		min-height: 100%;
+		min-height: 100vh;
+		position: relative;
+		margin-top: 0;
+		padding-bottom: 2rem;
+		padding-top: 0;
+	}
+
+	.overflow-container {
+		position: absolute;
+		top: calc($navbar-height / 2);
+		left: 0;
+		right: 0;
+		bottom: 0;
+		width: 100%;
+		overflow-y: auto;
+		overscroll-behavior-y: contain;
+		-webkit-overflow-scrolling: touch;
+		scroll-padding-top: 16px;
+	}
+
+	.contentContainer {
+		max-width: 1000px;
+		margin: 0 auto;
+		overflow: visible;
+		position: relative;
+		padding: 2rem;
+	}
 }
 
 .loreTitle {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
+	@include spaced-title-font();
+	font-size: 2.5rem;
+	margin: 0 0 0.5rem 0;
+	text-align: center;
+	color: $color-light;
+	text-transform: uppercase;
 }
 
 .loreSubtitle {
-  font-size: 1rem;
-  color: $color-dim;
-  margin-bottom: 2rem;
+	@include thin-font();
+	font-size: 1rem;
+	color: $color-dim;
+	margin-bottom: 3rem;
+	text-align: center;
 }
 
-.categoryGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 1rem;
-  max-width: 800px;
-  margin: 0 auto;
+.loreColumns {
+	display: grid;
+	grid-template-columns: 250px 1fr;
+	gap: 2rem;
+	align-items: start;
+}
+
+.categoriesColumn {
+	position: sticky;
+	top: 2rem;
+}
+
+.pagesColumn {
+	min-height: 400px;
+}
+
+.columnTitle {
+	@include spaced-title-font();
+	font-size: 1rem;
+	margin-bottom: 1.5rem;
+	color: $color-dark-gold;
+	text-transform: uppercase;
+}
+
+.categoriesList {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
 }
 
 .categoryCard {
-  background: rgba(30, 41, 59, 0.6);
-  border-radius: 8px;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.2s ease;
-  border: 1px solid transparent;
-  color: $color-light;
+	@include spaced-title-font();
+	background: transparent;
+	border: none;
+	padding: 0.75rem 1rem;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	color: $color-light-gray;
+	text-align: left;
+	font-size: 0.9rem;
+	text-transform: uppercase;
+	position: relative;
+
+	&::before {
+		content: '';
+		position: absolute;
+		left: 0;
+		top: 0;
+		bottom: 0;
+		width: 2px;
+		background: transparent;
+		transition: background 0.2s ease;
+	}
+
+	&:hover {
+		color: $color-light;
+		padding-left: 1.25rem;
+	}
+
+	&.active {
+		color: $color-gold;
+		padding-left: 1.25rem;
+
+		&::before {
+			background: $color-gold;
+		}
+	}
+
+	.label {
+		font-size: 0.9rem;
+	}
 }
 
-.categoryCard:hover {
-  background: rgba(51, 65, 85, 0.8);
-  border-color: $color-blue;
+.loadingText,
+.emptyText {
+	@include thin-font();
+	text-align: center;
+	color: $color-dim;
+	padding: 2rem;
 }
 
-.categoryCard .icon {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
+.pageList {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	display: flex;
+	gap: 1rem;
+	flex-direction: column;
 }
 
-.categoryCard .label {
-  font-size: 0.9rem;
-  font-weight: 600;
+.pageListItem {
+	cursor: pointer;
+	flex: 1;
+	min-height: 150px;
+	height: 150px;
+}
+
+.pageCard {
+	position: relative;
+	background: $color-dark-translucent;
+	border-radius: 8px;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	height: 150px;
+	transition: all 0.2s ease;
+	border: 1px solid $color-dark;
+	align-items: flex-end;
+	justify-content: flex-end;
+
+	&:hover {
+		border-color: $color-gold;
+
+			.meta {
+				max-height: 150px; // expand to show excerpt
+			}
+
+			.meta .pageExcerpt {
+				opacity: 1;
+				transform: translateY(0);
+			}
+	}
+
+	.thumb {
+		width: 100%;
+		height: 100%;
+		background-size: cover;
+		background-position: center;
+		object-fit: cover;
+		position: absolute;
+	}
+
+	.meta {
+		position: relative;
+		padding: 0.75rem;
+		justify-content: flex-start;
+		align-self: flex-end;
+		width: 100%;
+			
+		background: $color-dark-translucent;
+		display: flex;
+		flex-direction: column;
+			// Smooth raise animation via max-height (height:auto is not animatable)
+			max-height: 55px; // fits title + optional subtitle
+			overflow: hidden;
+			transition: max-height 300ms ease;
+			will-change: max-height;
+	}
+
+	.pageTitle {
+		@include title-font();
+		margin: 0;
+		font-size: 1rem;
+		color: $color-light;
+	}
+	.pageSubtitle {
+		@include spaced-title-font();
+		margin: 0;
+		font-size: 0.8rem;
+		color: $color-dark-gold;
+	}
+
+	.pageExcerpt {
+			@include text-font();
+			margin: .3rem 0 0 0;
+			font-size: 1rem;
+			color: $color-light-gray;
+			opacity: 0;
+			transform: translateY(4px);
+			transition: opacity 220ms ease, transform 220ms ease;
+
+      .moreIndicator{
+        @include spaced-title-font();
+        color: $color-dark-gold;
+        font-size: .7rem;
+
+        cursor: pointer;
+      }
+	}
+}
+
+.draftBadge {
+	position: absolute;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 30px;
+	top: 0.3rem;
+	margin-top: 0.25rem;
+	padding: 0.1rem 0.5rem;
+	background: $color-dark;
+	color: $color-gold;
+	border-top-left-radius: 4px;
+	border-bottom-left-radius: 4px;
+	font-size: 0.7rem;
+	font-weight: 600;
+}
+
+@media (max-width: 768px) {
+	.loreColumns {
+		grid-template-columns: 1fr;
+		gap: 1.5rem;
+	}
+
+	.categoriesColumn {
+		position: static;
+	}
+
+	.categoriesList {
+		flex-direction: row;
+		flex-wrap: wrap;
+	}
+
+	.categoryCard {
+		&.active {
+			padding-left: 1rem;
+		}
+
+		&::before {
+			display: none;
+		}
+	}
 }

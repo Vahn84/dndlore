@@ -1,0 +1,281 @@
+@use './variables.scss' as *;
+@use './mixins.scss' as *;
+
+.loreDetail {
+	background-size: cover !important;
+	background-position: center center !important;
+
+	.bgLayer {
+		position: absolute;
+		inset: 0;
+		background: inherit;
+		background-size: cover;
+		background-position: center;
+		pointer-events: none;
+		filter: blur(0px); // inline style overrides this
+		transform: translate3d(0, -1rem, 0);
+		will-change: filter;
+		z-index: 0;
+	}
+
+	&.offset-container {
+		height: auto;
+		min-height: 100%;
+		min-height: 100vh;
+		position: relative;
+		margin-top: 0;
+		padding-bottom: 2rem;
+		padding-top: 0;
+	}
+	.overflow-container {
+		position: absolute; // anchor to the loreDetail container
+		top: calc($navbar-height/2); // start below the gold line
+		left: 0;
+		right: 0;
+		bottom: 0; // fill to bottom
+		width: 100%;
+		overflow-y: auto; // vertical scroll only
+		overscroll-behavior-y: contain; // prevent rubber-band/scroll chaining past navbar
+		-webkit-overflow-scrolling: touch; // smooth on iOS
+		scroll-padding-top: 16px; // if you scroll to anchors, keep some top padding
+	}
+
+	.contentContainer {
+		max-width: 700px;
+		margin: 0 auto;
+		overflow: visible;
+		position: relative;
+		padding-bottom: 2rem;
+
+		.pageTitle {
+			margin: 50vh 0 0 0;
+			position: relative;
+			text-align: center;
+
+			h1 {
+				font-size: 2.5rem;
+
+				color: $color-light;
+			}
+
+			textarea {
+				text-align: center;
+				resize: none;
+			}
+
+			&:focus-within input,
+			textarea {
+				outline: none;
+			}
+
+			&:hover .banner-icon {
+				opacity: 0.5;
+			}
+
+			.banner-icon {
+				position: absolute;
+				
+				top: -2.5rem;
+                left:50%;
+				transform: translateX(-50%);
+				cursor: pointer;
+				color: $color-light-gray;
+				opacity: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                span {
+                    margin-left: .5rem;
+                }
+
+                &.loaded{
+                    color: $color-dark-gold;
+                }
+
+				&:hover {
+					opacity: 0.8;
+				}
+			}
+		}
+
+		.pageSubtitle {
+			position: relative;
+			text-align: center;
+			margin: 0;
+
+			&:focus-within input,
+			textarea {
+				outline: none;
+			}
+
+			textarea {
+				text-align: center;
+				resize: none;
+				height: 30px;
+			}
+			h4 {
+				font-size: 1.2rem;
+				color: $color-dark-gold;
+				font-weight: 400;
+			}
+		}
+
+		.richTextBlock--title {
+			@include bold-font();
+			background: transparent;
+			border: none;
+			color: $color-light;
+			font-size: larger;
+			width: 100%;
+			padding: 0;
+		}
+
+		.richTextBlock--subtitle {
+			@include spaced-title-font();
+			background: transparent;
+			border: none;
+			color: $color-dark-gold;
+			font-size: 1.2rem;
+			width: 100%;
+			padding: 0;
+			text-transform: uppercase;
+		}
+
+		.saveStatus {
+			@include thin-font();
+			font-size: 0.65rem;
+			color: $color-dim;
+			text-align: center;
+
+			.error {
+				color: $color-secret;
+			}
+		}
+
+		.publishRow {
+			margin-top: 0.5rem;
+			display: flex;
+			justify-content: center;
+		}
+
+		.publishBtn {
+			@include button--primary-btn();
+			margin-top: 0.5rem;
+		}
+
+
+
+		.blocks {
+			margin-top: 1.5rem;
+
+			.blockRow {
+				position: relative;
+				display: flex;
+				align-items: flex-start;
+				gap: 8px;
+				width: 100%;
+
+				& + .blockRow {
+					margin-top: 8px;
+				}
+
+				.blockRow__add {
+					@include flex-center();
+					position: relative;
+					width: 22px;
+					height: 22px;
+					border-radius: 6px;
+					color: $color-light-gray;
+					background: transparent;
+					border: none;
+					box-shadow: none;
+					line-height: 1;
+					opacity: 0;
+					cursor: pointer;
+					transition: opacity 0.15s ease, background 0.15s ease,
+						border-color 0.15s ease;
+
+					&:hover {
+						background: $color-medium-gray;
+						color: $color-light;
+					}
+				}
+			}
+
+			.richTextBlock {
+				font-family: $font-family-text;
+				width: 100%;
+				position: relative;
+
+				&.rt-hidden {
+					.rt-content {
+						border: 2px dashed $color-secret;
+						padding: 1rem;
+						border-radius: 6px;
+						background: $color-secret-translucent;
+
+						&::before {
+							content: 'Secret';
+							color: $color-secret;
+							font-size: 0.9rem;
+							font-weight: 600;
+							margin-bottom: 0.5rem;
+						}
+					}
+				}
+
+				.rt-content {
+					position: relative;
+					outline: none;
+					font-size: 1.1rem;
+					line-height: 1.2;
+
+					&[data-empty='true'][data-placeholder]::before {
+						content: attr(data-placeholder);
+						position: absolute;
+						pointer-events: none;
+						opacity: 0.5;
+						color: $color-medium-gray;
+					}
+
+					p,
+					h1,
+					h2,
+					h3,
+					h4,
+					h5,
+					h6,
+					blockquote,
+					ul {
+						color: $color-light;
+						outline: none;
+						margin: 0;
+					}
+					blockquote {
+						background: $color-light-gold-translucent;
+						padding: 1rem;
+						color: $color-dim;
+						margin: 1rem 0;
+						border-radius: 6px;
+						border: 1px solid $color-dark-gold;
+
+						p {
+							color: $color-light;
+						}
+					}
+
+					p {
+						color: $color-light;
+					}
+				}
+
+				&:hover {
+					.rt-toolbar {
+						opacity: 1;
+					}
+				}
+			}
+		}
+	}
+}

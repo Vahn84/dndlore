@@ -1,0 +1,103 @@
+@use './variables' as *;
+@use './mixins' as *;
+
+.lore-create-fab {
+	position: fixed;
+	bottom: 2rem;
+	left: 2rem;
+	z-index: 1000;
+}
+
+/* Seamless morphing surface: rounded square -> rounded rectangle */
+.lcfab__surface {
+	@include floating-button(
+		6px,
+		$color-gold,
+		$color-dark,
+		$color-gold,
+		$color-dark
+	);
+	@include regular-font();
+	transition: all 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+	outline: none;
+
+	.lcfab__plus {
+		@include flex-center();
+		position: absolute;
+		height: 100%;
+		width: 100%;
+		transition: all 0.2s ease;
+		outline: none;
+	}
+
+	.lcfab__content {
+		opacity: 0;
+		pointer-events: none;
+		transition: all 0.2s ease;
+		outline: none;
+        width: 100%;
+
+		.lcfab__content_wrapper {
+			display: flex;
+			align-items: flex-start;
+			gap: 10px;
+			justify-content: flex-start;
+			flex-direction: column;
+            width: 100%;
+
+			&--option {
+				@include thin-font();
+				display: flex;
+				align-items: center;
+				justify-content: flex-start;
+				font-size: 0.9rem;
+				text-transform: uppercase;
+
+				&-icon {
+					margin-right: .3rem;
+				}
+			}
+		}
+	}
+
+	&[data-open='true'] {
+		width: 190px;
+		height: 145px;
+		box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+
+		&:hover {
+			background: $color-gold;
+			$color: $color-dark;
+		}
+
+		.lcfab__plus {
+			opacity: 0;
+			pointer-events: none;
+		}
+
+		.lcfab__content {
+			opacity: 1;
+			pointer-events: auto;
+
+			.lcfab__content_wrapper--option {
+				width: 100%;
+				&:hover {
+					font-weight: 600;
+				}
+			}
+		}
+	}
+}
+
+/* Screen reader only text */
+.sr-only {
+	position: absolute !important;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}

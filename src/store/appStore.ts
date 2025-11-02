@@ -73,6 +73,7 @@ type AppState = {
 	createPage: (p: Omit<Page, 'id'>) => Promise<Page>;
 	updatePage: (p: Partial<Page>) => Promise<Page>;
 	deletePage: (id: string) => Promise<void>;
+	getPage: (id: string) => Promise<Page>;
 	saveTimeSystem: (config: any) => Promise<void>;
 
 	createAssetFromFile: (file: File) => Promise<Asset>;
@@ -190,7 +191,7 @@ export const useAppStore = create<AppState>()(
 					try {
 						const allEvents = await Api.getEvents();
 						const events = allEvents.filter(
-							(e:Event) => !e.hidden || get().user?.role === 'DM'
+							(e: Event) => !e.hidden || get().user?.role === 'DM'
 						);
 						set((s) => {
 							s.data.events.data = events;
@@ -478,7 +479,15 @@ export const useAppStore = create<AppState>()(
 						);
 					});
 				},
-
+				getPage: async (id) => {
+					const page = await Api.getPage(id);
+					set((s) => {
+						s.data.pages.data = s.data.pages.data.filter(
+							(x) => x._id !== id
+						);
+					});
+					return page;
+				},
 				replacePageInCache: (p) => {
 					set((s) => {
 						const idx = s.data.pages.data.findIndex(

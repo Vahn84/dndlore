@@ -19,6 +19,7 @@ import Api from './Api';
 import { useAppStore } from './store/appStore';
 import LoreHome from './pages/LoreHome';
 import { SignIn, SignOut, UserCircle } from 'phosphor-react';
+import LoreDetail from './pages/LoreDetail';
 
 /**
  * The main application component. This version uses React Router to provide
@@ -101,8 +102,8 @@ const AppContent: React.FC = () => {
 	const loadTimeSystem = useAppStore((s) => s.loadTimeSystem);
 	const loadAssets = useAppStore((s) => s.loadAssets);
 	const logout = useAppStore((s) => s.logout);
-	const isDM = useAppStore((s) => s.isDM());
-	const isLoggedIn = useAppStore((s) => s.isLoggedIn());
+	const isDM = useAppStore((s) => s.isDM);
+	const isLoggedIn = useAppStore((s) => s.isLoggedIn);
 
 	useEffect(() => {
 		loadGroups();
@@ -112,7 +113,7 @@ const AppContent: React.FC = () => {
 	}, [loadGroups, loadEvents, loadTimeSystem]);
 
 	const handleGoogleLogin = () => {
-		if (!isLoggedIn) {
+		if (!isLoggedIn()) {
 			window.location.href = `${Api.getBaseUrl()}/auth/google`;
 		} else {
 			logout();
@@ -130,7 +131,7 @@ const AppContent: React.FC = () => {
 					onClick={handleGoogleLogin}
 				>
 					<span className="icon_square-btn">
-						{isLoggedIn ? <SignOut /> : <SignIn />}
+						{isLoggedIn() ? <SignOut /> : <SignIn />}
 					</span>
 				</button>
 			</div>
@@ -145,6 +146,8 @@ const AppContent: React.FC = () => {
 					<Route path="/campaign" element={<Campaign />} />
 					<Route path="/history" element={<History />} />
 					<Route path="/lore" element={<LoreHome />} />
+					<Route path="/lore/:type/new" element={<LoreDetail isDM={isDM()} />} />
+					<Route path="/lore/:type/:id" element={<LoreDetail isDM={isDM()} />} />
 				</Routes>
 			</div>
 			{/* Render modals outside Routes so they overlay correctly */}

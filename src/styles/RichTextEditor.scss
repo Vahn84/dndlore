@@ -1,0 +1,379 @@
+@use './variables' as *;
+@use './mixins' as *;
+
+.rt-bubble-menu,
+.rt-bubble-menu-image {
+	background: $color-dark-gray;
+	color: $color-light;
+	border: 1px solid $color-medium-gray;
+	border-radius: 12px;
+	box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+	padding: 6px 8px;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	user-select: none;
+
+	&--hidden {
+		display: none;
+	}
+
+	/* subtle hairline around items */
+	.btns {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	/* dropdown/select on the left (e.g., Normal text) */
+	select,
+	.rt-select {
+		appearance: none;
+		background: $color-dark;
+		color: inherit;
+		border: 1px solid $color-medium-gray;
+		border-radius: 10px;
+		padding: 6px 10px;
+		font: inherit;
+		line-height: 1;
+		cursor: pointer;
+	}
+
+	/* custom mode button + menu */
+	.rt-mode {
+		position: relative;
+	}
+	.rt-mode__btn {
+		appearance: none;
+		background: $color-dark-gray;
+		color: inherit;
+		border-radius: 6px;
+		padding: 6px 10px;
+		font: inherit;
+		line-height: 1;
+		cursor: pointer;
+		min-width: 120px;
+		text-align: left;
+	}
+	.rt-mode-menu {
+		position: absolute;
+		top: calc(100% + 6px);
+		left: 0;
+		background: $color-dark-gray;
+		color: $color-light;
+		border: 1px solid $color-medium-gray;
+		border-radius: 6px;
+		box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+		padding: 10px;
+		min-width: 220px;
+		z-index: 1000;
+	}
+	.rt-mode-menu::before {
+		content: '';
+		position: absolute;
+		top: -6px;
+		left: 14px;
+		width: 10px;
+		height: 10px;
+		background: $color-medium-gray;
+		border-top: 1px solid $color-medium-gray;
+		border-left: 1px solid $color-medium-gray;
+		transform: rotate(45deg);
+	}
+	.rt-menu-section {
+		font-size: 12px;
+		opacity: 0.6;
+		margin: 4px 0 6px;
+	}
+	.rt-menu-row {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 4px 0;
+	}
+	.rt-menu-row > span {
+		font-size: 12px;
+		opacity: 0.7;
+	}
+	.rt-menu-row button {
+		appearance: none;
+		background: transparent;
+		color: inherit;
+		border: 1px solid transparent;
+		padding: 6px 8px;
+		border-radius: 6px;
+		cursor: pointer;
+		transition: background 0.12s ease, border-color 0.12s ease;
+		width: 100%;
+		text-align: left;
+		justify-content: flex-start;
+	}
+	.rt-menu-row button:hover {
+		background: $color-dark-gray;
+		border-color: $color-medium-gray;
+	}
+	.rt-menu-row button.active {
+		background: color-mix(in srgb, $color-gold 18%, transparent);
+		border-color: color-mix(in srgb, $color-gold 55%, $color-medium-gray);
+		color: #0b0b0b;
+		font-weight: 700;
+	}
+
+	/* generic icon buttons */
+	button {
+		appearance: none;
+		border: 1px solid transparent;
+		background: transparent;
+		color: inherit;
+		width: 32px;
+		height: 32px;
+		border-radius: 6px;
+		display: grid;
+		place-items: center;
+		cursor: pointer;
+		transition: background 0.12s ease, border-color 0.12s ease,
+			transform 0.06s ease;
+	}
+
+	button:hover {
+		background: $color-dark-gray;
+		border-color: $color-medium-gray;
+	}
+	button:active {
+		transform: translateY(1px);
+	}
+
+	/* active formatting state */
+	button.active {
+		background: color-mix(in srgb, $color-gold 18%, transparent);
+		border-color: color-mix(in srgb, $color-gold 55%, $color-medium-gray);
+		color: #0b0b0b;
+		font-weight: 700;
+	}
+
+	/* disabled state */
+	button:disabled {
+		opacity: 0.45;
+		cursor: not-allowed;
+	}
+
+	/* divider */
+	.rt-divider {
+		width: 1px;
+		height: 22px;
+		background: $color-medium-gray;
+		margin: 0 4px;
+	}
+}
+
+/* Optional: small caret/arrow under the bubble */
+.rt-bubble-menu:after,
+.rt-bubble-menu-image:after {
+	content: '';
+	position: absolute;
+	inset-inline: 0;
+	margin-inline: auto;
+	bottom: -6px;
+	width: 10px;
+	height: 10px;
+	background: $color-dark-gray;
+	border-right: 1px solid $color-medium-gray;
+	border-bottom: 1px solid $color-medium-gray;
+	transform: rotate(45deg);
+}
+
+/* Floating menu (slash menu) re-use styling */
+.rt-float {
+	background: $color-dark-gray;
+	color: $color-light;
+	border: 1px solid $color-medium-gray;
+	border-radius: 6px;
+	box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+	padding: 6px 8px;
+}
+
+.rt-toolbar {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: flex-end;
+	margin-bottom: 0.3rem;
+	opacity: 0;
+	position: absolute;
+	top: -25px;
+	z-index: 10;
+	width: 100%;
+
+	.rt-add-block {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.add-block-btn {
+		@include flex-center();
+		position: relative;
+		padding: 0.3rem;
+		border-radius: 3px;
+		width: 24px;
+		border-radius: 3px;
+		color: $color-light-gray;
+		background: $color-medium-gray;
+		border: none;
+		box-shadow: none;
+		line-height: 1;
+
+		cursor: pointer;
+		transition: opacity 0.15s ease, background 0.15s ease,
+			border-color 0.15s ease;
+
+		&:hover {
+			background: $color-dark;
+		}
+	}
+
+	.rt-sideTools {
+		justify-content: flex-end;
+		display: flex;
+		gap: 0.5rem;
+
+		button {
+			background: $color-medium-gray;
+			border: none;
+			color: $color-light-gray;
+			padding: 0.3rem;
+			border-radius: 3px;
+			width: 24px;
+			cursor: pointer;
+
+			&:hover {
+				background: $color-dark;
+			}
+		}
+	}
+}
+
+.richtext-dropcursor {
+	color: $color-gold;
+}
+
+p img {
+	max-width: 100%;
+	height: auto;
+}
+
+div[data-node='image'] {
+	div {
+		max-width: 100%;
+		img {
+			max-width: 100%;
+			height: auto;
+		}
+	}
+}
+
+/* --- Tiptap image resize handles --------------------------------------- */
+
+.rt-content [data-resize-container] {
+	position: relative; /* anchor for selection outline */
+	display: inline-flex; /* your DOM shows flex; either is fine */
+	align-items: flex-start;
+	justify-content: flex-start;
+}
+
+.rt-content [data-resize-wrapper] {
+	position: relative; /* <-- the handles are absolutely positioned to this */
+	display: inline-block;
+	line-height: 0; /* remove baseline gap under images */
+}
+
+/* Base style for all handles */
+.rt-content [data-resize-handle] {
+	position: absolute;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background: #c49f17; /* handle fill (pick your accent) */
+	border: 2px solid #0f1116; /* ring for contrast on light images */
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+	z-index: 5;
+	pointer-events: auto; /* <- important: clickable */
+	opacity: 0.95;
+
+	/* hide any inner text like the “x” some libs inject */
+	font-size: 0;
+	line-height: 0;
+}
+
+/* Position each handle and set appropriate cursors */
+.rt-content [data-resize-handle='top'] {
+	top: -6px;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	cursor: ns-resize;
+}
+.rt-content [data-resize-handle='bottom'] {
+	bottom: -6px;
+	right: 0;
+	cursor: ns-resize;
+}
+.rt-content [data-resize-handle='left'] {
+	left: -6px;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	cursor: ew-resize;
+}
+.rt-content [data-resize-handle='right'] {
+	right: -6px;
+	top: 50%;
+	transform: translate(50%, -50%);
+	cursor: ew-resize;
+}
+
+/* Show handles only when the image is hovered or selected (optional) */
+.rt-content [data-resize-container] [data-resize-handle] {
+	display: none;
+}
+.rt-content [data-resize-container]:hover [data-resize-handle],
+.rt-content
+	[data-resize-container].ProseMirror-selectednode
+	[data-resize-handle],
+.rt-content
+	[data-resize-container]
+	img.ProseMirror-selectednode
+	+ [data-resize-handle] {
+	display: block;
+}
+
+.ProseMirror p div:has(.float-left) {
+	float: left;
+	margin-right: 5px;
+}
+
+.ProseMirror p div:has(.float-right) {
+	float: right;
+	margin-left: 5px;
+}
+
+.ProseMirror p div:has(.float-none) {
+	float: none;
+	margin: 0;
+}
+
+.rt-content [data-resize-container][data-float='left'] {
+	float: left;
+	margin: 0.5rem;
+	margin-right: 1rem;
+	margin-top: 0.7rem;
+	margin-left: 0;
+}
+.rt-content [data-resize-container][data-float='right'] {
+	float: right;
+	margin: 0.5rem;
+	margin-left: 1rem;
+	margin-top: 0.7rem;
+	margin-right: 0;
+}
+.rt-content [data-resize-container][data-float='none'] {
+	float: none;
+	margin: 0;
+}

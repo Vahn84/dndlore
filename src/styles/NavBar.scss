@@ -15,7 +15,7 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		
+
 		.brand-logo {
 			max-height: 200px;
 			width: auto;
@@ -57,11 +57,19 @@
 	font-weight: 600;
 	color: $color-light;
 	transition: color 0.2s;
-	width:160px;
+	width: 160px;
+	transition: all 0.2s ease;
+
+	&:hover {
+		color: $color-gold;
+	}
 }
 
 .navLink.active {
 	color: $color-gold;
+	&:hover {
+		color: $color-dim;
+	}
 }
 
 .navLink.is-home {
@@ -98,6 +106,23 @@
 
 .brand.other .name {
 	font-size: 1.4rem;
+}
+
+.backLink {
+	position: absolute;
+	top: 50%;
+	left: 1rem;
+	transform: translateY(-50%);
+	text-decoration: none;
+	font-family: $font-family-title;
+	font-weight: 200;
+	color: $color-light;
+	display: flex;
+	transition: all 0.2s ease;
+
+	&:hover {
+		color: $color-gold;
+	}
 }
 
 @keyframes fromTopToBottom {

@@ -121,7 +121,7 @@ export interface PageBlock {
 	// TipTap JSON
 	rich?: any;
 	// retro-compat (vecchi seed):
-	text?: string;
+	plainText?: string;
 	url?: string;
 	hidden?: boolean;
 }
@@ -129,16 +129,15 @@ export interface PageBlock {
 export interface Page {
 	_id: string;
 	title: string;
+	subtitle?: string;
 	/** Type of lore page: place, history, myth, people or campaign. */
 	type: 'place' | 'history' | 'myth' | 'people' | 'campaign';
 	/** Optional banner image URL. */
 	bannerUrl?: string;
 	/** Array of content blocks. */
-	content: PageBlock[];
+	blocks: PageBlock[];
 	/** If true, the entire page is hidden from public users. */
 	hidden?: boolean;
-	/** Indexes of blocks that are hidden from public users. */
-	hiddenSections?: number[];
 	/** If true, this page is a draft and not published yet. */
 	draft?: boolean;
 }

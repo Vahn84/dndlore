@@ -6,7 +6,6 @@ import GroupModal from './GroupModal';
 import EventModal from './EventModal';
 import { useAppStore } from '../store/appStore';
 import { Virtuoso } from 'react-virtuoso';
-import AssetsManagerModal from './AssetsManagerModal';
 import { ICONS } from './Icons';
 import { CalendarBlank } from 'phosphor-react';
 

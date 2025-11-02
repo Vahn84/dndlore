@@ -8,14 +8,17 @@
     "build": "cross-env NODE_ENV=production webpack --mode production"
   },
   "dependencies": {
-    
     "@tiptap/extension-blockquote": "^3.8.0",
+    "@tiptap/extension-bold": "^3.10.1",
     "@tiptap/extension-bubble-menu": "^3.8.0",
     "@tiptap/extension-bullet-list": "^3.8.0",
     "@tiptap/extension-floating-menu": "^3.8.0",
+    "@tiptap/extension-image": "^3.10.1",
     "@tiptap/extension-link": "^3.8.0",
     "@tiptap/extension-list-item": "^3.8.0",
+    "@tiptap/extension-text-align": "^3.10.1",
     "@tiptap/extension-underline": "^3.8.0",
+    "@tiptap/extensions": "^3.10.1",
     "@tiptap/react": "^3.8.0",
     "@tiptap/starter-kit": "^3.8.0",
     "axios": "^1.12.2",
@@ -31,6 +34,7 @@
     "react-virtuoso": "^4.14.1",
     "sass": "^1.93.2",
     "sass-loader": "^16.0.6",
+    "tiptap-extension-resize-image": "^1.3.2",
     "zustand": "^5.0.8"
   },
   "devDependencies": {
