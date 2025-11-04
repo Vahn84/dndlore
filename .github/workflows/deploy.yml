@@ -61,6 +61,8 @@ jobs:
           port: ${{ secrets.NAS_SSH_PORT || 22 }}
           script: |
             set -e
+            export PATH="/usr/local/bin:/usr/bin:/bin:/usr/syno/bin:$PATH"
+            
             DEPLOY_DIR="${{ secrets.NAS_DEPLOY_DIR }}"
             if [ -z "$DEPLOY_DIR" ]; then DEPLOY_DIR="$HOME/dndlore"; fi
             mkdir -p "$DEPLOY_DIR"
