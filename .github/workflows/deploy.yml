@@ -20,6 +20,11 @@ jobs:
       
       - name: Derive lowercase owner for GHCR
         run: echo "OWNER_LC=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
+
+      - name: Generate .env.production
+        run: echo "REACT_APP_API_BASE_URL=${FRONTEND_API_BASE_URL:-/api}" > .env.production
+        env:
+          FRONTEND_API_BASE_URL: ${{ secrets.FRONTEND_API_BASE_URL }}
       
       - name: Connect to Tailscale
         uses: tailscale/github-action@v2
@@ -56,8 +61,10 @@ jobs:
           port: ${{ secrets.NAS_SSH_PORT || 22 }}
           script: |
             set -e
-            mkdir -p /volume2/dndlore
-            cd /volume2/dndlore
+            DEPLOY_DIR="${{ secrets.NAS_DEPLOY_DIR }}"
+            if [ -z "$DEPLOY_DIR" ]; then DEPLOY_DIR="$HOME/dndlore"; fi
+            mkdir -p "$DEPLOY_DIR"
+            cd "$DEPLOY_DIR"
             
             # Create network if it doesn't exist
             docker network create dndlore-network 2>/dev/null || true

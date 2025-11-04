@@ -71,6 +71,7 @@ module.exports = {
 			),
 			systemvars: true, // opzionale: permette override con env di sistema
 			allowEmptyValues: true, // opzionale
+			silent: true, // non fallire se il file .env.* non esiste nel container
 		}),
 	],
 };
