@@ -20,6 +20,7 @@ import { useAppStore } from './store/appStore';
 import LoreHome from './pages/LoreHome';
 import { SignIn, SignOut, UserCircle } from 'phosphor-react';
 import LoreDetail from './pages/LoreDetail';
+import TestSvg from './pages/TestSvg';
 
 /**
  * The main application component. This version uses React Router to provide
@@ -30,10 +31,15 @@ import LoreDetail from './pages/LoreDetail';
  */
 const AppContent: React.FC = () => {
 	// State for groups, events, time system
-
 	const location = useLocation();
 	const navigate = useNavigate();
+	const user = useAppStore((s) => s.user); // Subscribe to user state changes!
 	const setUser = useAppStore((s) => s.setUser);
+	const [googleStatus, setGoogleStatus] = useState<{
+		connected: boolean;
+		expired: boolean;
+		checking: boolean;
+	}>({ connected: false, expired: false, checking: false });
 
 	useEffect(() => {
 		// 1) Extract token returned by backend (e.g., http://app/?token=... or #token=...)
@@ -67,7 +73,9 @@ const AppContent: React.FC = () => {
 			try {
 				localStorage.setItem('token', tok);
 				const me = await Api.getCurrentUser();
-				if (me) setUser({ ...me, token: tok });
+				if (me) {
+					setUser({ ...me, token: tok });
+				}
 			} catch (e) {
 				console.error('Failed to hydrate user from token', e);
 				localStorage.removeItem('token');
@@ -112,6 +120,69 @@ const AppContent: React.FC = () => {
 		loadAssets();
 	}, [loadGroups, loadEvents, loadTimeSystem]);
 
+	// Check Google token status when user is logged in and auto-refresh if needed
+	useEffect(() => {
+		if (isLoggedIn() && isDM()) {
+			setGoogleStatus((prev) => ({ ...prev, checking: true }));
+			Api.checkGoogleTokenStatus()
+				.then((status) => {
+					// If token is expired or will expire soon, auto-refresh
+					if (
+						status.connected &&
+						(status.expired || status.needsReauth === false)
+					) {
+						Api.refreshGoogleToken()
+							.then((result) => {
+								if (result.success && result.token) {
+									// Update localStorage with new JWT containing fresh Google token
+									localStorage.setItem('token', result.token);
+									// Update user in store
+									Api.getCurrentUser().then((me) => {
+										if (me)
+											setUser({
+												...me,
+												token: result.token,
+											});
+									});
+									setGoogleStatus({
+										connected: true,
+										expired: false,
+										checking: false,
+									});
+								} else if (result.needsReauth) {
+									// Only show reconnect if we truly need full reauth
+									setGoogleStatus({
+										connected: false,
+										expired: true,
+										checking: false,
+									});
+								}
+							})
+							.catch(() => {
+								setGoogleStatus({
+									connected: false,
+									expired: true,
+									checking: false,
+								});
+							});
+					} else {
+						setGoogleStatus({
+							connected: status.connected,
+							expired: status.expired,
+							checking: false,
+						});
+					}
+				})
+				.catch(() => {
+					setGoogleStatus({
+						connected: false,
+						expired: true,
+						checking: false,
+					});
+				});
+		}
+	}, [isLoggedIn, isDM, setUser]);
+
 	const handleGoogleLogin = () => {
 		if (!isLoggedIn()) {
 			window.location.href = `${Api.getBaseUrl()}/auth/google`;
@@ -123,31 +194,61 @@ const AppContent: React.FC = () => {
 	return (
 		<>
 			{/* Login button/icon top right */}
-			<div className="loginContainer">
-				{/* In a real app this would trigger an authentication flow */}
+			<div className="loginContainer home-appear ">
+				{/* Google connection status indicator - only show if reauth truly needed */}
+				{isLoggedIn() &&
+					isDM() &&
+					!googleStatus.checking &&
+					googleStatus.expired &&
+					!googleStatus.connected && (
+						<div
+							className="googleStatus"
+							title="Google Docs connection lost. Click to reconnect."
+						>
+							<button
+								className="reconnectButton"
+								onClick={(e) => {
+									e.stopPropagation();
+									window.location.href = `${Api.getBaseUrl()}/auth/google`;
+								}}
+								title="Reconnect Google Docs"
+							>
+								<span style={{ color: '#ff9800' }}>⚠</span>{' '}
+								Reconnect
+							</button>
+						</div>
+					)}
+				{/* Login/Logout button */}
 				<button
 					className="loginButton"
-					title="Login"
+					title={isLoggedIn() ? 'Logout' : 'Login with Google'}
 					onClick={handleGoogleLogin}
 				>
-					<span className="icon_square-btn">
-						{isLoggedIn() ? <SignOut /> : <SignIn />}
+					{' '}
+					<span className="loginButtonWrapper">
+						{isLoggedIn() ? 'Logout' : 'DM Login'}
+						<span className="icon_square-btn">
+							{isLoggedIn() ? <SignOut /> : <SignIn />}
+						</span>
 					</span>
 				</button>
 			</div>
 			{/* Main content container with padding to avoid overlap with nav bar */}
-			<div
-				className={`appContent ${
-					location.pathname === '/' ? 'home' : 'other'
-				}`}
-			>
+			<div className={`appContent`}>
 				<Routes>
 					<Route path="/" element={<Home />} />
 					<Route path="/campaign" element={<Campaign />} />
-					<Route path="/history" element={<History />} />
+					<Route path="/timeline" element={<History />} />
+					<Route path="/test-svg" element={<TestSvg />} />
 					<Route path="/lore" element={<LoreHome />} />
-					<Route path="/lore/:type/new" element={<LoreDetail isDM={isDM()} />} />
-					<Route path="/lore/:type/:id" element={<LoreDetail isDM={isDM()} />} />
+					<Route
+						path="/lore/:type/new"
+						element={<LoreDetail isDM={isDM()} />}
+					/>
+					<Route
+						path="/lore/:type/:id"
+						element={<LoreDetail isDM={isDM()} />}
+					/>
 				</Routes>
 			</div>
 			{/* Render modals outside Routes so they overlay correctly */}

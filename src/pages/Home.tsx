@@ -9,9 +9,10 @@ import '../styles/Home.scss';
  */
 const Home: React.FC = () => {
 	return (
-		<div className="">
-			<div className="overlay"></div>
-			<div className="heroContent"></div>
+		<div className="homepage">
+			<div className="dark-bg"></div>
+			<div className="overlay-radial"></div>
+			<h1 className="homepage__title">Welcome to Aetherium</h1>
 		</div>
 	);
 };

@@ -5,10 +5,16 @@ import Api from '../Api';
 import { Event, Group, Page } from '../types';
 
 // Simple Asset type for the Asset Manager
-export type Asset = { _id: string; url: string; createdAt?: string };
+export type Asset = { _id: string; url: string; thumb_url?: string; createdAt?: string };
 
 type Role = 'DM' | 'PLAYER';
-type User = { id?: string; email?: string; role?: Role; token?: string };
+type User = { 
+	id?: string; 
+	email?: string; 
+	role?: Role; 
+	token?: string;
+	googleAccessToken?: string;
+};
 
 type Loadable<T> = {
 	data: T;
@@ -468,6 +474,10 @@ export const useAppStore = create<AppState>()(
 							x._id === upd.id ? upd : x
 						);
 					});
+					// Reload events to reflect any propagated sync from linked pages
+					try {
+						await get().loadEvents();
+					} catch {}
 					return upd;
 				},
 

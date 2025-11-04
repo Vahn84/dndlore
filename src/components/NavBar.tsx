@@ -1,7 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import '../styles/NavBar.scss';
-import logo from '../assets/aetherium_logo.png';
 import stylized_logo from '../assets/aetherium-logo.webp';
 import { ArrowLeft, ArrowSquareLeft, CaretLeft } from 'phosphor-react';
 
@@ -20,10 +19,50 @@ const NavBar: React.FC = () => {
 	const root = segments[0];
 	const categoryType = segments[1]; // e.g., 'place', 'history', etc.
 	const isSubPage = segments.length >= 2 && root === 'lore';
-	const backHref = categoryType ? `/${root}?category=${categoryType}` : `/${root}`;
-	const backLabel = root === 'lore' ? 'Back to Wikilore' : 'Back to History';
+
+	// Check if we came from the timeline
+	const fromTimeline = location.state?.from === 'timeline';
+	const backHref = fromTimeline
+		? '/timeline'
+		: categoryType
+		? `/${root}?category=${categoryType}`
+		: `/${root}`;
+	const backLabel = fromTimeline
+		? 'Back to Timeline'
+		: root === 'lore'
+		? 'Back to Wikilore'
+		: 'Back to History';
 
 	const navClass = onHome ? 'navBar is-home' : 'navBar other';
+
+	const svgRef = useRef<HTMLObjectElement>(null);
+
+	useEffect(() => {
+		const objectElement = svgRef.current;
+		if (!objectElement) return;
+
+		const handleLoad = () => {
+			const svgDocument = objectElement.contentDocument;
+			if (!svgDocument) return;
+
+			const svgElement = svgDocument.querySelector('svg');
+			if (!svgElement) return;
+
+			// Access the SVGator player API
+			const svgatorPlayer = (svgElement as any).svgatorPlayer;
+			if (svgatorPlayer) {
+				// Play the animation
+				svgatorPlayer.play();
+			}
+		};
+
+		objectElement.addEventListener('load', handleLoad);
+
+		return () => {
+			objectElement.removeEventListener('load', handleLoad);
+		};
+	}, []);
+
 	return (
 		<nav className={navClass}>
 			{isSubPage && !onHome && (
@@ -38,7 +77,7 @@ const NavBar: React.FC = () => {
 			)}
 			{/* History link */}
 			<NavLink
-				to="/history"
+				to="/timeline"
 				style={{ textAlign: 'right' }}
 				className={({ isActive }) => {
 					const base = `navLink ${onHome ? 'is-home' : 'other'}`;
@@ -53,11 +92,20 @@ const NavBar: React.FC = () => {
 				to="/"
 				className={`navLink brand ${onHome ? 'is-home' : 'other'}`}
 			>
-				<img
-					className="brand-logo"
-					src={stylized_logo}
-					alt="Aetherium Logo"
-				/>
+				{onHome ? (
+					<object
+						className="brand-logo"
+						ref={svgRef}
+						data={require('../assets/aetherium-logo-nostroke.svg')}
+						type="image/svg+xml"
+					/>
+				) : (
+					<img
+						src={stylized_logo}
+						className="brand-logo"
+						alt="Aetherium Logo"
+					/>
+				)}
 			</NavLink>
 
 			{/* Lore link */}

@@ -4,8 +4,12 @@ import '../styles/LoreHome.scss';
 import LoreCreateFab from '../components/LoreCreateFab';
 import Api from '../Api';
 import { Page } from '../types';
-import { FileDotted } from 'phosphor-react';
+import { FileDotted, Trash } from 'phosphor-react';
 import { useAppStore } from '../store/appStore';
+import Modal from 'react-modal';
+import { toast } from 'react-hot-toast';
+
+Modal.setAppElement('#root');
 
 /**
  * Landing page for the lore library with a two-column layout.
@@ -62,6 +66,37 @@ const LoreHome: React.FC = () => {
 	const pagesFromStore = useAppStore((s) => s.data.pages.data);
 	const storeLoading = useAppStore((s) => s.data.pages.loading);
 	const isDM = useAppStore((s) => s.isDM());
+	const deletePage = useAppStore((s) => s.deletePage);
+
+	// Delete confirmation modal state
+	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+	const [pageToDelete, setPageToDelete] = useState<Page | null>(null);
+
+	const handleDeleteClick = (e: React.MouseEvent, page: Page) => {
+		e.stopPropagation(); // Prevent navigation to page detail
+		setPageToDelete(page);
+		setDeleteModalOpen(true);
+	};
+
+	const confirmDelete = async () => {
+		if (!pageToDelete) return;
+		try {
+			await deletePage(pageToDelete._id);
+			toast.success('Page deleted successfully');
+			setDeleteModalOpen(false);
+			setPageToDelete(null);
+			// Reload pages to update the list
+			loadPages(selectedCategory as any);
+		} catch (error) {
+			console.error('Failed to delete page:', error);
+			toast.error('Failed to delete page');
+		}
+	};
+
+	const cancelDelete = () => {
+		setDeleteModalOpen(false);
+		setPageToDelete(null);
+	};
 
 	// Background blur on scroll
 	const overflowRef = useRef<HTMLDivElement | null>(null);
@@ -193,8 +228,9 @@ const LoreHome: React.FC = () => {
 															<div
 																className="thumb"
 																style={{
-																	backgroundImage: `url(${Api.resolveAssetUrl(
-																		page.bannerUrl
+																	backgroundImage: `url(${Api.resolveThumbnailUrl(
+																		page.bannerUrl,
+																		page.bannerThumbUrl
 																	)})`,
 																}}
 															/>
@@ -222,6 +258,23 @@ const LoreHome: React.FC = () => {
 																		),
 																	}}
 																></p>
+															)}
+															{isDM && (
+																<button
+																	className="deleteBtn"
+																	onClick={(e) =>
+																		handleDeleteClick(
+																			e,
+																			page
+																		)
+																	}
+																	title="Delete page"
+																>
+																	<Trash
+																		size={18}
+																		weight="bold"
+																	/>
+																</button>
 															)}
 														</div>
 														{page.draft && isDM && (
@@ -254,6 +307,41 @@ const LoreHome: React.FC = () => {
 				</div>
 			</div>
 			<LoreCreateFab />
+
+			{/* Delete confirmation modal */}
+			<Modal
+				isOpen={deleteModalOpen}
+				onRequestClose={cancelDelete}
+				className="modal__content"
+				overlayClassName="modal__overlay"
+				contentLabel="Delete Page Confirmation"
+			>
+				<div className="modal__header">
+					<h2>Delete Page</h2>
+				</div>
+				<div className="modal__body">
+					<p>
+						Are you sure you want to delete "<strong>{pageToDelete?.title}</strong>"?
+					</p>
+					<p style={{ color: '#d5d5d5', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+						This action cannot be undone.
+					</p>
+				</div>
+				<div className="modal__actions">
+					<button
+						className="modal__btn cancel"
+						onClick={cancelDelete}
+					>
+						Cancel
+					</button>
+					<button
+						className="modal__btn delete"
+						onClick={confirmDelete}
+					>
+						Delete
+					</button>
+				</div>
+			</Modal>
 		</div>
 	);
 };

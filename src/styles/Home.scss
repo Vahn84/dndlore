@@ -1,6 +1,6 @@
 @use './variables' as *;
 
-.home {
+.homepage {
 	position: relative;
 	min-height: 100%;
 	height: 100%;
@@ -8,27 +8,94 @@
 	color: $color-light;
 	text-align: center;
 	overflow: hidden;
-	background-image: url('../assets/aetherium_bg.png');
-	background-size: cover;
+	background-image: url('../assets/homebg.webp');
+	background-size: contain;
 	background-position: center;
+	background-repeat: no-repeat;
+
+	&::after {
+		position: absolute;
+		z-index: 1;
+		top: 0;
+		left: 0;
+		height: 100%;
+		width: 100%;
+		background: linear-gradient(
+			to bottom,
+			rgba(0, 0, 0, 0) 90%,
+			rgba(0, 0, 0, 0.85) 80%
+		);
+	}
+
+	.dark-bg {
+		position: absolute;
+		z-index: 0;
+		top: 0;
+		left: 0;
+		height: 100%;
+		width: 100%;
+		background: $color-dark-gray;
+		opacity: 1;
+		animation: disappear 3s ease forwards;
+		animation-delay: 5s;
+	}
+
+	.homepage__title {
+		position: relative;
+		opacity: 0;
+		top: calc(100% - 390px);
+		animation: appear 2s ease forwards;
+		animation-delay: 7s;
+		font-size: 4rem;
+		font-family: $font-family-decorative;
+		z-index: 3;
+		font-weight: 300;
+	}
+
+	.glow {
+		text-align: center;
+		-webkit-animation: glow 1s ease-in-out infinite alternate;
+		-moz-animation: glow 1s ease-in-out infinite alternate;
+		animation: glow 1s ease-in-out infinite alternate;
+	}
+
+	@-webkit-keyframes glow {
+		from {
+			text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #e9ca00,
+				0 0 40px #e9ca00, 0 0 50px #e9ca00, 0 0 60px #e9ca00,
+				0 0 70px #e9ca00;
+		}
+		to {
+			text-shadow: 0 0 20px #fff, 0 0 30px #e6d460, 0 0 40px #e6d460,
+				0 0 50px #e6d460, 0 0 60px #e6d460, 0 0 70px #e6d460,
+				0 0 80px #e6d460;
+		}
+	}
+	// .overlay-radial {
+	// 	position: absolute;
+	// 	z-index: 0;
+	// 	top: 0;
+	// 	left: 0;
+	// 	height: 100%;
+	// 	width: 100%;
+	// 	background: radial-gradient(
+	// 		circle at center,
+	// 		rgba(0, 0, 0, .9) 50%,
+	// 		rgba(0, 0, 0, .7) 70%,
+	// 		rgba(0, 0, 0, .5) 100%
+	// 	);
+	// 	pointer-events: none;
+	// }
 }
 
-.home .heroContent {
-	position: relative;
-	top: 40%;
-	transform: translateY(-40%);
-	padding: 0 2rem;
-}
 
-.home .heroTitle {
-	font-size: 2.5rem;
-	margin-bottom: 1rem;
-	font-weight: 700;
-}
 
-.home .heroSubtitle {
-	font-size: 1.1rem;
-	max-width: 40rem;
-	margin: 0 auto;
-	color: $color-light-gray;
+@keyframes appear {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+	
 }

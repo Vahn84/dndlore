@@ -4,6 +4,7 @@ import { Event, Group, TimeSystemConfig } from '../types';
 import { useAppStore } from '../store/appStore';
 import Api from '../Api';
 import AssetsManagerModal from './AssetsManagerModal';
+import PagePickerModal from './PagePickerModal';
 import { Calendar, CalendarBlank, Trash } from 'phosphor-react';
 import DatePicker from './DatePicker';
 import { _changeIcon, ICONS } from './Icons';
@@ -73,9 +74,14 @@ const EventModal: React.FC<EventModalProps> = ({
 			'#475569'
 	);
 	const [bannerUrl, setBannerUrl] = useState(event?.bannerUrl || '');
+	const [bannerThumbUrl, setBannerThumbUrl] = useState(event?.bannerThumbUrl || '');
 	const [hidden, setHidden] = useState<boolean>(event?.hidden ?? false);
 
 	const [assetOpen, setAssetOpen] = useState(false);
+	const [pagePickerOpen, setPagePickerOpen] = useState(false);
+	const [linkedPage, setLinkedPage] = useState<string | undefined>(event?.pageId);
+	// Single sync flag for all three fields
+	const [syncEnabled, setSyncEnabled] = useState<boolean>(event?.linkSync ?? false);
 
 	// If the URL is absolute, use it; otherwise prefix with API base
 	const resolveAssetUrl = Api.resolveAssetUrl;
@@ -85,7 +91,10 @@ const EventModal: React.FC<EventModalProps> = ({
 		setGroupId(event?.groupId || (effectiveGroups[0]?._id ?? ''));
 		setDescription(event?.description || '');
 		setBannerUrl(event?.bannerUrl || '');
+		setBannerThumbUrl(event?.bannerThumbUrl || '');
 		setHidden(event?.hidden ?? false);
+		setLinkedPage(event?.pageId);
+		setSyncEnabled(event?.linkSync ?? false);
 		// set color from event or selected group
 		if (!event || !event.color) {
 			const selected = effectiveGroups.find(
@@ -401,8 +410,11 @@ const EventModal: React.FC<EventModalProps> = ({
 			startDay: startDay !== '' ? parseInt(startDay, 10) : undefined,
 			description,
 			bannerUrl: bannerUrl || undefined,
+			bannerThumbUrl: bannerThumbUrl || undefined,
 			color,
 			hidden,
+			pageId: linkedPage || undefined,
+			linkSync: !!syncEnabled,
 		};
 
 		if (endEnabled) {
@@ -527,8 +539,59 @@ const EventModal: React.FC<EventModalProps> = ({
 							</div>
 
 							<div className="modal__form_wrapper">
-								{/* Group selection */}
+								{/* Link section */}
+								<fieldset style={{ border: 'none', padding: 0, margin: '0 0 1rem 0' }}>
+									<legend className="form-label" style={{ marginBottom: '0.5rem' }}>Link to Page</legend>
+									<div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+										{linkedPage ? (
+											<>
+												<span style={{ color: '#8ab4ff', fontSize: '0.9rem' }}>
+													<i className="icon icli iconly-Link" style={{ marginRight: '0.25rem' }} />
+													Page linked
+												</span>
+												<button
+													type="button"
+													className="btn-muted"
+													onClick={() => {
+														setLinkedPage(undefined);
+														setSyncEnabled(false);
+													}}
+													style={{ padding: '0.25rem 0.75rem', fontSize: '0.85rem' }}
+												>
+													Unlink
+												</button>
+											</>
+										) : (
+											<button 
+												type="button" 
+												className="btn-primary" 
+												onClick={() => setPagePickerOpen(true)}
+												style={{ padding: '0.25rem 0.75rem', fontSize: '0.85rem' }}
+											>
+												<i className="icon icli iconly-Calendar" /> Link Page
+											</button>
+										)}
+									</div>
+									
+									{/* Sync checkbox - only shown when linked */}
+									{linkedPage && (
+										<div className="checkbox-wrapper" style={{ marginTop: '0.75rem' }}>
+											<input 
+												type="checkbox" 
+												id="sync-checkbox"
+												className="input-checkbox input-checkbox-light" 
+												checked={syncEnabled} 
+												onChange={(e) => setSyncEnabled(e.target.checked)} 
+											/>
+											<label className="input-checkbox-btn" htmlFor="sync-checkbox" />
+											<span className="form-label" style={{ fontSize: '0.9rem' }}>
+												Keep synced (title, banner, world date)
+											</span>
+										</div>
+									)}
+								</fieldset>
 
+								{/* Group selection */}
 								<fieldset
 									style={{
 										border: 'none',
@@ -704,8 +767,19 @@ const EventModal: React.FC<EventModalProps> = ({
 				onClose={() => setAssetOpen(false)}
 				onSelect={(asset) => {
 					setBannerUrl(asset.url);
+					setBannerThumbUrl(asset.thumb_url || '');
 					setAssetOpen(false);
 				}}
+			/>
+			<PagePickerModal
+				isOpen={pagePickerOpen}
+				onClose={() => setPagePickerOpen(false)}
+				onSelect={(page) => {
+					setLinkedPage(page._id);
+					// default enable sync when linking
+					setSyncEnabled(true);
+				}}
+				placeholder="Search pages..."
 			/>
 		</>
 	);

@@ -74,24 +74,24 @@
 
 			.banner-icon {
 				position: absolute;
-				
+
 				top: -2.5rem;
-                left:50%;
+				left: 50%;
 				transform: translateX(-50%);
 				cursor: pointer;
 				color: $color-light-gray;
 				opacity: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
+				display: flex;
+				align-items: center;
+				justify-content: center;
 
-                span {
-                    margin-left: .5rem;
-                }
+				span {
+					margin-left: 0.5rem;
+				}
 
-                &.loaded{
-                    color: $color-dark-gold;
-                }
+				&.loaded {
+					color: $color-dark-gold;
+				}
 
 				&:hover {
 					opacity: 0.8;
@@ -121,6 +121,70 @@
 			}
 		}
 
+		.dateWrapper {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			color: $color-light-gray;
+			@include title-font();
+			font-weight: 300;
+			font-size: 0.65rem;
+			gap: 0.5rem;
+
+			.dateWrappedIcon {
+				opacity: 0.8;
+			}
+
+			// For the SessionDatePicker component
+			.datepick {
+				flex: 0 1 auto;
+				min-width: 200px;
+
+				.datepick__inputWrap {
+					.modal__input.datepill {
+						@include title-font();
+						font-weight: 300;
+						font-size: 0.65rem;
+						text-align: center;
+						padding: 0.4rem 2rem;
+						background: rgba(0, 0, 0, 0.2);
+						border: 1px solid rgba(255, 255, 255, 0.1);
+
+						&::placeholder {
+							color: $color-dim;
+							opacity: 0.6;
+						}
+					}
+
+					.datepill__icon {
+						left: 0.5rem;
+						opacity: 0.7;
+					}
+				}
+			}
+
+			// For the read-only sessionDate span
+			.sessionDate {
+				@include title-font();
+				font-weight: 300;
+				font-size: 0.65rem;
+			}
+
+			// Legacy native input support (if any remains)
+			input[type='date'] {
+				@include title-font();
+				width: auto;
+				outline: none;
+				font-weight: 300;
+				font-size: 0.65rem;
+				background: transparent;
+				border: none;
+				color: $color-dim;
+				text-align: center;
+				position: relative;
+			}
+		}
+
 		.richTextBlock--title {
 			@include bold-font();
 			background: transparent;
@@ -142,17 +206,6 @@
 			text-transform: uppercase;
 		}
 
-		.saveStatus {
-			@include thin-font();
-			font-size: 0.65rem;
-			color: $color-dim;
-			text-align: center;
-
-			.error {
-				color: $color-secret;
-			}
-		}
-
 		.publishRow {
 			margin-top: 0.5rem;
 			display: flex;
@@ -163,8 +216,6 @@
 			@include button--primary-btn();
 			margin-top: 0.5rem;
 		}
-
-
 
 		.blocks {
 			margin-top: 1.5rem;
@@ -275,6 +326,44 @@
 						opacity: 1;
 					}
 				}
+			}
+		}
+	}
+}
+
+.saveStatus {
+	@include thin-font();
+	font-size: 0.65rem;
+	color: $color-dim;
+	text-align: center;
+
+	.error {
+		color: $color-secret;
+	}
+}
+
+.campaignWorldDate {
+	position: relative; // positioning context for absolute popup
+	
+	.datepick {
+		display: flex;
+		justify-content: center;
+
+		.datepill__icon {
+			display: none;
+		}
+		input {
+			width: auto;
+			background: transparent;
+			border: none;
+			padding: 0 !important;
+			height: 20px;
+			color: $color-light-gray;
+			text-align: center;
+			cursor: pointer;
+			
+			&::placeholder {
+				color: $color-dim;
 			}
 		}
 	}

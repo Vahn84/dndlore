@@ -81,6 +81,41 @@ class Api {
 		}
 	}
 
+	/**
+	 * Check the status of the user's Google token connection.
+	 * Returns: { connected, expired, tokenExpiry, needsReauth }
+	 */
+	static async checkGoogleTokenStatus() {
+		try {
+			const resp = await Api.client.get('/auth/google-token-status');
+			return resp.data;
+		} catch (error) {
+			console.error('Failed to check Google token status:', error);
+			return { connected: false, expired: true, needsReauth: true };
+		}
+	}
+
+	/**
+	 * Refresh the Google access token using the stored refresh token.
+	 * Returns new token and updates localStorage.
+	 */
+	static async refreshGoogleToken() {
+		try {
+			const resp = await Api.client.post('/auth/refresh-google-token');
+			const { token, googleAccessToken, tokenExpiry } = resp.data;
+			
+			// Update stored JWT token
+			if (token) {
+				localStorage.setItem('token', token);
+			}
+			
+			return { success: true, token, googleAccessToken, tokenExpiry };
+		} catch (error: any) {
+			const needsReauth = error.response?.data?.needsReauth || false;
+			return { success: false, needsReauth, error: error.response?.data?.error };
+		}
+	}
+
 	// -------------------------------------------------------------------------
 	// Groups
 	// -------------------------------------------------------------------------
@@ -150,6 +185,13 @@ class Api {
 			params: type ? { type } : {},
 		});
 		return resp.data;
+	}
+
+	static async searchPages(q: string, type?: string, limit: number = 50) {
+		const params: any = { q, limit };
+		if (type) params.type = type;
+		const resp = await Api.client.get('/pages', { params });
+		return resp.data as Page[];
 	}
 
 	static async getPage(id: string) {
@@ -250,6 +292,16 @@ class Api {
 		return /^https?:\/\//i.test(u)
 			? u
 			: (process.env.REACT_APP_API_BASE_URL || '') + u;
+	}
+
+	/**
+	 * Resolve thumbnail URL if available, otherwise fall back to original.
+	 * Use this for list items, timeline events, and small cards.
+	 * For page banners, use resolveAssetUrl instead.
+	 */
+	static resolveThumbnailUrl(url: string, thumbUrl?: string) {
+		const resolved = thumbUrl || url;
+		return Api.resolveAssetUrl(resolved);
 	}
 }
 

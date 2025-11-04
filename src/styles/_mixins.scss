@@ -180,7 +180,7 @@
 
 @mixin input-icon-fld($cursor: pointer) {
 	position: relative;
-	padding-left: 2rem !important;
+	padding-left: 2rem;
 	cursor: $cursor;
 
 	&:focus {

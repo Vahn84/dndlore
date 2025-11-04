@@ -1,6 +1,16 @@
 @use './variables' as *;
 @use './mixins' as *;
 
+input[type='number'] {
+	appearance: textfield;
+	-moz-appearance: textfield;
+}
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
 .datepick {
 	position: relative;
 }
@@ -31,6 +41,18 @@
 		width: 30px;
 		height: 30px;
 	}
+
+	&.session-datepicker {
+		@include flex-center();
+		.modal__input.datepill {
+			background-color: transparent !important;
+			margin: 0;
+			padding: 0 !important;
+			height: 20px;
+			border: 0 !important;
+			width: 70px !important;
+		}
+	}
 }
 
 .datepick__inputWrap.is-disabled {
@@ -50,16 +72,16 @@
 	text-align: left;
 	padding: 0.625rem 0.75rem;
 	border-radius: 10px;
-	background: var(--surface-2);
-	border: 1px solid var(--surface-3);
+	background: $color-dark-gray;
+	border: 1px solid $color-medium-gray;
 	line-height: 1.25;
 	transition: border-color 0.15s ease, box-shadow 0.15s ease;
 	&:hover {
-		border-color: var(--surface-4);
+		border-color: $color-dim;
 	}
 	&:focus-visible {
 		outline: none;
-		box-shadow: 0 0 0 2px var(--focus);
+		box-shadow: 0 0 0 2px $color-gold;
 	}
 }
 
@@ -70,19 +92,24 @@
 
 .dp-pop {
 	position: absolute;
-	top: 0;
-	right: 0;
-	transform: translate(100%, calc(-100% + 64px));
+	top: calc(100% + 8px);
+	left: 50%;
+	transform: translateX(-50%);
 	font-size: 0.8rem;
 	background: $color-dark-gray;
 	border-radius: 8px;
 	z-index: 3;
+
+	&.dp-pop--above {
+		top: auto;
+		bottom: calc(100% + 8px);
+	}
 }
 
 .dp-pop__panel {
 	/* matches your modal popover visual */
-	background: var(--surface-2);
-	border: 1px solid var(--surface-3);
+	background: $color-dark-gray;
+	border: 1px solid $color-medium-gray;
 	border-radius: 12px;
 	box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
 	padding: 12px;
@@ -94,12 +121,19 @@
 
 	.dp-pop__head {
 		display: flex;
+		justify-content: center;
 
 		.dp-pop__navbtn {
 			background: transparent;
 			border: none;
 			color: $color-light-gray;
 			@include flex-center();
+			cursor: pointer;
+			padding: 4px;
+			
+			&:hover {
+				color: $color-gold;
+			}
 		}
 
 		.dp-pop__headmain {
@@ -107,13 +141,41 @@
 			font-size: 0.6rem;
 			align-items: flex-start;
 
+			gap: 0.4rem;
+
 			input,
 			select {
-				background: transparent;
+				background: rgba(0, 0, 0, 0.3);
+				color: $color-light-gray;
 				font-size: 0.6rem;
-				border-color: $color-medium-gray;
+				border: 1px solid $color-medium-gray;
 				text-align: center;
 				margin-top: 0;
+				border-radius: 6px;
+				padding: 6px 12px;
+				width: auto;
+				height: 100%;
+				
+				&:focus {
+					outline: none;
+					border-color: $color-gold;
+				}
+			}
+
+			select {
+				appearance: none;
+				background-image: url('data:image/svg+xml;utf8,<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9L12 15L18 9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(255,255,255)"/></svg>');
+				background-repeat: no-repeat;
+				background-position: right 10px center;
+				background-size: 20px;
+
+				&:focus {
+					appearance: none;
+					background-image: url('data:image/svg+xml;utf8,<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9L12 15L18 9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(255,255,255)"/></svg>');
+					background-repeat: no-repeat;
+					background-position: right 10px center;
+					background-size: 20px;
+				}
 			}
 		}
 	}
@@ -126,6 +188,10 @@
 
 	.dp-pop__weekcell {
 		text-align: center;
+		color: $color-dim;
+		font-size: 0.7rem;
+		font-weight: 600;
+		padding: 4px 0;
 	}
 }
 
@@ -145,7 +211,7 @@
 }
 .dp-pop__nav button {
 	appearance: none;
-	border: 1px solid var(--surface-3);
+	border: 1px solid $color-medium-gray;
 	background: transparent;
 	border-radius: 8px;
 	width: 32px;
@@ -158,12 +224,12 @@
 		box-shadow 0.15s ease;
 }
 .dp-pop__nav button:hover {
-	background: var(--surface-3);
-	border-color: var(--surface-4);
+	background: rgba(255, 255, 255, 0.1);
+	border-color: $color-dim;
 }
 .dp-pop__nav button:focus-visible {
 	outline: none;
-	box-shadow: 0 0 0 2px var(--focus);
+	box-shadow: 0 0 0 2px $color-gold;
 }
 
 /* Month/Year/Era selectors */
@@ -174,8 +240,6 @@
 }
 .dp-pop__panel select {
 	appearance: none;
-	background: var(--surface-2);
-	border: 1px solid var(--surface-3);
 	border-radius: 10px;
 	padding: 0.5rem 1.9rem 0.5rem 0.75rem; /* room for chevron */
 	font: inherit;
@@ -191,12 +255,11 @@
 	background-image: none;
 }
 .dp-pop__panel select:hover {
-	border-color: var(--surface-4);
-	background: var(--surface-2);
+	border-color: $color-dim;
 }
 .dp-pop__panel select:focus-visible {
 	outline: none;
-	box-shadow: 0 0 0 2px var(--focus);
+	box-shadow: 0 0 0 2px $color-gold;
 }
 
 /* Caption like "Pri 10000 DE" */
@@ -220,15 +283,12 @@
 }
 
 /* Day cells */
-.dp-pop__grid {
-	padding-top: 4px;
-}
-.dp-pop__grid button,
+.dp-pop__daybtn,
 .dp-pop__day {
 	appearance: none;
 	border: 1px solid transparent;
 	background: transparent;
-	border-radius: 10px;
+	border-radius: 8px;
 	width: 40px;
 	height: 36px;
 	line-height: 36px;
@@ -236,38 +296,40 @@
 	align-items: center;
 	justify-content: center;
 	font: inherit;
-	color: inherit;
+	color: $color-light-gray;
 	cursor: pointer;
 	transition: background 0.12s ease, border-color 0.12s ease,
 		box-shadow 0.12s ease;
+	font-size: 0.85rem;
 }
-.dp-pop__grid button:hover,
+.dp-pop__daybtn:hover,
 .dp-pop__day:hover {
-	background: var(--surface-3);
-	border-color: var(--surface-4);
+	background: rgba(255, 255, 255, 0.1);
+	border-color: $color-medium-gray;
 }
-.dp-pop__grid button:focus-visible,
+.dp-pop__daybtn:focus-visible,
 .dp-pop__day:focus-visible {
 	outline: none;
-	box-shadow: 0 0 0 2px var(--focus);
+	box-shadow: 0 0 0 2px $color-gold;
 }
-.dp-pop__grid .is-outside,
+.dp-pop__daybtn.is-outside,
 .dp-pop__day.is-outside {
-	opacity: 0.45;
+	opacity: 0.3;
+	color: $color-dim;
 }
-.dp-pop__grid .is-disabled,
+.dp-pop__daybtn.is-disabled,
 .dp-pop__day.is-disabled,
-.dp-pop__grid button[disabled] {
-	opacity: 0.35;
+.dp-pop__daybtn[disabled] {
+	opacity: 0.25;
 	pointer-events: none;
 }
-.dp-pop__grid .is-selected,
+.dp-pop__daybtn.is-selected,
 .dp-pop__day.is-selected,
-.dp-pop__grid button[aria-current='date'] {
-	background: var(--focus);
-	color: $color-dark-gold; /* good contrast on focus color */
-	border-color: transparent;
-	box-shadow: 0 0 0 2px $color-dark-gold inset;
+.dp-pop__daybtn[aria-current='date'] {
+	background: $color-dark-gold;
+	color: $color-dark;
+	border-color: $color-gold;
+	font-weight: 600;
 }
 
 /* Make the grid cells compact on small screens */

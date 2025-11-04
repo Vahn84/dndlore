@@ -2,8 +2,7 @@
 @import './iconly-font/css/style.css';
 @import './iconly-font/css/bulk-style.css';
 
-@import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
-
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 $color-dark: rgba(14, 15, 15, 1);
 $color-dark-translucent: color.change($color-dark, $alpha: 0.8);
 $color-dark-gray: rgba(27, 29, 31, 1);
@@ -27,3 +26,4 @@ $menu-border: $color-dark-gold;
 
 $font-family-title: 'Montserrat', sans-serif;
 $font-family-text: 'Crimson Text', sans-serif;
+$font-family-decorative: 'Cinzel Decorative', serif;

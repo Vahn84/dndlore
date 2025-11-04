@@ -94,6 +94,8 @@ export interface Event {
 	endDate?: string;
 	description: string;
 	bannerUrl?: string;
+	/** Thumbnail URL for list/timeline display */
+	bannerThumbUrl?: string;
 	color?: string;
 	/**
 	 * If true, this event will only be visible to editors (DMs).
@@ -134,10 +136,23 @@ export interface Page {
 	type: 'place' | 'history' | 'myth' | 'people' | 'campaign';
 	/** Optional banner image URL. */
 	bannerUrl?: string;
+	/** Optional banner thumbnail URL (for list display). */
+	bannerThumbUrl?: string;
 	/** Array of content blocks. */
 	blocks: PageBlock[];
+	/** Real-world session date for campaign pages (DD/MM/YYYY). */
+	sessionDate?: string;
+	/** In-world date for campaign pages (custom time system). */
+	worldDate?: { eraId: string; year: number; monthIndex: number; day: number } | null;
 	/** If true, the entire page is hidden from public users. */
 	hidden?: boolean;
 	/** If true, this page is a draft and not published yet. */
 	draft?: boolean;
+}
+
+declare module './types' {
+	interface Event {
+		pageId?: string;
+		linkSync?: boolean;
+	}
 }

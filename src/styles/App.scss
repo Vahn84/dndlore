@@ -28,17 +28,68 @@ html,
 
 .loginContainer {
 	position: fixed;
-	top: 0.5rem;
-	right: 1rem;
 	z-index: 1001;
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	top: calc($navbar-height/6);
+    right: 1rem;
 }
 
 .loginButton {
+	@include spaced-title-font();
 	background: transparent;
 	border: none;
 	color: $color-dim;
-	font-size: 1.5rem;
+	font-size: 1rem;
+	text-transform: uppercase;
 	cursor: pointer;
+
+	.loginButtonWrapper{
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+
+		&:hover {
+			color: $color-dark-gold;
+
+			.icon_square-btn {
+				background: $color-dark-gold;
+				color: $color-light;
+			}
+		}
+	}
+}
+
+.googleStatus {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.9rem;
+	color: $color-dim;
+	background: rgba(0, 0, 0, 0.3);
+	padding: 0.4rem 0.75rem;
+	border-radius: 8px;
+	backdrop-filter: blur(10px);
+
+	.reconnectButton {
+		background: transparent;
+		border: none;
+		color: $color-dim;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		font-size: 0.85rem;
+		padding: 0.25rem 0.5rem;
+		border-radius: 4px;
+		transition: all 0.2s;
+
+		&:hover {
+			background: rgba(255, 152, 0, 0.1);
+			color: #ff9800;
+		}
+	}
 }
 
 .appContent {
@@ -403,7 +454,7 @@ html,
 					flex-wrap: wrap;
 					justify-content: center;
 					align-items: center;
-
+					border-radius: 6px;
 					// bottom fade-to-black overlay over background image
 					&::after {
 						content: '';
@@ -554,22 +605,6 @@ html,
 				width: 80px;
 			}
 		}
-
-		.modal__select {
-			appearance: none;
-			background-image: url('data:image/svg+xml;utf8,<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9L12 15L18 9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(255,255,255)"/></svg>');
-			background-repeat: no-repeat;
-			background-position: right 10px center;
-			background-size: 20px;
-
-			&:focus {
-				appearance: none;
-				background-image: url('data:image/svg+xml;utf8,<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9L12 15L18 9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(255,255,255)"/></svg>');
-				background-repeat: no-repeat;
-				background-position: right 10px center;
-				background-size: 20px;
-			}
-		}
 	}
 
 	.modal__actions {
@@ -633,4 +668,55 @@ html,
 		width: 100%;
 		background: $color-dark-gold;
 	}
+}
+
+input,
+select {
+	@include formfield();
+}
+
+select {
+	appearance: none;
+	background-image: url('data:image/svg+xml;utf8,<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9L12 15L18 9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(255,255,255)"/></svg>');
+	background-repeat: no-repeat;
+	background-position: right 10px center;
+	background-size: 20px;
+
+	&:focus {
+		appearance: none;
+		background-image: url('data:image/svg+xml;utf8,<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9L12 15L18 9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(255,255,255)"/></svg>');
+		background-repeat: no-repeat;
+		background-position: right 10px center;
+		background-size: 20px;
+	}
+}
+
+.home-appear {
+	opacity: 0;
+	animation: appear 1s ease forwards;
+	animation-delay: 7s;
+}
+
+
+
+@keyframes disappear {
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+	}
+	
+}
+
+
+
+@keyframes appear {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+	
 }

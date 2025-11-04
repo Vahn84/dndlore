@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Modal from 'react-modal';
+import { X } from 'phosphor-react';
 import { useAppStore, type Asset } from '../store/appStore';
 import '../styles/AssetsManager.scss';
 import Api from '../Api';
@@ -80,6 +81,16 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 		setSelectedId(null);
 	};
 
+	const onDeleteAsset = async (assetId: string, e?: React.MouseEvent) => {
+		if (e) {
+			e.stopPropagation();
+		}
+		await deleteAsset(assetId);
+		if (selectedId === assetId) {
+			setSelectedId(null);
+		}
+	};
+
 	return (
 		<Modal
 			isOpen={isOpen}
@@ -131,6 +142,14 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 												className="assetmgr__thumb"
 												alt=""
 											/>
+											<button
+												type="button"
+												className="assetmgr__deleteBtn"
+												onClick={(e) => onDeleteAsset(a._id, e)}
+												title="Delete asset"
+											>
+												<X size={20} weight="bold" />
+											</button>
 										</div>
 										<div className="assetmgr__meta">
 											<span className="assetmgr__name">

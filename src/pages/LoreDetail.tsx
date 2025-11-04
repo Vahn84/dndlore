@@ -6,11 +6,19 @@ import { useAutoSave } from '../hooks/useAutoSave';
 import { Page } from '../types';
 import '../styles/LoreDetail.scss';
 import { useAppStore } from '../store/appStore';
-import { Image, TrashSimple } from 'phosphor-react';
+import {
+	Calendar,
+	CalendarBlank,
+	CalendarCheck,
+	Image,
+	TrashSimple,
+} from 'phosphor-react';
 import AssetsManagerModal from '../components/AssetsManagerModal';
 import Modal from 'react-modal';
 import Api from '../Api';
 import Divider from '../components/Divider';
+import DatePicker from '../components/DatePicker';
+import SessionDatePicker from '../components/SessionDatePicker';
 
 Modal.setAppElement('#root');
 
@@ -26,6 +34,11 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 	const updatePage = useAppStore((s) => s.updatePage);
 	const getPage = useAppStore((s) => s.getPage);
 	const replacePageInCache = useAppStore((s) => s.replacePageInCache);
+	const loadTimeSystem = useAppStore((s) => s.loadTimeSystem);
+	const timeSystem = useAppStore((s) => s.data.timeSystem.data);
+	const groups = useAppStore((s) => s.data.groups.data);
+	const loadGroups = useAppStore((s) => s.loadGroups);
+	const createEvent = useAppStore((s) => s.createEvent);
 
 	const [assetOpen, setAssetOpen] = useState(false);
 
@@ -102,6 +115,8 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 				blocks: [makeRichBlock()],
 				hidden: false,
 				draft: true,
+				sessionDate: '',
+				worldDate: null as any,
 			} as any)
 	);
 
@@ -142,6 +157,15 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 		};
 	}, [id, getPage]);
 
+	// Ensure time system/groups are available when editing campaign pages
+	useEffect(() => {
+		if (type === 'campaign') {
+			if (!timeSystem) void loadTimeSystem();
+			if (!groups || groups.length === 0) void loadGroups();
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [type]);
+
 	// --- Save (create / update) ---------------------------------------------
 	const saveFn = useCallback(
 		async (data: Page) => {
@@ -155,6 +179,8 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 				blocks: (data as any).blocks,
 				hidden: (data as any).hidden,
 				draft: (data as any).draft,
+				sessionDate: (data as any).sessionDate,
+				worldDate: (data as any).worldDate,
 				// @ts-ignore include type/category if your API expects it
 				type,
 			};
@@ -250,7 +276,6 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 	const removeBanner = async () => {
 		// Update UI instantly
 		setPageDraft((prev: any) => ({ ...prev, bannerUrl: '' }));
-		debugger;
 		// If editing an existing page, persist right away
 		if (id) {
 			try {
@@ -264,6 +289,41 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 		}
 	};
 
+	const ordinal = (n: number) => {
+		const mod100 = n % 100;
+		if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
+		switch (n % 10) {
+			case 1:
+				return `${n}st`;
+			case 2:
+				return `${n}nd`;
+			case 3:
+				return `${n}rd`;
+			default:
+				return `${n}th`;
+		}
+	};
+
+	const formatWorldDate = (
+		ts: any,
+		wd: { eraId: string; year: number; monthIndex: number; day: number }
+	) => {
+		const era = ts?.eras?.find((e: any) => e.id === wd.eraId);
+		const eraAbbr = era?.abbreviation || '';
+		const monthName = ts?.months?.[wd.monthIndex]?.name;
+		if (typeof wd.day === 'number' && monthName) {
+			return `${ordinal(wd.day)} ${monthName} ${String(wd.year)}${
+				eraAbbr ? `, ${eraAbbr}` : ''
+			}`;
+		}
+		if (monthName) {
+			return `${monthName} ${String(wd.year)}${
+				eraAbbr ? `, ${eraAbbr}` : ''
+			}`;
+		}
+		return `${String(wd.year)}${eraAbbr ? `, ${eraAbbr}` : ''}`;
+	};
+
 	// --- Publish (toggle draft off) -----------------------------------------
 	const publishPage = async () => {
 		try {
@@ -275,7 +335,60 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 			setPageDraft((prev: any) => ({ ...prev, draft: false }));
 			// ensure cache reflects latest
 			if (upd) replacePageInCache(upd as any);
-			toast.success('Page published');
+
+			// If campaign page with world date, create a linked timeline event
+			if (type === 'campaign' && (pageDraft as any)?.worldDate) {
+				const wd = (pageDraft as any).worldDate as {
+					eraId: string;
+					year: number;
+					monthIndex: number;
+					day: number;
+				};
+				// pick a group: prefer "Campaign" or similar, fallback to first
+				let groupId =
+					groups && groups.length ? groups[0]._id : undefined;
+				const preferred = groups?.find((g: any) =>
+					/campaign|session/i.test(g.name)
+				);
+				if (preferred) groupId = preferred._id;
+
+				if (!groupId) {
+					toast((t) => (
+						<div>
+							Published. No groups available to create a timeline
+							event.
+						</div>
+					));
+					toast.success('Page published');
+					return;
+				}
+
+				const startDateStr = timeSystem
+					? formatWorldDate(timeSystem, wd)
+					: String(wd.year);
+
+				try {
+					await createEvent({
+						title: (pageDraft as any).title || 'Session',
+						groupId,
+						startDate: startDateStr,
+						startEraId: wd.eraId,
+						startYear: wd.year,
+						startMonthIndex: wd.monthIndex,
+						startDay: wd.day,
+						detailLevel: 'Day' as any,
+						description: (pageDraft as any).subtitle || '',
+						// @ts-ignore extended interface for page linkage
+						pageId: (upd as any)?._id || (pageDraft as any)?._id,
+					} as any);
+					toast.success('Page published and event created');
+				} catch (err) {
+					console.error('Failed to create event for page', err);
+					toast.success('Page published (event not created)');
+				}
+			} else {
+				toast.success('Page published');
+			}
 		} catch (e: any) {
 			console.error('Failed to publish page', e);
 			toast.error('Failed to publish page');
@@ -342,6 +455,58 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 							<h1>{(pageDraft as any).title || 'New Title'}</h1>
 						)}
 					</h1>
+					<div className="campaignWorldDate">
+						<DatePicker
+							ts={timeSystem}
+							format="yearMonthDay"
+							positionAbove={true}
+							value={
+								(pageDraft as any).worldDate
+									? {
+											eraId: (pageDraft as any).worldDate
+												.eraId,
+											year: String(
+												(pageDraft as any).worldDate
+													.year ?? ''
+											),
+											monthIndex: String(
+												(pageDraft as any).worldDate
+													.monthIndex ?? '0'
+											),
+											day: String(
+												(pageDraft as any).worldDate
+													.day ?? '1'
+											),
+									  }
+									: null
+							}
+							onChange={(parts) => {
+								setPageDraft((prev: any) => ({
+									...prev,
+									worldDate: parts
+										? {
+												eraId: parts.eraId,
+												year:
+													parseInt(
+														parts.year || '0',
+														10
+													) || 0,
+												monthIndex:
+													parseInt(
+														parts.monthIndex || '0',
+														10
+													) || 0,
+												day:
+													parseInt(
+														parts.day || '1',
+														10
+													) || 1,
+										  }
+										: null,
+								}));
+							}}
+						/>
+					</div>
 					<Divider />
 					<h4 className="pageSubtitle">
 						{isDM ? (
@@ -356,19 +521,30 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 							<h4>{(pageDraft as any).subtitle || ''}</h4>
 						) : null}
 					</h4>
-					<div className="saveStatus">
-						{isSaving
-							? 'Saving…'
-							: lastSavedAt
-							? `Last saved at: ${new Date(
-									lastSavedAt
-							  ).toLocaleTimeString()}`
-							: null}
-						{error ? (
-							<span className="error"> • {error}</span>
-						) : null}
-					</div>
-
+					{type === 'campaign' && (pageDraft.sessionDate || isDM) && (
+						<div className="dateWrapper">
+							{isDM ? (
+								<SessionDatePicker
+									value={
+										(pageDraft as any).sessionDate || null
+									}
+									onChange={(dateStr) =>
+										setPageDraft((prev: any) => ({
+											...prev,
+											sessionDate: dateStr || '',
+										}))
+									}
+									placeholder="Select session date"
+								/>
+							) : (
+								<span className="sessionDate">
+									{pageDraft.sessionDate
+										? pageDraft.sessionDate
+										: 'N/A'}
+								</span>
+							)}
+						</div>
+					)}
 					{isDM && (pageDraft as any)?.draft && (
 						<div className="publishRow">
 							<button
@@ -458,6 +634,28 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 						)}
 					</div>
 				</div>
+
+				{/* Campaign-only metadata fields */}
+				{isDM && type === 'campaign' && (
+					<div
+						className="metaFields"
+						style={{ margin: '8px 0 16px' }}
+					>
+						<Divider />
+						<div className="saveStatus">
+							{isSaving
+								? 'Saving…'
+								: lastSavedAt
+								? `Last saved at: ${new Date(
+										lastSavedAt
+								  ).toLocaleTimeString()}`
+								: null}
+							{error ? (
+								<span className="error"> • {error}</span>
+							) : null}
+						</div>
+					</div>
+				)}
 			</div>
 			<AssetsManagerModal
 				isOpen={assetOpen}
@@ -466,6 +664,7 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 					setPageDraft((prev) => ({
 						...prev,
 						bannerUrl: asset.url,
+						bannerThumbUrl: asset.thumb_url,
 					}));
 					setAssetOpen(false);
 				}}

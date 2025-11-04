@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DetailLevel, Event, Group, TimeSystemConfig } from '../types';
 import '../styles/Timeline.scss';
 import TimeSystemModal from './TimeSystemModal';
@@ -8,10 +9,12 @@ import { useAppStore } from '../store/appStore';
 import { Virtuoso } from 'react-virtuoso';
 import { ICONS } from './Icons';
 import { CalendarBlank } from 'phosphor-react';
+import Api from '../Api';
 
 interface TimelineProps {}
 
 const Timeline: React.FC<TimelineProps> = () => {
+	const navigate = useNavigate();
 	// Modals control
 	const [isEventModalOpen, setEventModalOpen] = useState(false);
 	const [editingEvent, setEditingEvent] = useState<Event | null>(null);
@@ -498,6 +501,21 @@ const Timeline: React.FC<TimelineProps> = () => {
 			setEventModalOpen(true);
 		}
 
+		// helper to open linked page if present
+		const openLinkedPage = async (pageId?: string) => {
+			if (!pageId) return;
+			try {
+				const page = await Api.getPage(pageId);
+				if (page && page._id && page.type) {
+					navigate(`/lore/${page.type}/${page._id}`, {
+						state: { from: 'timeline' }
+					});
+				}
+			} catch (e) {
+				console.error('Failed to open linked page', e);
+			}
+		};
+
 		// event card style
 		// Compose a card that splits into info and image sections. The card uses a
 		// dark translucent background and rounded corners. The group name is
@@ -554,7 +572,16 @@ const Timeline: React.FC<TimelineProps> = () => {
 						</div>
 						{/* Event card */}
 						<div className="cardWrapper">
-							<div className="card">
+							<div 
+								className={`card ${ev.pageId ? 'clickable' : ''}`}
+								onClick={(e) => {
+									// Only navigate if clicking the card itself, not buttons
+									if (ev.pageId && e.target === e.currentTarget) {
+										openLinkedPage(ev.pageId);
+									}
+								}}
+								style={{ cursor: ev.pageId ? 'pointer' : 'default' }}
+							>
 								<div
 									className="cardBg"
 									style={
@@ -563,15 +590,29 @@ const Timeline: React.FC<TimelineProps> = () => {
 													backgroundImage: `url(${
 														process.env
 															.REACT_APP_API_BASE_URL +
-														ev.bannerUrl
+														(ev.bannerThumbUrl || ev.bannerUrl)
 													})`,
 											  }
 											: ev.color
 											? { background: ev.color }
 											: {}
 									}
+									onClick={(e) => {
+										if (ev.pageId) {
+											e.stopPropagation();
+											openLinkedPage(ev.pageId);
+										}
+									}}
 								></div>
-								<div className="info">
+								<div 
+									className="info"
+									onClick={(e) => {
+										// Make clicking anywhere in info area navigate (except buttons)
+										if (ev.pageId && !e.defaultPrevented) {
+											openLinkedPage(ev.pageId);
+										}
+									}}
+								>
 									{/* Group label */}
 									<span className="groupLabel">
 										{group?.name?.toUpperCase() || 'Group'}
@@ -627,6 +668,7 @@ const Timeline: React.FC<TimelineProps> = () => {
 											}
 											onClick={(e) => {
 												e.stopPropagation();
+												e.preventDefault();
 												setMenuOpenFor(
 													menuOpenFor === ev._id
 														? null
@@ -649,20 +691,28 @@ const Timeline: React.FC<TimelineProps> = () => {
 													: ''
 											}`}
 											role="menu"
+											onClick={(e) => {
+												e.stopPropagation();
+												e.preventDefault();
+											}}
 										>
 											<div
 												className="menuItem"
 												role="menuitem"
-												onClick={() => onEditEvent(ev)}
+												onClick={(e) => {
+													e.stopPropagation();
+													onEditEvent(ev);
+												}}
 											>
 												Edit event
 											</div>
 											<div
 												className="menuItem"
 												role="menuitem"
-												onClick={() =>
-													handleDuplicateEvent(ev)
-												}
+												onClick={(e) => {
+													e.stopPropagation();
+													handleDuplicateEvent(ev);
+												}}
 											>
 												Duplicate event
 											</div>
@@ -676,12 +726,13 @@ const Timeline: React.FC<TimelineProps> = () => {
 														<div
 															key={g._id}
 															className="menuItem"
-															onClick={() =>
+															onClick={(e) => {
+																e.stopPropagation();
 																handleMoveToGroup(
 																	ev,
 																	g._id
-																)
-															}
+																);
+															}}
 														>
 															{g.name}
 															{g._id ===
@@ -708,12 +759,13 @@ const Timeline: React.FC<TimelineProps> = () => {
 														<div
 															key={lvl}
 															className="menuItem"
-															onClick={() =>
+															onClick={(e) => {
+																e.stopPropagation();
 																setDetailLevelFor(
 																	ev,
 																	lvl
-																)
-															}
+																);
+															}}
 														>
 															{((ev as any)
 																.detailLevel ||
@@ -729,9 +781,10 @@ const Timeline: React.FC<TimelineProps> = () => {
 											<div
 												className="menuItem"
 												role="menuitem"
-												onClick={() =>
-													handleDeleteEvent(ev._id)
-												}
+												onClick={(e) => {
+													e.stopPropagation();
+													handleDeleteEvent(ev._id);
+												}}
 											>
 												Delete event
 											</div>

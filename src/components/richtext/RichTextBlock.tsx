@@ -110,10 +110,13 @@ const RichTextBlock: React.FC<Props> = ({
 	const rtModeRef = useRef<HTMLDivElement | null>(null);
 
 	// Initial content: only respect current shape -> `value.rich` or empty doc.
-	const initialContent = useMemo(
-		() => (value?.rich ? value.rich : emptyDoc),
-		[value?.rich]
-	);
+	const initialContent = useMemo(() => {
+		const content = value?.rich ? value.rich : emptyDoc;
+		if (value?.rich && content.content) {
+			console.log(`[RichTextBlock] Rendering TipTap doc with ${content.content.length} nodes`);
+		}
+		return content;
+	}, [value?.rich]);
 
 	// Normalize and bubble the editor content to parent as a compact block.
 	const pushUp = (ed: any) => {

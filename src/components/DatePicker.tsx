@@ -6,8 +6,8 @@ import {
 	Rewind,
 	FastForward,
 	X,
-  XCircle,
-  RewindCircle,
+	XCircle,
+	RewindCircle,
 } from 'phosphor-react';
 import type { TimeSystemConfig } from '../types';
 import '../styles/DatePicker.scss';
@@ -43,6 +43,9 @@ export type DatePickerProps = {
 		parts: PickerValue | null,
 		formatted?: DateChangeFormatted
 	) => void;
+	format?: 'year' | 'yearMonth' | 'yearMonthDay' | string | undefined;
+	/** Position the popup above the input instead of below */
+	positionAbove?: boolean;
 };
 
 /* ---------------- helpers ---------------- */
@@ -167,9 +170,11 @@ const DatePicker: React.FC<DatePickerProps> = ({
 	ts,
 	value,
 	placeholder = 'Pick a date',
-	clearable,
+	clearable = false,
 	label,
 	onChange,
+	format = 'yearMonthDay',
+	positionAbove = false,
 }) => {
 	const hasTS = !!(
 		ts &&
@@ -221,7 +226,9 @@ const DatePicker: React.FC<DatePickerProps> = ({
 			year,
 			monthIndex,
 			day,
-			ts?.dateFormats?.yearMonth
+			format
+				? (ts?.dateFormats as any)[format]
+				: ts?.dateFormats?.yearMonth
 		);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [ts, eraId, year, monthIndex, day]);
@@ -376,7 +383,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
 			</div>
 
 			{open && hasTS && (
-				<div ref={popRef} className="dp-pop">
+				<div ref={popRef} className={`dp-pop ${positionAbove ? 'dp-pop--above' : ''}`}>
 					<div className="dp-pop__panel">
 						{/* Header: nav + month select + year input + era select */}
 						<div className="dp-pop__head">
@@ -401,7 +408,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
 								<select
 									className="modal__select"
 									value={String(mNum)}
-									style={{backgroundImage: 'none'}}
+									style={{ backgroundImage: 'none' }}
 									onChange={(e) =>
 										setMonthIndex(e.target.value)
 									}
@@ -424,7 +431,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
 								<select
 									className="modal__select"
 									value={eraId}
-									style={{backgroundImage: 'none'}}
+									style={{ backgroundImage: 'none' }}
 									onChange={(e) => setEraId(e.target.value)}
 								>
 									{ts!.eras.map((er) => (

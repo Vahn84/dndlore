@@ -17,23 +17,22 @@
 		align-items: center;
 
 		.brand-logo {
-			max-height: 200px;
 			width: auto;
-			transition: all 1s ease-in-out;
+
+			
 		}
 	}
 
 	&.other {
 		padding: 0.5rem 1rem;
 		border-bottom: 1px solid rgb(136, 125, 5);
-		animation: fromBottomToTop 0.4s ease-out forwards;
 		height: calc($navbar-height/2);
+		top:0;
 
 		.brand {
 			.brand-logo {
 				max-height: 100px;
 				width: auto;
-				transition: all 0.1s ease-in-out;
 			}
 		}
 	}
@@ -41,18 +40,18 @@
 	&.is-home {
 		padding: 1.5rem 1rem;
 		background: transparent;
-		animation: fromTopToBottom 1s ease-out forwards;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
 		height: calc($navbar-height);
-		.brand {
-			.brand-logo {
-				max-height: 200px;
-				width: auto;
-			}
-		}
+		animation: fromTopToBottom 1s ease-out forwards;
+		animation-delay: 6s;
+		width: 100%;
 	}
 }
 
 .navLink {
+	@include spaced-title-font();
 	text-decoration: none;
 	font-weight: 600;
 	color: $color-light;
@@ -75,6 +74,19 @@
 .navLink.is-home {
 	font-size: 1.5rem;
 	width: 200px;
+
+	&.brand {
+		height: auto;
+		width: 300px;
+		animation: smmaller 0.4s ease forwards;
+		animation-delay: 6s;
+	}
+
+	&:not(.brand) {
+		opacity: 0;
+		animation: appear 3s ease forwards;
+		animation-delay: 5s;
+	}
 }
 
 .navLink.other {
@@ -109,12 +121,12 @@
 }
 
 .backLink {
+	@include spaced-title-font();
 	position: absolute;
 	top: 50%;
 	left: 1rem;
 	transform: translateY(-50%);
 	text-decoration: none;
-	font-family: $font-family-title;
 	font-weight: 200;
 	color: $color-light;
 	display: flex;
@@ -127,20 +139,36 @@
 
 @keyframes fromTopToBottom {
 	0% {
-		top: 0px;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
 	}
 	100% {
-		top: calc(100% - $navbar-height);
+		height: 100px;
+		top: calc(100% - 210px);
+		background: $color-dark-gray;
 	}
 }
 
 @keyframes fromBottomToTop {
 	0% {
-		top: calc(100% - $navbar-height);
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
 	}
 	100% {
 		top: 0px;
 		border-width: 100%;
 		border-opacity: 1;
+	}
+}
+
+@keyframes smmaller {
+	0% {
+		width: 300px;
+	}
+	100% {
+		width: 100px;
+		
 	}
 }

@@ -3,16 +3,45 @@ import {
 	GlobeHemisphereWest,
 	Sparkle,
 	UsersThree,
+	CloudArrowDown,
 } from 'phosphor-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Api from '../Api';
+import { toast } from 'react-hot-toast';
+import { useAppStore } from '../store/appStore';
+import DatePicker from './DatePicker';
 
 type LoreType = 'history' | 'campaign' | 'people' | 'myth';
 
 const LoreCreateFab: React.FC = () => {
 	const [open, setOpen] = useState(false);
+	const [syncOpen, setSyncOpen] = useState(false);
+	const [previewOpen, setPreviewOpen] = useState(false);
+	const [docInput, setDocInput] = useState<string>(
+		() =>
+			localStorage.getItem('drive_doc_input') ||
+			process.env.REACT_APP_GOOGLE_DOC_URL ||
+			''
+	);
+	const [summarize, setSummarize] = useState<boolean>(true);
+	const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+	
+	// Preview data from backend
+	const [previewData, setPreviewData] = useState<any>(null);
+	
+	// Editable fields for the preview modal
+	const [titleInput, setTitleInput] = useState<string>('');
+	const [subtitleInput, setSubtitleInput] = useState<string>('');
+	const [worldDate, setWorldDate] = useState<any>(null);
+	const [bannerUrl, setBannerUrl] = useState<string>('');
+	
 	const surfaceRef = useRef<HTMLDivElement | null>(null);
 	const navigate = useNavigate();
+	const isDM = useAppStore((s) => s.isDM());
+	const user = useAppStore((s) => s.user);
+	const timeSystem = useAppStore((s) => s.data.timeSystem.data);
+	const loadTimeSystem = useAppStore((s) => s.loadTimeSystem);
 
 	// Close panel with Escape
 	useEffect(() => {
@@ -22,6 +51,31 @@ const LoreCreateFab: React.FC = () => {
 		window.addEventListener('keydown', onKey);
 		return () => window.removeEventListener('keydown', onKey);
 	}, [open]);
+
+	// Close sync modal with Escape
+	useEffect(() => {
+		if (!syncOpen) return;
+		const onKey = (e: KeyboardEvent) =>
+			e.key === 'Escape' && setSyncOpen(false);
+		window.addEventListener('keydown', onKey);
+		return () => window.removeEventListener('keydown', onKey);
+	}, [syncOpen]);
+
+	// Close preview modal with Escape
+	useEffect(() => {
+		if (!previewOpen) return;
+		const onKey = (e: KeyboardEvent) =>
+			e.key === 'Escape' && setPreviewOpen(false);
+		window.addEventListener('keydown', onKey);
+		return () => window.removeEventListener('keydown', onKey);
+	}, [previewOpen]);
+
+	// Load time system when preview modal opens
+	useEffect(() => {
+		if (previewOpen && !timeSystem) {
+			void loadTimeSystem();
+		}
+	}, [previewOpen, timeSystem, loadTimeSystem]);
 
 	// Close when clicking/tapping outside the surface
 	useEffect(() => {
@@ -35,7 +89,9 @@ const LoreCreateFab: React.FC = () => {
 			}
 		};
 		document.addEventListener('mousedown', onPointerDown);
-		document.addEventListener('touchstart', onPointerDown, { passive: true });
+		document.addEventListener('touchstart', onPointerDown, {
+			passive: true,
+		});
 		return () => {
 			document.removeEventListener('mousedown', onPointerDown);
 			document.removeEventListener('touchstart', onPointerDown);
@@ -43,6 +99,151 @@ const LoreCreateFab: React.FC = () => {
 	}, [open]);
 
 	const handleCreate = (type: string) => navigate(`/lore/${type}/new`);
+
+	const extractDocId = (input: string): string | null => {
+		if (!input) return null;
+		const trimmed = input.trim();
+		// If it's already an id-like string
+		if (/^[a-zA-Z0-9_-]{20,}$/.test(trimmed)) return trimmed;
+		// Try to parse from a Google Docs URL
+		const m = trimmed.match(/\/document\/d\/([a-zA-Z0-9_-]+)/);
+		return m ? m[1] : null;
+	};
+
+	const handleSyncFromDrive = async () => {
+		if (!isDM) {
+			toast.error('Only DMs can sync from Drive');
+			return;
+		}
+		const docId = extractDocId(docInput);
+		if (!docId) {
+			toast.error('Please paste a valid Google Doc URL or ID');
+			return;
+		}
+		localStorage.setItem('drive_doc_input', docInput);
+		setIsLoadingPreview(true);
+		
+		try {
+			const tId = toast.loading('Fetching and summarizing…', {
+				id: 'sync-preview',
+			});
+			const googleAccessToken =
+				user?.googleAccessToken ||
+				localStorage.getItem('googleAccessToken');
+			
+			// Step 1: Call preview endpoint to get summarized content
+			const resp = await fetch(
+				`${Api.getBaseUrl()}/sync/campaign/preview`,
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${
+							localStorage.getItem('token') || ''
+						}`,
+					},
+					body: JSON.stringify({
+						docId,
+						summarize,
+						googleAccessToken,
+					}),
+				}
+			);
+			const data = await resp.json();
+			
+			if (!resp.ok) {
+				// Check if token expired
+				if (resp.status === 401 || data?.error?.includes('token')) {
+					toast.error('Google token expired. Reconnecting...', {
+						id: tId,
+					});
+					const refreshResult = await Api.refreshGoogleToken();
+					if (refreshResult.success) {
+						toast.success('Token refreshed. Please try again.', {
+							id: tId,
+						});
+					} else if (refreshResult.needsReauth) {
+						toast.error('Please reconnect your Google account', {
+							id: tId,
+						});
+					}
+					return;
+				}
+				throw new Error(data?.error || 'Preview failed');
+			}
+			
+			if (!data?.preview) {
+				toast.dismiss(tId);
+				toast('No newer section found');
+				return;
+			}
+			
+			// Success - show preview modal
+			toast.success('Preview ready', { id: tId });
+			setPreviewData(data.preview);
+			setTitleInput(data.preview.suggestedTitle || '');
+			setSubtitleInput('');
+			setWorldDate(null);
+			setBannerUrl('');
+			setSyncOpen(false);
+			setPreviewOpen(true);
+			
+		} catch (e: any) {
+			toast.error(e?.message || 'Preview failed');
+		} finally {
+			setIsLoadingPreview(false);
+		}
+	};
+
+	const handleCreateFromPreview = async () => {
+		if (!previewData) return;
+		
+		try {
+			const tId = toast.loading('Creating page…', { id: 'create-page' });
+			
+			const resp = await fetch(
+				`${Api.getBaseUrl()}/sync/campaign/create`,
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${
+							localStorage.getItem('token') || ''
+						}`,
+					},
+					body: JSON.stringify({
+						summary: previewData.summary,
+						sessionDate: previewData.sessionDate,
+						title: titleInput.trim() || previewData.suggestedTitle,
+						subtitle: subtitleInput.trim(),
+						worldDate,
+						bannerUrl: bannerUrl.trim(),
+					}),
+				}
+			);
+			
+			const data = await resp.json();
+			
+			if (!resp.ok) {
+				throw new Error(data?.error || 'Creation failed');
+			}
+			
+			if (data?.created?._id) {
+				toast.success('Draft page created', { id: tId });
+				navigate(`/lore/campaign/${data.created._id}`);
+				setPreviewOpen(false);
+				setOpen(false);
+				// Reset state
+				setTitleInput('');
+				setSubtitleInput('');
+				setWorldDate(null);
+				setBannerUrl('');
+				setPreviewData(null);
+			}
+		} catch (e: any) {
+			toast.error(e?.message || 'Creation failed');
+		}
+	};
 
 	const onSurfaceKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (
 		e
@@ -54,74 +255,246 @@ const LoreCreateFab: React.FC = () => {
 	};
 
 	return (
-		<div className="lore-create-fab" aria-live="polite">
-			<div
-				className="lcfab__surface"
-				data-open={open}
-				ref={surfaceRef}
-				role={!open ? 'button' : undefined}
-				tabIndex={!open ? 0 : -1}
-				aria-expanded={open}
-				aria-controls="lcfab-panel"
-				onClick={!open ? () => setOpen(true) : undefined}
-				onKeyDown={onSurfaceKeyDown}
-			>
-				{/* Closed state: plus icon */}
-				<span className="lcfab__plus" aria-hidden>
-					<i className="icon icli iconly-Plus"></i>
-				</span>
-
-				{/* Open state content (fades/slides in) */}
+		<>
+			<div className="lore-create-fab" aria-live="polite">
 				<div
-					id="lcfab-panel"
-					className="lcfab__content"
-					aria-hidden={!open}
+					className="lcfab__surface"
+					data-open={open}
+					ref={surfaceRef}
+					role={!open ? 'button' : undefined}
+					tabIndex={!open ? 0 : -1}
+					aria-expanded={open}
+					aria-controls="lcfab-panel"
+					onClick={!open ? () => setOpen(true) : undefined}
+					onKeyDown={onSurfaceKeyDown}
 				>
-					<div className="lcfab__content_wrapper">
-						<div
-							className="lcfab__content_wrapper--option history-option"
-							onClick={() => handleCreate('history')}
-						>
-							<Books
-								size={18}
-								className="lcfab__content_wrapper--option-icon"
-							/>
-							History
-						</div>
-						<div
-							className="lcfab__content_wrapper--option campaign-option"
-							onClick={() => handleCreate('campaign')}
-						>
-							<GlobeHemisphereWest
-								size={18}
-								className="lcfab__content_wrapper--option-icon"
-							/>
-							Campaign
-						</div>
-						<div
-							className="lcfab__content_wrapper--option people-option"
-							onClick={() => handleCreate('people')}
-						>
-							<UsersThree
-								size={18}
-								className="lcfab__content_wrapper--option-icon"
-							/>
-							People&Orgs
-						</div>
-						<div
-							className="lcfab__content_wrapper--option myth-option"
-							onClick={() => handleCreate('myth')}
-						>
-							<Sparkle
-								size={18}
-								className="lcfab__content_wrapper--option-icon"
-							/>
-							Myths&Legends
+					{/* Closed state: plus icon */}
+					<span className="lcfab__plus" aria-hidden>
+						<i className="icon icli iconly-Plus"></i>
+					</span>
+
+					{/* Open state content (fades/slides in) */}
+					<div
+						id="lcfab-panel"
+						className="lcfab__content"
+						aria-hidden={!open}
+					>
+						<div className="lcfab__content_wrapper">
+							<div
+								className="lcfab__content_wrapper--option history-option"
+								onClick={() => handleCreate('history')}
+							>
+								<Books
+									size={18}
+									className="lcfab__content_wrapper--option-icon"
+								/>
+								History
+							</div>
+							<div
+								className="lcfab__content_wrapper--option campaign-option"
+								onClick={() => handleCreate('campaign')}
+							>
+								<GlobeHemisphereWest
+									size={18}
+									className="lcfab__content_wrapper--option-icon"
+								/>
+								Campaign
+							</div>
+							<div
+								className="lcfab__content_wrapper--option people-option"
+								onClick={() => handleCreate('people')}
+							>
+								<UsersThree
+									size={18}
+									className="lcfab__content_wrapper--option-icon"
+								/>
+								People&Orgs
+							</div>
+							<div
+								className="lcfab__content_wrapper--option myth-option"
+								onClick={() => handleCreate('myth')}
+							>
+								<Sparkle
+									size={18}
+									className="lcfab__content_wrapper--option-icon"
+								/>
+								Myths&Legends
+							</div>
+							{isDM && (
+								<div
+									className="lcfab__content_wrapper--option sync-option"
+									onClick={() => {
+										setSyncOpen(true);
+										setOpen(false);
+									}}
+									title="Import latest session notes from Google Doc and create a draft"
+								>
+									<CloudArrowDown
+										size={22}
+										className="lcfab__content_wrapper--option-icon"
+									/>
+									Sync Session from Drive
+								</div>
+							)}
 						</div>
 					</div>
 				</div>
 			</div>
-		</div>
+			{syncOpen && isDM && (
+				<div
+					className="lcfab__modal"
+					role="dialog"
+					aria-modal="true"
+					onMouseDown={(e) => {
+						if (e.target === e.currentTarget) setSyncOpen(false);
+					}}
+				>
+					<div className="lcfab__modal__card" role="document">
+						<div className="lcfab__modal__title">
+							Sync from Google Docs
+						</div>
+						<label className="lcfab__modal__label">
+							Doc URL or ID
+						</label>
+						<input
+							className="lcfab__modal__input"
+							placeholder="https://docs.google.com/document/d/… or ID"
+							value={docInput}
+							onChange={(e) => setDocInput(e.target.value)}
+						/>
+
+						<div className="checkbox-wrapper">
+							<input
+								id="summary-checkbox"
+								type="checkbox"
+								checked={summarize}
+								className="input-checkbox input-checkbox-light"
+								onChange={(e) => setSummarize(e.target.checked)}
+							/>
+
+							<label
+								className="input-checkbox-btn"
+								htmlFor="summary-checkbox"
+							></label>
+							<span className="form-label">
+								Summarize with AI (if available)
+							</span>
+						</div>
+
+						<div className="lcfab__modal__actions">
+							<button
+								className="modal__btn cancel"
+								onClick={() => setSyncOpen(false)}
+							>
+								Cancel
+							</button>
+							<button
+								className="modal__btn primary"
+								onClick={handleSyncFromDrive}
+								disabled={isLoadingPreview}
+							>
+								{isLoadingPreview ? 'Loading…' : 'Preview'}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+			
+			{previewOpen && isDM && previewData && (
+				<div
+					className="lcfab__modal"
+					role="dialog"
+					aria-modal="true"
+					onMouseDown={(e) => {
+						if (e.target === e.currentTarget) setPreviewOpen(false);
+					}}
+				>
+					<div className="lcfab__modal__card lcfab__modal__card--large" role="document">
+						<div className="lcfab__modal__title">
+							Preview & Customize Session
+						</div>
+						
+						<label className="lcfab__modal__label">
+							Title
+						</label>
+						<input
+							className="lcfab__modal__input"
+							placeholder="Session title"
+							value={titleInput}
+							onChange={(e) => setTitleInput(e.target.value)}
+						/>
+						
+						<label className="lcfab__modal__label">
+							Subtitle (optional)
+						</label>
+						<input
+							className="lcfab__modal__input"
+							placeholder="e.g., The Lost Temple"
+							value={subtitleInput}
+							onChange={(e) => setSubtitleInput(e.target.value)}
+						/>
+						
+						<label className="lcfab__modal__label">
+							Session Date
+						</label>
+						<input
+							className="lcfab__modal__input"
+							value={previewData.sessionDate || ''}
+							disabled
+							style={{ opacity: 0.6, cursor: 'not-allowed' }}
+						/>
+						
+						<label className="lcfab__modal__label">
+							World Date (optional)
+						</label>
+						{timeSystem ? (
+							<DatePicker
+								value={worldDate}
+								onChange={(parts) => setWorldDate(parts)}
+								ts={timeSystem}
+								placeholder="Select world date"
+							/>
+						) : (
+							<div style={{ fontSize: '0.9rem', color: '#999', marginBottom: '1rem' }}>
+								Loading calendar...
+							</div>
+						)}
+						
+						<label className="lcfab__modal__label">
+							Banner URL (optional)
+						</label>
+						<input
+							className="lcfab__modal__input"
+							placeholder="/uploads/... or https://..."
+							value={bannerUrl}
+							onChange={(e) => setBannerUrl(e.target.value)}
+						/>
+						
+						<label className="lcfab__modal__label">
+							Summary Preview
+						</label>
+						<div className="lcfab__modal__preview">
+							{previewData.summary || 'No content'}
+						</div>
+
+						<div className="lcfab__modal__actions">
+							<button
+								className="modal__btn cancel"
+								onClick={() => setPreviewOpen(false)}
+							>
+								Cancel
+							</button>
+							<button
+								className="modal__btn primary"
+								onClick={handleCreateFromPreview}
+							>
+								Create
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+		</>
 	);
 };
 
