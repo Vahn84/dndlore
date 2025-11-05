@@ -90,12 +90,13 @@ jobs:
               echo "Using FRONTEND_PORT from secret: $FRONTEND_PORT"
             fi
             
-            # Start new frontend container
+            # Start new frontend container with host network
+            # This allows nginx to reach backend at localhost:10101
             docker run -d \
               --name dndlore-frontend \
               --restart unless-stopped \
-              -p "$FRONTEND_PORT":80 \
-              --network dndlore-network \
+              --network host \
+              -e NGINX_PORT="$FRONTEND_PORT" \
               ghcr.io/${{ env.OWNER_LC }}/dndlore-frontend:latest
 
             # Quick post-deploy checks
