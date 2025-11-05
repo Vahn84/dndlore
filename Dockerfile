@@ -22,6 +22,9 @@ FROM nginx:alpine
 # Copy built files from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
+# Copy index.html from public folder to serve directory
+COPY --from=builder /app/public/index.html /usr/share/nginx/html/index.html
+
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 

@@ -102,6 +102,9 @@ jobs:
             echo "Deployed containers:"
             docker ps --filter name=dndlore-frontend --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
             
+            echo "Container logs (last 50 lines):"
+            docker logs --tail=50 dndlore-frontend
+            
             echo "Checking if nginx is responding inside container..."
             docker exec dndlore-frontend curl -sS -o /dev/null -w 'Container internal: HTTP %{http_code}\n' http://localhost:80/ || echo "Container internal check failed"
             
