@@ -1,0 +1,96 @@
+@use './variables' as *;
+@use 'sass:color';
+
+.polygon-edit-modal {
+	position: absolute;
+	background: $color-dark-gray;
+	border: 1px solid $color-gold;
+	border-radius: 8px;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+	z-index: 2000; // Above navbar (which is 1000) and other modals
+	min-width: 220px;
+	user-select: none;
+
+	.polygon-edit-modal-header {
+		padding: 12px 16px;
+		background: linear-gradient(
+			135deg,
+			$color-dark-gold 0%,
+			$color-gold 100%
+		);
+		color: $color-dark;
+		border-radius: 8px 8px 0 0;
+		cursor: grab;
+
+		&:active {
+			cursor: grabbing;
+		}
+
+		h4 {
+			margin: 0;
+			font-size: 14px;
+			font-weight: 600;
+			color: $color-dark;
+		}
+	}
+
+	.polygon-edit-modal-body {
+		padding: 12px 16px;
+		border-bottom: 1px solid $color-medium-gray;
+		background: $color-dark-gray;
+
+		p {
+			margin: 0;
+			font-size: 13px;
+			color: $color-light-gray;
+		}
+	}
+
+	.polygon-edit-modal-actions {
+		padding: 12px 16px;
+		display: flex;
+		gap: 8px;
+		justify-content: flex-end;
+		background: $color-dark-gray;
+		border-radius: 0 0 8px 8px;
+
+		button {
+			padding: 8px 16px;
+			border: none;
+			border-radius: 4px;
+			font-size: 13px;
+			font-weight: 500;
+			cursor: pointer;
+			transition: all 0.2s ease;
+
+			&:hover {
+				transform: translateY(-1px);
+				box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+			}
+
+			&:active {
+				transform: translateY(0);
+			}
+		}
+
+		.btn-cancel {
+			background: $color-medium-gray;
+			color: $color-light;
+			border: 1px solid $color-medium-gray;
+
+			&:hover {
+				background: color.adjust($color-medium-gray, $lightness: 10%);
+			}
+		}
+
+		.btn-save {
+			background: $color-dark-gold;
+			color: $color-dark;
+			border: 1px solid $color-gold;
+
+			&:hover {
+				background: $color-gold;
+			}
+		}
+	}
+}

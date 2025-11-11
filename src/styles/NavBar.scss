@@ -25,7 +25,8 @@
 
 	&.other {
 		padding: 0.5rem 1rem;
-		border-bottom: 1px solid rgb(136, 125, 5);
+		background: $color-dark-gray;
+		border-bottom: 1px solid $color-dark-gold;
 		height: calc($navbar-height/2);
 		top:0;
 

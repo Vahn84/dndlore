@@ -287,6 +287,32 @@ class Api {
 		return resp.data;
 	}
 
+	/**
+	 * Move an asset to a different folder (or root if folderId is null).
+	 */
+	static async moveAssetToFolder(assetId: string, folderId: string | null) {
+		const resp = await Api.client.patch(`/assets/${assetId}/move`, { folderId });
+		return resp.data;
+	}
+
+	// -------------------------------------------------------------------------
+	// Asset Folders
+	// -------------------------------------------------------------------------
+	static async getAssetFolders() {
+		const resp = await Api.client.get('/asset-folders');
+		return resp.data;
+	}
+
+	static async createAssetFolder(name: string) {
+		const resp = await Api.client.post('/asset-folders', { name });
+		return resp.data;
+	}
+
+	static async deleteAssetFolder(id: string) {
+		const resp = await Api.client.delete(`/asset-folders/${id}`);
+		return resp.data;
+	}
+
 	static resolveAssetUrl(u: string) {
 		if (!u) return '';
 		return /^https?:\/\//i.test(u)
@@ -299,8 +325,9 @@ class Api {
 	 * Use this for list items, timeline events, and small cards.
 	 * For page banners, use resolveAssetUrl instead.
 	 */
-	static resolveThumbnailUrl(url: string, thumbUrl?: string) {
-		const resolved = thumbUrl || url;
+	static resolveThumbnailUrl(url: string, bannerThumbUrl?: string) {
+		const resolved = bannerThumbUrl || url;
+		console.log('Resolved thumbnail URL:', resolved, bannerThumbUrl);
 		return Api.resolveAssetUrl(resolved);
 	}
 }

@@ -508,7 +508,7 @@ const Timeline: React.FC<TimelineProps> = () => {
 				const page = await Api.getPage(pageId);
 				if (page && page._id && page.type) {
 					navigate(`/lore/${page.type}/${page._id}`, {
-						state: { from: 'timeline' }
+						state: { from: 'timeline' },
 					});
 				}
 			} catch (e) {
@@ -572,15 +572,22 @@ const Timeline: React.FC<TimelineProps> = () => {
 						</div>
 						{/* Event card */}
 						<div className="cardWrapper">
-							<div 
-								className={`card ${ev.pageId ? 'clickable' : ''}`}
+							<div
+								className={`card ${
+									ev.pageId ? 'clickable' : ''
+								}`}
 								onClick={(e) => {
 									// Only navigate if clicking the card itself, not buttons
-									if (ev.pageId && e.target === e.currentTarget) {
+									if (
+										ev.pageId &&
+										e.target === e.currentTarget
+									) {
 										openLinkedPage(ev.pageId);
 									}
 								}}
-								style={{ cursor: ev.pageId ? 'pointer' : 'default' }}
+								style={{
+									cursor: ev.pageId ? 'pointer' : 'default',
+								}}
 							>
 								<div
 									className="cardBg"
@@ -590,7 +597,8 @@ const Timeline: React.FC<TimelineProps> = () => {
 													backgroundImage: `url(${
 														process.env
 															.REACT_APP_API_BASE_URL +
-														(ev.bannerThumbUrl || ev.bannerUrl)
+														(ev.bannerThumbUrl ||
+															ev.bannerUrl)
 													})`,
 											  }
 											: ev.color
@@ -604,7 +612,7 @@ const Timeline: React.FC<TimelineProps> = () => {
 										}
 									}}
 								></div>
-								<div 
+								<div
 									className="info"
 									onClick={(e) => {
 										// Make clicking anywhere in info area navigate (except buttons)
@@ -906,15 +914,17 @@ const Timeline: React.FC<TimelineProps> = () => {
 					onClose={() => setTimeSystemModalOpen(false)}
 				/>
 			)}
-			<button
-				className="floating-button"
-				onClick={() => {
-					setEditingEvent(null);
-					setEventModalOpen(true);
-				}}
-			>
-				<i className="icon icli iconly-Plus"></i>
-			</button>
+			{isDM && (
+				<button
+					className="floating-button"
+					onClick={() => {
+						setEditingEvent(null);
+						setEventModalOpen(true);
+					}}
+				>
+					<i className="icon icli iconly-Plus"></i>
+				</button>
+			)}
 		</div>
 	);
 };

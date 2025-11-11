@@ -19,6 +19,7 @@ import Api from '../Api';
 import Divider from '../components/Divider';
 import DatePicker from '../components/DatePicker';
 import SessionDatePicker from '../components/SessionDatePicker';
+import useAutoSizeTextArea from '../hooks/useAutoSizeTextArea';
 
 Modal.setAppElement('#root');
 
@@ -39,6 +40,7 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 	const groups = useAppStore((s) => s.data.groups.data);
 	const loadGroups = useAppStore((s) => s.loadGroups);
 	const createEvent = useAppStore((s) => s.createEvent);
+	const updateEvent = useAppStore((s) => s.updateEvent);
 
 	const [assetOpen, setAssetOpen] = useState(false);
 
@@ -47,6 +49,9 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 	const [bgBlur, setBgBlur] = useState(0);
 	const [bgGray, setBgGray] = useState(0);
 	const rafId = useRef<number | null>(null);
+
+	const titleRef = useRef<HTMLTextAreaElement>(null);
+	const subtitleRef = useRef<HTMLTextAreaElement>(null);
 
 	const handleScroll = () => {
 		const el = overflowRef.current;
@@ -120,6 +125,13 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 			} as any)
 	);
 
+	useAutoSizeTextArea('title-input', titleRef.current, pageDraft.title || '');
+	useAutoSizeTextArea(
+		'subtitle-input',
+		subtitleRef.current,
+		pageDraft.subtitle || ''
+	);
+
 	const [focusIndex, setFocusIndex] = useState<number | null>(null);
 	const [isLoadingPage, setIsLoadingPage] = useState(false);
 
@@ -176,6 +188,8 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 				title,
 				subtitle: (data as any).subtitle,
 				bannerUrl: (data as any).bannerUrl,
+				assetId: (data as any).assetId,
+				bannerThumbUrl: (data as any).bannerThumbUrl,
 				blocks: (data as any).blocks,
 				hidden: (data as any).hidden,
 				draft: (data as any).draft,
@@ -336,7 +350,7 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 			// ensure cache reflects latest
 			if (upd) replacePageInCache(upd as any);
 
-			// If campaign page with world date, create a linked timeline event
+			// If campaign page with world date, check for existing event or create a linked timeline event
 			if (type === 'campaign' && (pageDraft as any)?.worldDate) {
 				const wd = (pageDraft as any).worldDate as {
 					eraId: string;
@@ -344,6 +358,27 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 					monthIndex: number;
 					day: number;
 				};
+				const pageId = (upd as any)?._id || (pageDraft as any)?._id;
+				
+				// Check if an event already exists for this page
+				try {
+					const eventsResp = await Api.getEvents();
+					const existingEvent = eventsResp.find((e: any) => e.pageId === pageId);
+					
+					if (existingEvent) {
+						// Event exists, just unhide it
+						await updateEvent({
+							_id: existingEvent._id,
+							hidden: false,
+						});
+						toast.success('Page published and event revealed');
+						return;
+					}
+				} catch (err) {
+					console.error('Failed to check for existing event', err);
+				}
+				
+				// No existing event, create a new one
 				// pick a group: prefer "Campaign" or similar, fallback to first
 				let groupId =
 					groups && groups.length ? groups[0]._id : undefined;
@@ -379,7 +414,7 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 						detailLevel: 'Day' as any,
 						description: (pageDraft as any).subtitle || '',
 						// @ts-ignore extended interface for page linkage
-						pageId: (upd as any)?._id || (pageDraft as any)?._id,
+						pageId: pageId,
 					} as any);
 					toast.success('Page published and event created');
 				} catch (err) {
@@ -449,6 +484,7 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 									onChange={(e) =>
 										updateTitle(e.target.value)
 									}
+									id="title-input"
 								/>
 							</>
 						) : (
@@ -516,6 +552,7 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 								value={(pageDraft as any).subtitle}
 								placeholder="Subtitle"
 								onChange={(e) => updateSubtitle(e.target.value)}
+								id='subtitle-input'
 							/>
 						) : pageDraft.subtitle ? (
 							<h4>{(pageDraft as any).subtitle || ''}</h4>
@@ -665,6 +702,7 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 						...prev,
 						bannerUrl: asset.url,
 						bannerThumbUrl: asset.thumb_url,
+						assetId: asset._id,
 					}));
 					setAssetOpen(false);
 				}}

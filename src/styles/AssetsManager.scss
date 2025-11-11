@@ -1,4 +1,5 @@
 @use '_variables' as *;
+@use 'sass:color';
 
 /* =============== Asset Manager =============== */
 .assetmgr {
@@ -31,13 +32,36 @@
 	gap: 1rem;
 	height: calc(100% - 2rem);
 }
+.assetmgr__layout {
+	display: grid;
+	grid-template-columns: 1fr 340px; /* grid + right sidebar */
+	gap: 1rem;
+}
+
+.asset-manager-columns-container {
+	display: flex;
+}
 
 /* grid of tiles */
 .assetmgr__grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+	display: flex;
+	flex-wrap: wrap;
 	gap: 0.75rem;
 	align-content: start;
+	padding-right: 10px;
+
+	.assetmgr__card {
+		box-sizing: border-box;
+	}
+}
+.assetmgr__grid--scroll {
+	max-height: 100%;
+	width:100%;
+	overflow-y: auto;
+	padding-right: 20px;
+	::-webkit-scrollbar {
+		width: 6px;
+	}
 }
 
 .assetmgr__card {
@@ -52,6 +76,7 @@
 	flex-direction: column;
 	transition: border-color 0.15s ease, box-shadow 0.15s ease,
 		background 0.15s ease;
+	max-width: 20%;
 }
 .assetmgr__card:hover {
 	border-color: $color-dark-gray;
@@ -69,12 +94,28 @@
 	border-top-left-radius: 10px;
 	border-top-right-radius: 10px;
 }
+.assetmgr__thumbWrap {
+	position: relative;
+	width: 100%;
+	padding-top: 66%; /* 3:2 compromise */
+	overflow: hidden;
+	border-top-left-radius: 10px;
+	border-top-right-radius: 10px;
+}
 .assetmgr__thumb {
 	position: absolute;
 	inset: 0;
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
+}
+.assetmgr__thumb {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	background: rgba(0, 0, 0, 0.35);
 }
 
 .assetmgr__deleteBtn {
@@ -93,7 +134,8 @@
 	justify-content: center;
 	cursor: pointer;
 	opacity: 0;
-	transition: opacity 0.2s ease, background 0.15s ease, border-color 0.15s ease;
+	transition: opacity 0.2s ease, background 0.15s ease,
+		border-color 0.15s ease;
 	z-index: 10;
 
 	&:hover {
@@ -124,7 +166,20 @@
 	border-left: 1px solid $color-dark;
 	padding-left: 1rem;
 	display: flex;
-	align-items: stretch;
+	flex: 30%;
+}
+.assetmgr__sidebar {
+	border-left: 1px solid $color-dark;
+	padding-left: 1rem;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	position: sticky;
+	top: 0;
+
+	&--left {
+		flex: 70%;
+	}
 }
 
 .assetmgr__empty {
@@ -150,6 +205,7 @@
 	border: 1px solid $color-dark;
 	border-radius: 8px;
 	padding: 0.25rem;
+	max-height: 200px;
 }
 .assetmgr__previewImg {
 	display: block;
@@ -172,4 +228,154 @@
 	align-items: center;
 	display: flex;
 	flex-direction: column;
+}
+
+/* Breadcrumb navigation */
+.assetmgr__breadcrumb {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin-bottom: 0.75rem;
+	padding: 0.5rem 0.75rem;
+	background: $color-dark;
+	border-radius: 6px;
+	font-size: 0.9rem;
+}
+
+.assetmgr__breadcrumb-btn {
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+	background: transparent;
+	border: none;
+	color: $color-light;
+	cursor: pointer;
+	padding: 0.25rem 0.5rem;
+	border-radius: 4px;
+	transition: background 0.15s ease, color 0.15s ease;
+
+	&:hover {
+		background: rgba(255, 255, 255, 0.1);
+		color: $color-dark-gold;
+	}
+}
+
+.assetmgr__breadcrumb-sep {
+	color: $color-dim;
+	margin: 0 0.25rem;
+}
+
+.assetmgr__breadcrumb-current {
+	color: $color-dark-gold;
+	font-weight: 600;
+}
+
+/* New folder input */
+.assetmgr__newfolder {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+	margin-bottom: 0.75rem;
+	padding: 0.75rem;
+	background: $color-dark;
+	border-radius: 6px;
+
+	input {
+		flex: 1;
+	}
+}
+
+/* Folder card */
+.assetmgr__folder {
+	position: relative;
+	background: $color-dark;
+	border: 1px solid $color-dark;
+	border-radius: 10px;
+	color: inherit;
+	text-align: center;
+	padding: 1.5rem 1rem;
+	cursor: pointer;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.5rem;
+	max-width: 20%;
+	min-width: 20%;
+	transition: border-color 0.15s ease, background 0.15s ease;
+	justify-content: center;
+
+	&:hover {
+		border-color: $color-dark-gray;
+		background: color.adjust($color-dark, $lightness: 2%);
+
+		.assetmgr__deleteBtn {
+			opacity: 1;
+		}
+	}
+}
+
+.assetmgr__folder-icon {
+	color: $color-dark-gold;
+	opacity: 0.8;
+}
+
+.assetmgr__folder-name {
+	.assetmgr__preview {
+		background: $color-dark;
+		border: 1px solid $color-dark;
+		border-radius: 8px;
+		padding: 0.5rem;
+		max-height: 200px;
+		width: 100%;
+		overflow: hidden;
+	}
+	font-size: 0.9rem;
+	color: $color-light;
+	font-weight: 500;
+}
+
+/* Move asset section */
+.assetmgr__previewInner {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.assetmgr__previewImg {
+	display: block;
+	width: 100%;
+	height: auto;
+	max-height: 100%;
+	object-fit: contain;
+	border-radius: 6px;
+}
+.assetmgr__move {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	text-align: center;
+	width: 100%;
+	padding: 0.75rem;
+	background: $color-dark;
+	border-radius: 6px;
+}
+
+.assetmgr__move-label {
+	font-size: 0.85rem;
+	color: $color-dim;
+	font-weight: 500;
+}
+
+/* Inline new folder form in breadcrumb row */
+.assetmgr__breadcrumb-actions {
+	margin-left: auto;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+.assetmgr__newfolder-inline {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
 }

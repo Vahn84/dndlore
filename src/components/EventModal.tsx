@@ -74,7 +74,7 @@ const EventModal: React.FC<EventModalProps> = ({
 			'#475569'
 	);
 	const [bannerUrl, setBannerUrl] = useState(event?.bannerUrl || '');
-	const [bannerThumbUrl, setBannerThumbUrl] = useState(event?.bannerThumbUrl || '');
+	const [bannerThumbUrl, setbannerThumbUrl] = useState(event?.bannerThumbUrl || '');
 	const [hidden, setHidden] = useState<boolean>(event?.hidden ?? false);
 
 	const [assetOpen, setAssetOpen] = useState(false);
@@ -91,7 +91,7 @@ const EventModal: React.FC<EventModalProps> = ({
 		setGroupId(event?.groupId || (effectiveGroups[0]?._id ?? ''));
 		setDescription(event?.description || '');
 		setBannerUrl(event?.bannerUrl || '');
-		setBannerThumbUrl(event?.bannerThumbUrl || '');
+		setbannerThumbUrl(event?.bannerThumbUrl || '');
 		setHidden(event?.hidden ?? false);
 		setLinkedPage(event?.pageId);
 		setSyncEnabled(event?.linkSync ?? false);
@@ -767,7 +767,7 @@ const EventModal: React.FC<EventModalProps> = ({
 				onClose={() => setAssetOpen(false)}
 				onSelect={(asset) => {
 					setBannerUrl(asset.url);
-					setBannerThumbUrl(asset.thumb_url || '');
+					setbannerThumbUrl(asset.thumb_url || '');
 					setAssetOpen(false);
 				}}
 			/>

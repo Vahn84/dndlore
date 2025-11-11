@@ -26,9 +26,17 @@ const LoreCreateFab: React.FC = () => {
 	);
 	const [summarize, setSummarize] = useState<boolean>(true);
 	const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+	const [isLoadingSummary, setIsLoadingSummary] = useState(false);
 	
-	// Preview data from backend
+	// Available dates from backend (Step 1)
+	const [availableDates, setAvailableDates] = useState<Array<{date: string, content: string}>>([]);
+	const [selectedDate, setSelectedDate] = useState<string>('');
+	
+	// Preview data from backend (Step 2)
 	const [previewData, setPreviewData] = useState<any>(null);
+	
+	// Modal step: 1 = select date, 2 = preview summary
+	const [previewStep, setPreviewStep] = useState<1 | 2>(1);
 	
 	// Editable fields for the preview modal
 	const [titleInput, setTitleInput] = useState<string>('');
@@ -124,14 +132,14 @@ const LoreCreateFab: React.FC = () => {
 		setIsLoadingPreview(true);
 		
 		try {
-			const tId = toast.loading('Fetching and summarizing…', {
+			const tId = toast.loading('Fetching available sessions…', {
 				id: 'sync-preview',
 			});
 			const googleAccessToken =
 				user?.googleAccessToken ||
 				localStorage.getItem('googleAccessToken');
 			
-			// Step 1: Call preview endpoint to get summarized content
+			// Step 1: Call preview endpoint to get available dates
 			const resp = await fetch(
 				`${Api.getBaseUrl()}/sync/campaign/preview`,
 				{
@@ -144,7 +152,6 @@ const LoreCreateFab: React.FC = () => {
 					},
 					body: JSON.stringify({
 						docId,
-						summarize,
 						googleAccessToken,
 					}),
 				}
@@ -154,34 +161,94 @@ const LoreCreateFab: React.FC = () => {
 			if (!resp.ok) {
 				// Check if token expired
 				if (resp.status === 401 || data?.error?.includes('token')) {
-					toast.error('Google token expired. Reconnecting...', {
+					toast.loading('Google token expired. Refreshing...', {
 						id: tId,
 					});
 					const refreshResult = await Api.refreshGoogleToken();
 					if (refreshResult.success) {
-						toast.success('Token refreshed. Please try again.', {
+						toast.loading('Token refreshed. Retrying...', {
 							id: tId,
 						});
+						
+						// Update user state with new token
+						if (user && refreshResult.googleAccessToken) {
+							const updatedUser = {
+								...user,
+								googleAccessToken: refreshResult.googleAccessToken,
+							};
+							useAppStore.getState().setUser(updatedUser);
+						}
+						
+						// Retry the request with new token
+						const retryResp = await fetch(
+							`${Api.getBaseUrl()}/sync/campaign/preview`,
+							{
+								method: 'POST',
+								headers: {
+									'Content-Type': 'application/json',
+									Authorization: `Bearer ${
+										localStorage.getItem('token') || ''
+									}`,
+								},
+								body: JSON.stringify({
+									docId,
+									googleAccessToken: refreshResult.googleAccessToken,
+								}),
+							}
+						);
+						const retryData = await retryResp.json();
+						
+						if (!retryResp.ok) {
+							throw new Error(retryData?.error || 'Preview failed after token refresh');
+						}
+						
+						if (!retryData?.availableDates || retryData.availableDates.length === 0) {
+							toast.dismiss(tId);
+							toast(retryData?.message || 'No new sessions found');
+							return;
+						}
+						
+						// Success - show preview modal with date selection
+						toast.success(`Found ${retryData.availableDates.length} session(s)`, { id: tId });
+						setAvailableDates(retryData.availableDates);
+						setSelectedDate(retryData.availableDates[0].date);
+						setPreviewStep(1);
+						setPreviewData(null);
+						setTitleInput('');
+						setSubtitleInput('');
+						setWorldDate(null);
+						setBannerUrl('');
+						setSyncOpen(false);
+						setPreviewOpen(true);
+						return;
 					} else if (refreshResult.needsReauth) {
 						toast.error('Please reconnect your Google account', {
 							id: tId,
 						});
+						return;
+					} else {
+						toast.error('Failed to refresh token', {
+							id: tId,
+						});
+						return;
 					}
-					return;
 				}
 				throw new Error(data?.error || 'Preview failed');
 			}
 			
-			if (!data?.preview) {
+			if (!data?.availableDates || data.availableDates.length === 0) {
 				toast.dismiss(tId);
-				toast('No newer section found');
+				toast(data?.message || 'No new sessions found');
 				return;
 			}
 			
-			// Success - show preview modal
-			toast.success('Preview ready', { id: tId });
-			setPreviewData(data.preview);
-			setTitleInput(data.preview.suggestedTitle || '');
+			// Success - show preview modal with date selection
+			toast.success(`Found ${data.availableDates.length} session(s)`, { id: tId });
+			setAvailableDates(data.availableDates);
+			setSelectedDate(data.availableDates[0].date); // Pre-select most recent
+			setPreviewStep(1);
+			setPreviewData(null); // Clear previous summary
+			setTitleInput('');
 			setSubtitleInput('');
 			setWorldDate(null);
 			setBannerUrl('');
@@ -192,6 +259,66 @@ const LoreCreateFab: React.FC = () => {
 			toast.error(e?.message || 'Preview failed');
 		} finally {
 			setIsLoadingPreview(false);
+		}
+	};
+
+	const handleSummarizeDate = async () => {
+		if (!selectedDate) {
+			toast.error('Please select a date');
+			return;
+		}
+
+		const selectedSession = availableDates.find(d => d.date === selectedDate);
+		if (!selectedSession) {
+			toast.error('Selected date not found');
+			return;
+		}
+
+		setIsLoadingSummary(true);
+		
+		try {
+			const tId = toast.loading('Summarizing with AI…', {
+				id: 'summarize',
+			});
+			
+			// Step 2: Call summarize endpoint
+			const resp = await fetch(
+				`${Api.getBaseUrl()}/sync/campaign/summarize`,
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${
+							localStorage.getItem('token') || ''
+						}`,
+					},
+					body: JSON.stringify({
+						rawText: selectedSession.content,
+						sessionDate: selectedDate,
+					}),
+				}
+			);
+			const data = await resp.json();
+			
+			if (!resp.ok) {
+				throw new Error(data?.error || 'Summarization failed');
+			}
+			
+			// Success - move to step 2 with summary
+			toast.success('Summary ready', { id: tId });
+			setPreviewData({
+				summary: data.summary,
+				sessionDate: selectedDate,
+				suggestedTitle: data.suggestedTitle || `Session ${selectedDate}`,
+				rawText: selectedSession.content,
+			});
+			setTitleInput(data.suggestedTitle || `Session ${selectedDate}`);
+			setPreviewStep(2);
+			
+		} catch (e: any) {
+			toast.error(e?.message || 'Summarization failed');
+		} finally {
+			setIsLoadingSummary(false);
 		}
 	};
 
@@ -400,7 +527,7 @@ const LoreCreateFab: React.FC = () => {
 				</div>
 			)}
 			
-			{previewOpen && isDM && previewData && (
+			{previewOpen && isDM && (
 				<div
 					className="lcfab__modal"
 					role="dialog"
@@ -410,87 +537,146 @@ const LoreCreateFab: React.FC = () => {
 					}}
 				>
 					<div className="lcfab__modal__card lcfab__modal__card--large" role="document">
-						<div className="lcfab__modal__title">
-							Preview & Customize Session
-						</div>
-						
-						<label className="lcfab__modal__label">
-							Title
-						</label>
-						<input
-							className="lcfab__modal__input"
-							placeholder="Session title"
-							value={titleInput}
-							onChange={(e) => setTitleInput(e.target.value)}
-						/>
-						
-						<label className="lcfab__modal__label">
-							Subtitle (optional)
-						</label>
-						<input
-							className="lcfab__modal__input"
-							placeholder="e.g., The Lost Temple"
-							value={subtitleInput}
-							onChange={(e) => setSubtitleInput(e.target.value)}
-						/>
-						
-						<label className="lcfab__modal__label">
-							Session Date
-						</label>
-						<input
-							className="lcfab__modal__input"
-							value={previewData.sessionDate || ''}
-							disabled
-							style={{ opacity: 0.6, cursor: 'not-allowed' }}
-						/>
-						
-						<label className="lcfab__modal__label">
-							World Date (optional)
-						</label>
-						{timeSystem ? (
-							<DatePicker
-								value={worldDate}
-								onChange={(parts) => setWorldDate(parts)}
-								ts={timeSystem}
-								placeholder="Select world date"
-							/>
-						) : (
-							<div style={{ fontSize: '0.9rem', color: '#999', marginBottom: '1rem' }}>
-								Loading calendar...
-							</div>
-						)}
-						
-						<label className="lcfab__modal__label">
-							Banner URL (optional)
-						</label>
-						<input
-							className="lcfab__modal__input"
-							placeholder="/uploads/... or https://..."
-							value={bannerUrl}
-							onChange={(e) => setBannerUrl(e.target.value)}
-						/>
-						
-						<label className="lcfab__modal__label">
-							Summary Preview
-						</label>
-						<div className="lcfab__modal__preview">
-							{previewData.summary || 'No content'}
-						</div>
+						{previewStep === 1 ? (
+							<>
+								{/* STEP 1: Select Date and Preview Raw Content */}
+								<div className="lcfab__modal__title">
+									Select Session to Import
+								</div>
+								
+								<label className="lcfab__modal__label">
+									Available Sessions
+								</label>
+								<select
+									className="lcfab__modal__input"
+									value={selectedDate}
+									onChange={(e) => setSelectedDate(e.target.value)}
+									style={{ marginBottom: '1rem' }}
+								>
+									{availableDates.map((session) => (
+										<option key={session.date} value={session.date}>
+											{session.date}
+										</option>
+									))}
+								</select>
+								
+								<label className="lcfab__modal__label">
+									Raw Notes Preview
+								</label>
+								<div className="lcfab__modal__preview" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+									{availableDates.find(d => d.date === selectedDate)?.content || 'No content'}
+								</div>
 
-						<div className="lcfab__modal__actions">
-							<button
-								className="modal__btn cancel"
-								onClick={() => setPreviewOpen(false)}
-							>
-								Cancel
-							</button>
-							<button
-								className="modal__btn primary"
-								onClick={handleCreateFromPreview}
-							>
-								Create
-							</button>
-						</div>
+								<div className="lcfab__modal__actions">
+									<button
+										className="modal__btn cancel"
+										onClick={() => {
+											setPreviewOpen(false);
+											setPreviewStep(1);
+											setAvailableDates([]);
+											setSelectedDate('');
+										}}
+									>
+										Cancel
+									</button>
+									<button
+										className="modal__btn primary"
+										onClick={handleSummarizeDate}
+										disabled={isLoadingSummary || !selectedDate}
+									>
+										{isLoadingSummary ? 'Summarizing…' : 'Summarize with AI →'}
+									</button>
+								</div>
+							</>
+						) : previewData ? (
+							<>
+								{/* STEP 2: Preview Summary and Customize */}
+								<div className="lcfab__modal__title">
+									Preview & Customize Session
+								</div>
+								
+								<label className="lcfab__modal__label">
+									Title
+								</label>
+								<input
+									className="lcfab__modal__input"
+									placeholder="Session title"
+									value={titleInput}
+									onChange={(e) => setTitleInput(e.target.value)}
+								/>
+								
+								<label className="lcfab__modal__label">
+									Subtitle (optional)
+								</label>
+								<input
+									className="lcfab__modal__input"
+									placeholder="e.g., The Lost Temple"
+									value={subtitleInput}
+									onChange={(e) => setSubtitleInput(e.target.value)}
+								/>
+								
+								<label className="lcfab__modal__label">
+									Session Date
+								</label>
+								<input
+									className="lcfab__modal__input"
+									value={previewData.sessionDate || ''}
+									disabled
+									style={{ opacity: 0.6, cursor: 'not-allowed' }}
+								/>
+								
+								<label className="lcfab__modal__label">
+									World Date (optional)
+								</label>
+								{timeSystem ? (
+									<DatePicker
+										value={worldDate}
+										onChange={(parts) => setWorldDate(parts)}
+										ts={timeSystem}
+										placeholder="Select world date"
+									/>
+								) : (
+									<div style={{ fontSize: '0.9rem', color: '#999', marginBottom: '1rem' }}>
+										Loading calendar...
+									</div>
+								)}
+								
+								<label className="lcfab__modal__label">
+									Banner URL (optional)
+								</label>
+								<input
+									className="lcfab__modal__input"
+									placeholder="/uploads/... or https://..."
+									value={bannerUrl}
+									onChange={(e) => setBannerUrl(e.target.value)}
+								/>
+								
+								<label className="lcfab__modal__label">
+									AI Summary Preview
+								</label>
+								<div className="lcfab__modal__preview">
+									{previewData.summary || 'No content'}
+								</div>
+
+								<div className="lcfab__modal__actions">
+									<button
+										className="modal__btn cancel"
+										onClick={() => {
+											setPreviewStep(1);
+											setPreviewData(null);
+										}}
+									>
+										← Back
+									</button>
+									<button
+										className="modal__btn primary"
+										onClick={handleCreateFromPreview}
+									>
+										Create Page
+									</button>
+								</div>
+							</>
+						) : null}
 					</div>
 				</div>
 			)}

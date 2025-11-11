@@ -5,7 +5,8 @@ import Api from '../Api';
 import { Event, Group, Page } from '../types';
 
 // Simple Asset type for the Asset Manager
-export type Asset = { _id: string; url: string; thumb_url?: string; createdAt?: string };
+export type Asset = { _id: string; url: string; thumb_url?: string; createdAt?: string; folderId?: string | null };
+export type AssetFolder = { _id: string; name: string; createdAt?: string };
 
 type Role = 'DM' | 'PLAYER';
 type User = { 
@@ -27,7 +28,8 @@ type DataState = {
 	events: Loadable<Event[]>;
 	pages: Loadable<Page[]>;
 	timeSystem: Loadable<any>;
-	assets: Loadable<Asset[]>; // <-- added
+	assets: Loadable<Asset[]>;
+	assetFolders: Loadable<AssetFolder[]>;
 };
 
 type UIState = {
@@ -60,6 +62,7 @@ type AppState = {
 	loadPages: (type?: Page['type']) => Promise<void>;
 	loadTimeSystem: () => Promise<void>;
 	loadAssets: () => Promise<void>;
+	loadAssetFolders: () => Promise<void>;
 
 	// --- mutations (API) ---
 	createGroup: (name: string) => Promise<Group>;
@@ -85,6 +88,10 @@ type AppState = {
 	createAssetFromFile: (file: File) => Promise<Asset>;
 	createAssetFromUrl: (url: string) => Promise<Asset>;
 	deleteAsset: (id: string) => Promise<void>;
+	moveAssetToFolder: (assetId: string, folderId: string | null) => Promise<void>;
+
+	createAssetFolder: (name: string) => Promise<AssetFolder>;
+	deleteAssetFolder: (id: string) => Promise<void>;
 
 	// --- helpers ---
 	replacePageInCache: (p: Page) => void;
@@ -103,15 +110,14 @@ export const useAppStore = create<AppState>()(
 				// --- initial state ---
 				user: null,
 				ui: { showHidden: false, activeGroupIds: [] },
-				data: {
-					groups: initialLoadable<Group[]>([]),
-					events: initialLoadable<Event[]>([]),
-					pages: initialLoadable<Page[]>([]),
-					timeSystem: initialLoadable<any>(null),
-					assets: initialLoadable<Asset[]>([]), // <-- added
-				},
-
-				// --- derived ---
+			data: {
+				groups: initialLoadable<Group[]>([]),
+				events: initialLoadable<Event[]>([]),
+				pages: initialLoadable<Page[]>([]),
+				timeSystem: initialLoadable<any>(null),
+				assets: initialLoadable<Asset[]>([]),
+				assetFolders: initialLoadable<AssetFolder[]>([]),
+			},				// --- derived ---
 				isDM: () => get().user?.role === 'DM',
 				isLoggedIn: () =>
 					get().user !== null && get().user?.token !== null,
@@ -325,19 +331,79 @@ export const useAppStore = create<AppState>()(
 					return created as Asset;
 				},
 
-				deleteAsset: async (id) => {
-					await Api.deleteAsset(id);
-					set((s) => {
-						// @ts-ignore
-						if (!s.data.assets)
-							s.data.assets = initialLoadable<Asset[]>([]);
-						s.data.assets.data = s.data.assets.data.filter(
-							(a) => a._id !== id
-						);
-					});
-				},
+			deleteAsset: async (id) => {
+				await Api.deleteAsset(id);
+				set((s) => {
+					// @ts-ignore
+					if (!s.data.assets)
+						s.data.assets = initialLoadable<Asset[]>([]);
+					s.data.assets.data = s.data.assets.data.filter(
+						(a) => a._id !== id
+					);
+				});
+			},
 
-				// --- mutations ---
+			moveAssetToFolder: async (assetId, folderId) => {
+				const updated = await Api.moveAssetToFolder(assetId, folderId);
+				set((s) => {
+					// @ts-ignore
+					if (!s.data.assets)
+						s.data.assets = initialLoadable<Asset[]>([]);
+					const idx = s.data.assets.data.findIndex((a) => a._id === assetId);
+					if (idx >= 0) {
+						s.data.assets.data[idx] = updated;
+					}
+				});
+			},
+
+			loadAssetFolders: async () => {
+				set((s) => {
+					// @ts-ignore
+					if (!s.data.assetFolders)
+						s.data.assetFolders = initialLoadable<AssetFolder[]>([]);
+					s.data.assetFolders.loading = true;
+					s.data.assetFolders.error = null;
+				});
+				try {
+					const list = await Api.getAssetFolders();
+					set((s) => {
+						s.data.assetFolders.data = Array.isArray(list) ? list : [];
+					});
+				} catch (e: any) {
+					set((s) => {
+						s.data.assetFolders.error = e?.message || 'Failed to load folders';
+					});
+				} finally {
+					set((s) => {
+						s.data.assetFolders.loading = false;
+					});
+				}
+			},
+
+			createAssetFolder: async (name) => {
+				const created = await Api.createAssetFolder(name);
+				if (!created || !created._id)
+					throw new Error('Failed to create folder');
+				set((s) => {
+					// @ts-ignore
+					if (!s.data.assetFolders)
+						s.data.assetFolders = initialLoadable<AssetFolder[]>([]);
+					s.data.assetFolders.data = [created, ...s.data.assetFolders.data];
+				});
+				return created as AssetFolder;
+			},
+
+			deleteAssetFolder: async (id) => {
+				await Api.deleteAssetFolder(id);
+				set((s) => {
+					// @ts-ignore
+					if (!s.data.assetFolders)
+						s.data.assetFolders = initialLoadable<AssetFolder[]>([]);
+					s.data.assetFolders.data = s.data.assetFolders.data.filter(
+						(f) => f._id !== id
+					);
+				});
+			},				// --- mutations ---
 				createGroup: async (name) => {
 					const created = await Api.createGroup({ name });
 					set((s) => {
@@ -471,7 +537,7 @@ export const useAppStore = create<AppState>()(
 					const upd = await Api.updatePage(p);
 					set((s) => {
 						s.data.pages.data = s.data.pages.data.map((x) =>
-							x._id === upd.id ? upd : x
+							x._id === (upd._id ?? upd.id) ? upd : x
 						);
 					});
 					// Reload events to reflect any propagated sync from linked pages
@@ -512,34 +578,35 @@ export const useAppStore = create<AppState>()(
 				name: 'dndlore-state',
 				version: 3,
 				migrate: (state: any, version) => {
-					// Ensure root objects exist
-					if (!state) return state as any;
-					if (!state.ui)
-						state.ui = { showHidden: false, activeGroupIds: [] };
-					if (!state.data) {
-						state.data = {
-							groups: initialLoadable([]),
-							events: initialLoadable([]),
-							pages: initialLoadable([]),
-							timeSystem: initialLoadable(null),
-							assets: initialLoadable([]),
-						};
-						return state as any;
-					}
-
-					// Sanitize group filter
-					if (state.ui && Array.isArray(state.ui.activeGroupIds)) {
-						state.ui.activeGroupIds =
-							state.ui.activeGroupIds.filter(
-								(x: any) => typeof x === 'string' && !!x
-							);
-					}
-
-					// Ensure assets slice exists after rehydrate from older versions
-					if (!state.data.assets)
-						state.data.assets = initialLoadable([]);
-
+				// Ensure root objects exist
+				if (!state) return state as any;
+				if (!state.ui)
+					state.ui = { showHidden: false, activeGroupIds: [] };
+				if (!state.data) {
+					state.data = {
+						groups: initialLoadable([]),
+						events: initialLoadable([]),
+						pages: initialLoadable([]),
+						timeSystem: initialLoadable(null),
+						assets: initialLoadable([]),
+						assetFolders: initialLoadable([]),
+					};
 					return state as any;
+				}
+
+				// Sanitize group filter
+				if (state.ui && Array.isArray(state.ui.activeGroupIds)) {
+					state.ui.activeGroupIds =
+						state.ui.activeGroupIds.filter(
+							(x: any) => typeof x === 'string' && !!x
+						);
+				}
+
+				// Ensure assets slice exists after rehydrate from older versions
+				if (!state.data.assets)
+					state.data.assets = initialLoadable([]);
+				if (!state.data.assetFolders)
+					state.data.assetFolders = initialLoadable([]);					return state as any;
 				},
 			}
 		)

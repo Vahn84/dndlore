@@ -33,7 +33,7 @@ html,
 	align-items: center;
 	gap: 0.75rem;
 	top: calc($navbar-height/6);
-    right: 1rem;
+	right: 1rem;
 }
 
 .loginButton {
@@ -45,7 +45,7 @@ html,
 	text-transform: uppercase;
 	cursor: pointer;
 
-	.loginButtonWrapper{
+	.loginButtonWrapper {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
@@ -426,6 +426,18 @@ html,
 
 	&--asset_mngr {
 		min-width: 80vw;
+		.modal__body {
+			.modal__body_content {
+				padding-top: 0;
+			}
+		}
+	}
+
+	&--page-picker {
+		min-width: auto;
+		max-width: 500px;
+		min-height: 300px;
+		max-height: 400px;
 	}
 
 	&--event {
@@ -697,8 +709,6 @@ select {
 	animation-delay: 7s;
 }
 
-
-
 @keyframes disappear {
 	from {
 		opacity: 1;
@@ -706,10 +716,7 @@ select {
 	to {
 		opacity: 0;
 	}
-	
 }
-
-
 
 @keyframes appear {
 	from {
@@ -718,5 +725,4 @@ select {
 	to {
 		opacity: 1;
 	}
-	
 }

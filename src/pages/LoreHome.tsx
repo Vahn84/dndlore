@@ -2,12 +2,16 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import '../styles/LoreHome.scss';
 import LoreCreateFab from '../components/LoreCreateFab';
+import PlaceMapView from '../components/PlaceMapView';
+import { PlacePage } from '../components/InteractiveMapCanvas';
 import Api from '../Api';
 import { Page } from '../types';
-import { FileDotted, Trash } from 'phosphor-react';
+import { CaretLeft, CaretRight, FileDotted, Trash } from 'phosphor-react';
 import { useAppStore } from '../store/appStore';
 import Modal from 'react-modal';
 import { toast } from 'react-hot-toast';
+import CategoriesMenu from '../components/CategoriesMenu';
+import Constants from '../Constants';
 
 Modal.setAppElement('#root');
 
@@ -67,10 +71,15 @@ const LoreHome: React.FC = () => {
 	const storeLoading = useAppStore((s) => s.data.pages.loading);
 	const isDM = useAppStore((s) => s.isDM());
 	const deletePage = useAppStore((s) => s.deletePage);
+	const createPage = useAppStore((s) => s.createPage);
+	const updatePage = useAppStore((s) => s.updatePage);
 
 	// Delete confirmation modal state
 	const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 	const [pageToDelete, setPageToDelete] = useState<Page | null>(null);
+
+	// Left menu collapse state
+	const [leftMenuCollapsed, setLeftMenuCollapsed] = useState(false);
 
 	const handleDeleteClick = (e: React.MouseEvent, page: Page) => {
 		e.stopPropagation(); // Prevent navigation to page detail
@@ -150,61 +159,144 @@ const LoreHome: React.FC = () => {
 		<div
 			className="loreHome offset-container"
 			style={{
-				background: `url(${require('../assets/aetherium_bg.png')})`,
+				background:
+					selectedCategory !== 'place'
+						? `url(${Constants.LORE_BG[selectedCategory]})`
+						: 'none',
 			}}
 		>
-			<div
-				className="bgLayer"
-				style={{
-					filter: `blur(${bgBlur}px) grayscale(${bgGray})`,
-				}}
+			{/* Left Categories Menu - Always visible */}
+			<CategoriesMenu
+				categories={categories}
+				selectedCategory={selectedCategory}
+				onCategoryChange={handleCategoryChange}
 			/>
+			{selectedCategory === 'place' ? (
+				<PlaceMapView
+					imageUrl={require('../assets/Aetherium-Tyriandor.webp')}
+					onPlaceClick={(place) =>
+						navigate(`/lore/place/${place._id}`)
+					}
+					leftMenuCollapsed={leftMenuCollapsed}
+				/>
+			) : (
+				<div
+					className="bgLayer"
+					style={{
+						filter: `blur(${bgBlur}px) grayscale(${bgGray})`,
+					}}
+				/>
+			)}
 			<div className="overlay"></div>
-			<div
-				className="overflow-container"
-				ref={overflowRef}
-				onScroll={handleScroll}
-			>
-				<div className="contentContainer">
-					<h1 className="loreTitle">Lore Library</h1>
-					<p className="loreSubtitle">
-						Explore the world of Aetherium through its places,
-						history and myths.
-					</p>
-					<div className="loreColumns">
-						{/* Left column - Categories */}
-						<div className="categoriesColumn">
-							<h2 className="columnTitle">Categories</h2>
-							<div className="categoriesList">
-								{categories.map((cat) => (
-									<button
-										key={cat.type}
-										className={`categoryCard ${
-											selectedCategory === cat.type
-												? 'active'
-												: ''
-										}`}
-										onClick={() =>
-											handleCategoryChange(cat.type)
-										}
-									>
-										<span className="label">
-											{cat.label}
-										</span>
-									</button>
-								))}
-							</div>
-						</div>
 
-						{/* Right column - Pages list */}
-						<div className="pagesColumn">
-							{storeLoading ? (
-								<p className="loadingText">Loading…</p>
-							) : (
-								<ul className="pageList">
-									{
-										// Filter pages: only show drafts to DMs
-										(pagesFromStore || [])
+			{/* Hide overflow container when viewing places category */}
+			{selectedCategory !== 'place' && (
+				<div
+					className="overflow-container"
+					ref={overflowRef}
+					onScroll={handleScroll}
+				>
+					<div className="contentContainer">
+						<h1 className="loreTitle">The Great Library of Morne</h1>
+						<p className="loreSubtitle">
+							Welcome to the Great Library of Morne! Explore the
+							world of Aetherium through its places, history and
+							myths.
+						</p>
+
+						<div className="loreColumns">
+							{/* Pages list */}
+					
+							<div
+								className="pagesColumn"
+								style={{ flex: '1', maxWidth: '100%' }}
+							>
+								{storeLoading ? (
+									<p className="loadingText">Loading…</p>
+								) : (
+									<ul className="pageList">
+										{
+											// Filter pages: only show drafts to DMs
+											(pagesFromStore || [])
+												.filter(
+													(p) =>
+														p.type ===
+														(selectedCategory as any)
+												)
+												.filter((p) =>
+													isDM ? true : !p.draft
+												)
+												.map((page) => (
+													<li
+														key={page._id}
+														className="pageListItem"
+														onClick={() =>
+															navigate(
+																`/lore/${selectedCategory}/${page._id}`
+															)
+														}
+													>
+														<div className="pageCard">
+															{page.bannerUrl && (
+																<div
+																	className="thumb"
+																	style={{
+																		backgroundImage: `url(${Api.resolveThumbnailUrl(
+																			page.bannerUrl,
+																			page.bannerThumbUrl
+																		)})`,
+																	}}
+																/>
+															)}
+															<div className="meta">
+																<h3 className="pageTitle">
+																	{page.title}
+																</h3>
+																{page.subtitle && (
+																	<h4 className="pageSubtitle">
+																		{
+																			page.subtitle.toUpperCase()
+																		}
+																	</h4>
+																)}
+		
+																{isDM && (
+																	<button
+																		className="deleteBtn"
+																		onClick={(
+																			e
+																		) =>
+																			handleDeleteClick(
+																				e,
+																				page
+																			)
+																		}
+																		title="Delete page"
+																	>
+																		<Trash
+																			size={
+																				18
+																			}
+																			weight="bold"
+																		/>
+																	</button>
+																)}
+															</div>
+															{page.draft &&
+																isDM && (
+																	<span className="draftBadge">
+																		<FileDotted
+																			size={
+																				18
+																			}
+																		/>
+																	</span>
+																)}
+														</div>
+													</li>
+												))
+										}
+										{pagesFromStore
 											.filter(
 												(p) =>
 													p.type ===
@@ -212,101 +304,19 @@ const LoreHome: React.FC = () => {
 											)
 											.filter((p) =>
 												isDM ? true : !p.draft
-											)
-											.map((page) => (
-												<li
-													key={page._id}
-													className="pageListItem"
-													onClick={() =>
-														navigate(
-															`/lore/${selectedCategory}/${page._id}`
-														)
-													}
-												>
-													<div className="pageCard">
-														{page.bannerUrl && (
-															<div
-																className="thumb"
-																style={{
-																	backgroundImage: `url(${Api.resolveThumbnailUrl(
-																		page.bannerUrl,
-																		page.bannerThumbUrl
-																	)})`,
-																}}
-															/>
-														)}
-														<div className="meta">
-															<h3 className="pageTitle">
-																{page.title}
-															</h3>
-															{page.subtitle && (
-																<h4 className="pageSubtitle">
-																	{
-																		page.subtitle
-																	}
-																</h4>
-															)}
-															{page.blocks[0]
-																?.plainText && (
-																<p
-																	className="pageExcerpt"
-																	dangerouslySetInnerHTML={{
-																		__html: generateExcerpt(
-																			page
-																				.blocks[0]
-																				.plainText
-																		),
-																	}}
-																></p>
-															)}
-															{isDM && (
-																<button
-																	className="deleteBtn"
-																	onClick={(e) =>
-																		handleDeleteClick(
-																			e,
-																			page
-																		)
-																	}
-																	title="Delete page"
-																>
-																	<Trash
-																		size={18}
-																		weight="bold"
-																	/>
-																</button>
-															)}
-														</div>
-														{page.draft && isDM && (
-															<span className="draftBadge">
-																<FileDotted
-																	size={18}
-																/>
-															</span>
-														)}
-													</div>
-												</li>
-											))
-									}
-									{pagesFromStore
-										.filter(
-											(p) =>
-												p.type ===
-												(selectedCategory as any)
-										)
-										.filter((p) => (isDM ? true : !p.draft))
-										.length === 0 && (
-										<p className="emptyText">
-											No pages found.
-										</p>
-									)}
-								</ul>
-							)}
+											).length === 0 && (
+											<p className="emptyText">
+												No pages found.
+											</p>
+										)}
+									</ul>
+								)}
+							</div>
 						</div>
 					</div>
 				</div>
-			</div>
-			<LoreCreateFab />
+			)}
+			{isDM && selectedCategory !== 'place' && <LoreCreateFab />}
 
 			{/* Delete confirmation modal */}
 			<Modal
@@ -321,9 +331,16 @@ const LoreHome: React.FC = () => {
 				</div>
 				<div className="modal__body">
 					<p>
-						Are you sure you want to delete "<strong>{pageToDelete?.title}</strong>"?
+						Are you sure you want to delete "
+						<strong>{pageToDelete?.title}</strong>"?
 					</p>
-					<p style={{ color: '#d5d5d5', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+					<p
+						style={{
+							color: '#d5d5d5',
+							fontSize: '0.9rem',
+							marginTop: '0.5rem',
+						}}
+					>
 						This action cannot be undone.
 					</p>
 				</div>

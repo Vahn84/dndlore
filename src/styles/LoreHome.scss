@@ -18,6 +18,97 @@
 		z-index: 0;
 	}
 
+	.mapBackgroundLayer {
+		position: fixed;
+		inset: 0;
+		top: calc($navbar-height/2);
+		z-index: 1;
+		pointer-events: auto;
+	}
+
+	.mapOverlayUI {
+		position: fixed;
+		top: calc($navbar-height + 1rem);
+		right: 2rem;
+		z-index: 10;
+		pointer-events: none;
+
+		// Allow pointer events on actual UI elements
+		& > * {
+			pointer-events: auto;
+		}
+	}
+
+	.mapModeToggle {
+		width: 50px;
+		height: 50px;
+		border-radius: 50%;
+		background: rgba(0, 0, 0, 0.7);
+		backdrop-filter: blur(10px);
+		border: 2px solid rgba($color-dark-gold, 0.3);
+		color: $color-dim;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+
+		&:hover {
+			background: rgba($color-dark-gold, 0.2);
+			border-color: rgba($color-dark-gold, 0.6);
+			color: $color-light;
+		}
+
+		&.active {
+			background: $color-dark-gold;
+			border-color: $color-dark-gold;
+			color: $color-dark;
+		}
+
+		svg {
+			width: 24px;
+			height: 24px;
+		}
+	}
+
+	.categoriesMenu {
+		position: fixed;
+		top: calc($navbar-height + 1rem);
+		z-index: 10;
+		width: $categories-menu-width;
+		transition: transform 0.3s ease;
+		transform: translate3d(2rem, 0, 0);
+
+		&.collapsed {
+			transform: translate3d(
+				calc(
+					-2rem - $categories-menu-width + ($categories-menu-chip-width)
+				),
+				0,
+				0
+			);
+		}
+
+		&--collapsible {
+			position: absolute;
+			right: calc($categories-menu-chip-width * -1);
+			top: 60px;
+			transform: translateY(-50%);
+			width: $categories-menu-chip-width;
+			height: 60px;
+			background: $color-dark-translucent;
+			border: none;
+			border-radius: 0 8px 8px 0;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			color: #e6c896;
+			padding: 0;
+		}
+	}
+
 	&.offset-container {
 		height: auto;
 		min-height: 100%;
@@ -39,14 +130,27 @@
 		overscroll-behavior-y: contain;
 		-webkit-overflow-scrolling: touch;
 		scroll-padding-top: 16px;
+		z-index: 2;
+		pointer-events: none;
+
+		// Allow pointer events on child elements
+		& > * {
+			pointer-events: auto;
+		}
 	}
 
 	.contentContainer {
-		max-width: 1000px;
+		max-width: 100%;
 		margin: 0 auto;
 		overflow: visible;
 		position: relative;
 		padding: 2rem;
+		pointer-events: none;
+
+		// But allow pointer events on actual content
+		& > * {
+			pointer-events: auto;
+		}
 	}
 }
 
@@ -68,19 +172,40 @@
 }
 
 .loreColumns {
-	display: grid;
-	grid-template-columns: 250px 1fr;
+	display: flex;
 	gap: 2rem;
 	align-items: start;
+	pointer-events: none;
+	max-width: 1000px;
+	margin: 0 auto;
+
+	// But columns themselves can receive events
+	& > * {
+		pointer-events: auto;
+	}
 }
 
 .categoriesColumn {
-	position: sticky;
-	top: 2rem;
+	position: relative;
+	background-color: $color-dark-translucent;
+	backdrop-filter: blur(10px);
+	z-index: 10;
+	pointer-events: auto;
+	border-radius: 8px;
+	padding: 1.5rem;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .pagesColumn {
 	min-height: 400px;
+	position: relative;
+	z-index: 10;
+	pointer-events: auto;
+
+	// Individual elements get pointer events, gaps don't
+	& > * {
+		pointer-events: auto;
+	}
 }
 
 .columnTitle {
@@ -154,14 +279,14 @@
 	margin: 0;
 	display: flex;
 	gap: 1rem;
-	flex-direction: column;
+	flex-direction: row;
 }
 
 .pageListItem {
 	cursor: pointer;
 	flex: 1;
-	min-height: 150px;
-	height: 150px;
+	min-height: 250px;
+	max-width: 200px;	
 }
 
 .pageCard {
@@ -171,7 +296,7 @@
 	overflow: hidden;
 	display: flex;
 	flex-direction: column;
-	height: 150px;
+	height: 100%;
 	transition: all 0.2s ease;
 	border: 1px solid $color-dark;
 	align-items: flex-end;
@@ -180,14 +305,12 @@
 	&:hover {
 		border-color: $color-gold;
 
-			.meta {
-				max-height: 150px; // expand to show excerpt
-			}
 
-			.meta .pageExcerpt {
-				opacity: 1;
-				transform: translateY(0);
-			}
+
+		.meta .pageExcerpt {
+			opacity: 1;
+			transform: translateY(0);
+		}
 	}
 
 	.thumb {
@@ -205,15 +328,15 @@
 		justify-content: flex-start;
 		align-self: flex-end;
 		width: 100%;
-			
+
 		background: $color-dark-translucent;
 		display: flex;
 		flex-direction: column;
-			// Smooth raise animation via max-height (height:auto is not animatable)
-			max-height: 55px; // fits title + optional subtitle
-			overflow: hidden;
-			transition: max-height 300ms ease;
-			will-change: max-height;
+		// Smooth raise animation via max-height (height:auto is not animatable)
+		
+		overflow: hidden;
+		transition: max-height 300ms ease;
+		will-change: max-height;
 
 		.deleteBtn {
 			position: absolute;
@@ -254,30 +377,31 @@
 		margin: 0;
 		font-size: 1rem;
 		color: $color-light;
+		text-transform: uppercase;
 	}
 	.pageSubtitle {
 		@include spaced-title-font();
 		margin: 0;
-		font-size: 0.8rem;
+		font-size: 0.6rem;
 		color: $color-dark-gold;
 	}
 
 	.pageExcerpt {
-			@include text-font();
-			margin: .3rem 0 0 0;
-			font-size: 1rem;
-			color: $color-light-gray;
-			opacity: 0;
-			transform: translateY(4px);
-			transition: opacity 220ms ease, transform 220ms ease;
+		@include text-font();
+		margin: 0.3rem 0 0 0;
+		font-size: 1rem;
+		color: $color-light-gray;
+		opacity: 0;
+		transform: translateY(4px);
+		transition: opacity 220ms ease, transform 220ms ease;
 
-      .moreIndicator{
-        @include spaced-title-font();
-        color: $color-dark-gold;
-        font-size: .7rem;
+		.moreIndicator {
+			@include spaced-title-font();
+			color: $color-dark-gold;
+			font-size: 0.7rem;
 
-        cursor: pointer;
-      }
+			cursor: pointer;
+		}
 	}
 }
 
@@ -308,27 +432,27 @@
 	cursor: pointer;
 	transition: all 0.2s ease;
 	font-size: 0.9rem;
-	
+
 	&:hover {
 		background: $color-dark-gray;
 		border-color: $color-light-gray;
 	}
-	
+
 	&.cancel {
 		background: transparent;
 		color: $color-light-gray;
-		
+
 		&:hover {
 			background: rgba(255, 255, 255, 0.05);
 			color: $color-light;
 		}
 	}
-	
+
 	&.delete {
 		background: rgba(168, 85, 247, 0.2);
 		border-color: $color-secret;
 		color: $color-secret;
-		
+
 		&:hover {
 			background: $color-secret;
 			color: $color-dark;
@@ -360,4 +484,19 @@
 			display: none;
 		}
 	}
+}
+
+.sidebarPageDetail {
+	position: fixed;
+	top: calc($navbar-height/2);
+	right: 0px;
+	width: 400px;
+	height: 100vh;
+	background-color: $color-dark-gray;
+	border-left: 1px solid $color-dark-gold;
+	box-shadow: rgba(0, 0, 0, 0.3) -4px 0px 24px;
+	z-index: 1100;
+	overflow-y: auto;
+	padding: 1.5rem;
+	color: rgb(226, 232, 240);
 }

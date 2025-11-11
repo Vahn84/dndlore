@@ -134,10 +134,26 @@ export interface Page {
 	subtitle?: string;
 	/** Type of lore page: place, history, myth, people or campaign. */
 	type: 'place' | 'history' | 'myth' | 'people' | 'campaign';
+	/** For place pages: specify if it's a region or city. */
+	placeType?: 'region' | 'city';
+	/** Map coordinates for place pages. */
+	coordinates?: {
+		type: 'point' | 'polygon';
+		data: {
+			x?: number; // normalized 0-1
+			y?: number; // normalized 0-1
+			points?: Array<{ x: number; y: number }>; // normalized 0-1
+		};
+		parentRegionId?: string; // reference to parent region for cities
+		borderColor?: string; // border color for regions
+		fillColor?: string; // fill color for regions (with opacity)
+	};
 	/** Optional banner image URL. */
 	bannerUrl?: string;
 	/** Optional banner thumbnail URL (for list display). */
 	bannerThumbUrl?: string;
+	/** Optional asset ID for city icon on map. */
+	assetId?: string | null;
 	/** Array of content blocks. */
 	blocks: PageBlock[];
 	/** Real-world session date for campaign pages (DD/MM/YYYY). */
