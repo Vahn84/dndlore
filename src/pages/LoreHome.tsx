@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import '../styles/LoreHome.scss';
 import LoreCreateFab from '../components/LoreCreateFab';
@@ -12,6 +12,99 @@ import ConfirmModal from '../components/ConfirmModal';
 import { toast } from 'react-hot-toast';
 import CategoriesMenu from '../components/CategoriesMenu';
 import Constants from '../Constants';
+import {
+	DndContext,
+	closestCenter,
+	KeyboardSensor,
+	PointerSensor,
+	useSensor,
+	useSensors,
+	DragEndEvent,
+} from '@dnd-kit/core';
+import {
+	arrayMove,
+	SortableContext,
+	sortableKeyboardCoordinates,
+	useSortable,
+	verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+/**
+ * Sortable page item component for drag-and-drop
+ */
+interface SortablePageItemProps {
+	page: Page;
+	selectedCategory: string;
+	isDM: boolean;
+	onDeleteClick: (e: React.MouseEvent, page: Page) => void;
+	onNavigate: () => void;
+}
+
+const SortablePageItem: React.FC<SortablePageItemProps> = ({
+	page,
+	selectedCategory,
+	isDM,
+	onDeleteClick,
+	onNavigate,
+}) => {
+	const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+		useSortable({ id: page._id });
+
+	const style = {
+		transform: CSS.Transform.toString(transform),
+		transition,
+		opacity: isDragging ? 0.5 : 1,
+	};
+
+	return (
+		<li
+			ref={setNodeRef}
+			style={style}
+			{...attributes}
+			{...listeners}
+			className="pageListItem"
+			onClick={onNavigate}
+		>
+			<div className="pageCard">
+				{page.bannerUrl && (
+					<div
+						className="thumb"
+						style={{
+							backgroundImage: `url(${Api.resolveThumbnailUrl(
+								page.bannerUrl,
+								page.bannerThumbUrl
+							)})`,
+						}}
+					/>
+				)}
+				<div className="meta">
+					<h3 className="pageTitle">{page.title}</h3>
+					{page.subtitle && (
+						<h4 className="pageSubtitle">
+							{page.subtitle.toUpperCase()}
+						</h4>
+					)}
+
+					{isDM && (
+						<button
+							className="deleteBtn"
+							onClick={(e) => onDeleteClick(e, page)}
+							title="Delete page"
+						>
+							<Trash size={18} weight="bold" />
+						</button>
+					)}
+				</div>
+				{page.draft && isDM && (
+					<span className="draftBadge">
+						<FileDotted size={18} />
+					</span>
+				)}
+			</div>
+		</li>
+	);
+};
 
 /**
  * Landing page for the lore library with a two-column layout.
@@ -78,6 +171,95 @@ const LoreHome: React.FC = () => {
 
 	// Left menu collapse state
 	const [leftMenuCollapsed, setLeftMenuCollapsed] = useState(false);
+
+	// Drag-and-drop sensors
+	const sensors = useSensors(
+		useSensor(PointerSensor),
+		useSensor(KeyboardSensor, {
+			coordinateGetter: sortableKeyboardCoordinates,
+		})
+	);
+
+	// Sorted and filtered pages with default sorting
+	const sortedPages = useMemo(() => {
+		const filtered = (pagesFromStore || [])
+			.filter((p) => p.type === (selectedCategory as any))
+			.filter((p) => (isDM ? true : !p.draft));
+
+		// Sort by order field first (if set), then apply category-specific default sorting
+		return [...filtered].sort((a, b) => {
+			// If both have order fields, use them
+			const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+			const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+			
+			if (orderA !== orderB) {
+				return orderA - orderB;
+			}
+
+			// If order is the same (or both unset), apply category-specific sorting
+			if (selectedCategory === 'campaign') {
+				// Campaign pages: sort by sessionDate descending (newest first)
+				const parseDate = (dateStr?: string) => {
+					if (!dateStr) return 0;
+					const [day, month, year] = dateStr.split('/').map(Number);
+					return new Date(year, month - 1, day).getTime();
+				};
+				const dateA = parseDate(a.sessionDate);
+				const dateB = parseDate(b.sessionDate);
+				return dateB - dateA; // descending
+			} else if (selectedCategory === 'history') {
+				// History pages: sort by worldDate ascending (oldest first)
+				const getWorldYear = (p: Page) => {
+					if (!p.worldDate) return 0;
+					return p.worldDate.year;
+				};
+				const yearA = getWorldYear(a);
+				const yearB = getWorldYear(b);
+				return yearA - yearB; // ascending
+			}
+
+			// For other categories, maintain insertion order
+			return 0;
+		});
+	}, [pagesFromStore, selectedCategory, isDM]);
+
+	// Local state for drag-and-drop reordering
+	const [localPageOrder, setLocalPageOrder] = useState<string[]>([]);
+
+	// Update local order when sorted pages change
+	useEffect(() => {
+		setLocalPageOrder(sortedPages.map((p) => p._id));
+	}, [sortedPages]);
+
+	// Get pages in current display order
+	const displayPages = useMemo(() => {
+		return localPageOrder
+			.map((id) => sortedPages.find((p) => p._id === id))
+			.filter((p): p is Page => p !== undefined);
+	}, [localPageOrder, sortedPages]);
+
+	const handleDragEnd = async (event: DragEndEvent) => {
+		const { active, over } = event;
+
+		if (over && active.id !== over.id) {
+			const oldIndex = localPageOrder.indexOf(active.id as string);
+			const newIndex = localPageOrder.indexOf(over.id as string);
+			const newOrder = arrayMove(localPageOrder, oldIndex, newIndex);
+			
+			setLocalPageOrder(newOrder);
+
+			// Persist order to backend
+			try {
+				await Api.reorderPages(selectedCategory, newOrder);
+				toast.success('Page order updated');
+			} catch (error) {
+				console.error('Failed to update page order:', error);
+				toast.error('Failed to save page order');
+				// Revert to previous order on error
+				setLocalPageOrder(localPageOrder);
+			}
+		}
+	};
 
 	const handleDeleteClick = (e: React.MouseEvent, page: Page) => {
 		e.stopPropagation(); // Prevent navigation to page detail
@@ -212,102 +394,38 @@ const LoreHome: React.FC = () => {
 								{storeLoading ? (
 									<p className="loadingText">Loading…</p>
 								) : (
-									<ul className="pageList">
-										{
-											// Filter pages: only show drafts to DMs
-											(pagesFromStore || [])
-												.filter(
-													(p) =>
-														p.type ===
-														(selectedCategory as any)
-												)
-												.filter((p) =>
-													isDM ? true : !p.draft
-												)
-												.map((page) => (
-													<li
+									<DndContext
+										sensors={sensors}
+										collisionDetection={closestCenter}
+										onDragEnd={handleDragEnd}
+									>
+										<SortableContext
+											items={localPageOrder}
+											strategy={verticalListSortingStrategy}
+										>
+											<ul className="pageList">
+												{displayPages.map((page) => (
+													<SortablePageItem
 														key={page._id}
-														className="pageListItem"
-														onClick={() =>
+														page={page}
+														selectedCategory={selectedCategory}
+														isDM={isDM}
+														onDeleteClick={handleDeleteClick}
+														onNavigate={() =>
 															navigate(
 																`/lore/${selectedCategory}/${page._id}`
 															)
 														}
-													>
-														<div className="pageCard">
-															{page.bannerUrl && (
-																<div
-																	className="thumb"
-																	style={{
-																		backgroundImage: `url(${Api.resolveThumbnailUrl(
-																			page.bannerUrl,
-																			page.bannerThumbUrl
-																		)})`,
-																	}}
-																/>
-															)}
-															<div className="meta">
-																<h3 className="pageTitle">
-																	{page.title}
-																</h3>
-																{page.subtitle && (
-																	<h4 className="pageSubtitle">
-																		{
-																			page.subtitle.toUpperCase()
-																		}
-																	</h4>
-																)}
-		
-																{isDM && (
-																	<button
-																		className="deleteBtn"
-																		onClick={(
-																			e
-																		) =>
-																			handleDeleteClick(
-																				e,
-																				page
-																			)
-																		}
-																		title="Delete page"
-																	>
-																		<Trash
-																			size={
-																				18
-																			}
-																			weight="bold"
-																		/>
-																	</button>
-																)}
-															</div>
-															{page.draft &&
-																isDM && (
-																	<span className="draftBadge">
-																		<FileDotted
-																			size={
-																				18
-																			}
-																		/>
-																	</span>
-																)}
-														</div>
-													</li>
-												))
-										}
-										{pagesFromStore
-											.filter(
-												(p) =>
-													p.type ===
-													(selectedCategory as any)
-											)
-											.filter((p) =>
-												isDM ? true : !p.draft
-											).length === 0 && (
-											<p className="emptyText">
-												No pages found.
-											</p>
-										)}
-									</ul>
+													/>
+												))}
+												{displayPages.length === 0 && (
+													<p className="emptyText">
+														No pages found.
+													</p>
+												)}
+											</ul>
+										</SortableContext>
+									</DndContext>
 								)}
 							</div>
 						</div>

@@ -164,6 +164,8 @@ export interface Page {
 	hidden?: boolean;
 	/** If true, this page is a draft and not published yet. */
 	draft?: boolean;
+	/** Manual ordering for display within the same type (lower numbers appear first). */
+	order?: number;
 }
 
 declare module './types' {

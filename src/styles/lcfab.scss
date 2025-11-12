@@ -160,6 +160,40 @@
 		font-size: 0.9rem;
 	}
 
+	.banner-preview-wrapper {
+		position: relative;
+		margin-bottom: 12px;
+
+		.bannerPreview {
+			width: 100%;
+			height: 200px;
+			background-size: cover;
+			background-position: center;
+			border-radius: 8px;
+			border: 1px solid $color-dark-gold;
+		}
+
+		.trash-btn {
+			position: absolute;
+			top: 8px;
+			right: 8px;
+			background: rgba(0, 0, 0, 0.7);
+			border: 1px solid rgba(255, 255, 255, 0.2);
+			border-radius: 50%;
+			width: 32px;
+			height: 32px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			cursor: pointer;
+			transition: background 0.2s;
+
+			&:hover {
+				background: rgba(0, 0, 0, 0.9);
+			}
+		}
+	}
+
 	&__check {
 		display: flex;
 		align-items: center;

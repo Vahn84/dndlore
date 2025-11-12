@@ -32,25 +32,27 @@ const LoreCreateFab: React.FC = () => {
 	const [summarize, setSummarize] = useState<boolean>(true);
 	const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 	const [isLoadingSummary, setIsLoadingSummary] = useState(false);
-	
+
 	// Available dates from backend (Step 1)
-	const [availableDates, setAvailableDates] = useState<Array<{date: string, content: string}>>([]);
+	const [availableDates, setAvailableDates] = useState<
+		Array<{ date: string; content: string }>
+	>([]);
 	const [selectedDate, setSelectedDate] = useState<string>('');
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-	
+
 	// Preview data from backend (Step 2)
 	const [previewData, setPreviewData] = useState<any>(null);
-	
+
 	// Modal step: 1 = select date, 2 = preview summary
 	const [previewStep, setPreviewStep] = useState<1 | 2>(1);
-	
+
 	// Editable fields for the preview modal
 	const [titleInput, setTitleInput] = useState<string>('');
 	const [subtitleInput, setSubtitleInput] = useState<string>('');
 	const [worldDate, setWorldDate] = useState<any>(null);
 	const [bannerUrl, setBannerUrl] = useState<string>('');
 	const [assetOpen, setAssetOpen] = useState<boolean>(false);
-	
+
 	const surfaceRef = useRef<HTMLDivElement | null>(null);
 	const dropdownRef = useRef<HTMLDivElement | null>(null);
 	const navigate = useNavigate();
@@ -117,14 +119,18 @@ const LoreCreateFab: React.FC = () => {
 	// Close dropdown when clicking outside
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
-			if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+			if (
+				dropdownRef.current &&
+				!dropdownRef.current.contains(event.target as Node)
+			) {
 				setIsDropdownOpen(false);
 			}
 		};
-		
+
 		if (isDropdownOpen) {
 			document.addEventListener('mousedown', handleClickOutside);
-			return () => document.removeEventListener('mousedown', handleClickOutside);
+			return () =>
+				document.removeEventListener('mousedown', handleClickOutside);
 		}
 	}, [isDropdownOpen]);
 
@@ -152,7 +158,7 @@ const LoreCreateFab: React.FC = () => {
 		}
 		localStorage.setItem('drive_doc_input', docInput);
 		setIsLoadingPreview(true);
-		
+
 		try {
 			const tId = toast.loading('Fetching available sessions…', {
 				id: 'sync-preview',
@@ -160,7 +166,7 @@ const LoreCreateFab: React.FC = () => {
 			const googleAccessToken =
 				user?.googleAccessToken ||
 				localStorage.getItem('googleAccessToken');
-			
+
 			// Step 1: Call preview endpoint to get available dates
 			const resp = await fetch(
 				`${Api.getBaseUrl()}/sync/campaign/preview`,
@@ -179,7 +185,7 @@ const LoreCreateFab: React.FC = () => {
 				}
 			);
 			const data = await resp.json();
-			
+
 			if (!resp.ok) {
 				// Check if token expired
 				if (resp.status === 401 || data?.error?.includes('token')) {
@@ -191,16 +197,17 @@ const LoreCreateFab: React.FC = () => {
 						toast.loading('Token refreshed. Retrying...', {
 							id: tId,
 						});
-						
+
 						// Update user state with new token
 						if (user && refreshResult.googleAccessToken) {
 							const updatedUser = {
 								...user,
-								googleAccessToken: refreshResult.googleAccessToken,
+								googleAccessToken:
+									refreshResult.googleAccessToken,
 							};
 							useAppStore.getState().setUser(updatedUser);
 						}
-						
+
 						// Retry the request with new token
 						const retryResp = await fetch(
 							`${Api.getBaseUrl()}/sync/campaign/preview`,
@@ -214,24 +221,36 @@ const LoreCreateFab: React.FC = () => {
 								},
 								body: JSON.stringify({
 									docId,
-									googleAccessToken: refreshResult.googleAccessToken,
+									googleAccessToken:
+										refreshResult.googleAccessToken,
 								}),
 							}
 						);
 						const retryData = await retryResp.json();
-						
+
 						if (!retryResp.ok) {
-							throw new Error(retryData?.error || 'Preview failed after token refresh');
+							throw new Error(
+								retryData?.error ||
+									'Preview failed after token refresh'
+							);
 						}
-						
-						if (!retryData?.availableDates || retryData.availableDates.length === 0) {
+
+						if (
+							!retryData?.availableDates ||
+							retryData.availableDates.length === 0
+						) {
 							toast.dismiss(tId);
-							toast(retryData?.message || 'No new sessions found');
+							toast(
+								retryData?.message || 'No new sessions found'
+							);
 							return;
 						}
-						
+
 						// Success - show preview modal with date selection
-						toast.success(`Found ${retryData.availableDates.length} session(s)`, { id: tId });
+						toast.success(
+							`Found ${retryData.availableDates.length} session(s)`,
+							{ id: tId }
+						);
 						setAvailableDates(retryData.availableDates);
 						setSelectedDate(retryData.availableDates[0].date);
 						setPreviewStep(1);
@@ -257,15 +276,17 @@ const LoreCreateFab: React.FC = () => {
 				}
 				throw new Error(data?.error || 'Preview failed');
 			}
-			
+
 			if (!data?.availableDates || data.availableDates.length === 0) {
 				toast.dismiss(tId);
 				toast(data?.message || 'No new sessions found');
 				return;
 			}
-			
+
 			// Success - show preview modal with date selection
-			toast.success(`Found ${data.availableDates.length} session(s)`, { id: tId });
+			toast.success(`Found ${data.availableDates.length} session(s)`, {
+				id: tId,
+			});
 			setAvailableDates(data.availableDates);
 			setSelectedDate(data.availableDates[0].date); // Pre-select most recent
 			setPreviewStep(1);
@@ -276,7 +297,6 @@ const LoreCreateFab: React.FC = () => {
 			setBannerUrl('');
 			setSyncOpen(false);
 			setPreviewOpen(true);
-			
 		} catch (e: any) {
 			toast.error(e?.message || 'Preview failed');
 		} finally {
@@ -290,19 +310,21 @@ const LoreCreateFab: React.FC = () => {
 			return;
 		}
 
-		const selectedSession = availableDates.find(d => d.date === selectedDate);
+		const selectedSession = availableDates.find(
+			(d) => d.date === selectedDate
+		);
 		if (!selectedSession) {
 			toast.error('Selected date not found');
 			return;
 		}
 
 		setIsLoadingSummary(true);
-		
+
 		try {
 			const tId = toast.loading('Summarizing with AI…', {
 				id: 'summarize',
 			});
-			
+
 			// Step 2: Call summarize endpoint
 			const resp = await fetch(
 				`${Api.getBaseUrl()}/sync/campaign/summarize`,
@@ -321,22 +343,22 @@ const LoreCreateFab: React.FC = () => {
 				}
 			);
 			const data = await resp.json();
-			
+
 			if (!resp.ok) {
 				throw new Error(data?.error || 'Summarization failed');
 			}
-			
+
 			// Success - move to step 2 with summary
 			toast.success('Summary ready', { id: tId });
 			setPreviewData({
 				summary: data.summary,
 				sessionDate: selectedDate,
-				suggestedTitle: data.suggestedTitle || `Session ${selectedDate}`,
+				suggestedTitle:
+					data.suggestedTitle || `Session ${selectedDate}`,
 				rawText: selectedSession.content,
 			});
 			setTitleInput(data.suggestedTitle || `Session ${selectedDate}`);
 			setPreviewStep(2);
-			
 		} catch (e: any) {
 			toast.error(e?.message || 'Summarization failed');
 		} finally {
@@ -346,10 +368,10 @@ const LoreCreateFab: React.FC = () => {
 
 	const handleCreateFromPreview = async () => {
 		if (!previewData) return;
-		
+
 		try {
 			const tId = toast.loading('Creating page…', { id: 'create-page' });
-			
+
 			const resp = await fetch(
 				`${Api.getBaseUrl()}/sync/campaign/create`,
 				{
@@ -370,13 +392,13 @@ const LoreCreateFab: React.FC = () => {
 					}),
 				}
 			);
-			
+
 			const data = await resp.json();
-			
+
 			if (!resp.ok) {
 				throw new Error(data?.error || 'Creation failed');
 			}
-			
+
 			if (data?.created?._id) {
 				toast.success('Draft page created', { id: tId });
 				navigate(`/lore/campaign/${data.created._id}`);
@@ -450,16 +472,6 @@ const LoreCreateFab: React.FC = () => {
 								Campaign
 							</div>
 							<div
-								className="lcfab__content_wrapper--option people-option"
-								onClick={() => handleCreate('people')}
-							>
-								<UsersThree
-									size={18}
-									className="lcfab__content_wrapper--option-icon"
-								/>
-								People&Orgs
-							</div>
-							<div
 								className="lcfab__content_wrapper--option myth-option"
 								onClick={() => handleCreate('myth')}
 							>
@@ -467,8 +479,19 @@ const LoreCreateFab: React.FC = () => {
 									size={18}
 									className="lcfab__content_wrapper--option-icon"
 								/>
-								Myths&Legends
+								Myths
 							</div>
+							<div
+								className="lcfab__content_wrapper--option people-option"
+								onClick={() => handleCreate('people')}
+							>
+								<UsersThree
+									size={18}
+									className="lcfab__content_wrapper--option-icon"
+								/>
+								Organizations
+							</div>
+
 							{isDM && (
 								<>
 									<div
@@ -483,7 +506,7 @@ const LoreCreateFab: React.FC = () => {
 											size={22}
 											className="lcfab__content_wrapper--option-icon"
 										/>
-										Sync Session from Drive
+										Sync Session
 									</div>
 									<div
 										className="lcfab__content_wrapper--option discord-option"
@@ -497,7 +520,7 @@ const LoreCreateFab: React.FC = () => {
 											size={22}
 											className="lcfab__content_wrapper--option-icon"
 										/>
-										Create Discord Event
+										Discord Event
 									</div>
 								</>
 							)}
@@ -564,7 +587,7 @@ const LoreCreateFab: React.FC = () => {
 					</div>
 				</div>
 			)}
-			
+
 			{previewOpen && isDM && (
 				<div
 					className="lcfab__modal"
@@ -574,27 +597,39 @@ const LoreCreateFab: React.FC = () => {
 						if (e.target === e.currentTarget) setPreviewOpen(false);
 					}}
 				>
-					<div className="lcfab__modal__card lcfab__modal__card--large" role="document">
+					<div
+						className="lcfab__modal__card lcfab__modal__card--large"
+						role="document"
+					>
 						{previewStep === 1 ? (
 							<>
 								{/* STEP 1: Select Date and Preview Raw Content */}
 								<div className="lcfab__modal__title">
 									Select Session to Import
 								</div>
-								
+
 								<label className="lcfab__modal__label">
 									Available Sessions
 								</label>
-								<div className="lcfab__modal__dropdown" ref={dropdownRef}>
+								<div
+									className="lcfab__modal__dropdown"
+									ref={dropdownRef}
+								>
 									<button
 										type="button"
 										className="lcfab__modal__dropdown-toggle"
-										onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+										onClick={() =>
+											setIsDropdownOpen(!isDropdownOpen)
+										}
 									>
-										<span>{selectedDate || 'Select a session'}</span>
-										<span className="lcfab__modal__dropdown-arrow">{isDropdownOpen ? '▲' : '▼'}</span>
+										<span>
+											{selectedDate || 'Select a session'}
+										</span>
+										<span className="lcfab__modal__dropdown-arrow">
+											{isDropdownOpen ? '▲' : '▼'}
+										</span>
 									</button>
-									
+
 									{isDropdownOpen && (
 										<div className="lcfab__modal__dropdown-menu">
 											{availableDates.length === 0 ? (
@@ -602,29 +637,48 @@ const LoreCreateFab: React.FC = () => {
 													No sessions found
 												</div>
 											) : (
-												availableDates.map((session) => (
-													<button
-														key={session.date}
-														type="button"
-														className={`lcfab__modal__dropdown-item ${selectedDate === session.date ? 'lcfab__modal__dropdown-item--selected' : ''}`}
-														onClick={() => {
-															setSelectedDate(session.date);
-															setIsDropdownOpen(false);
-														}}
-													>
-														{session.date}
-													</button>
-												))
+												availableDates.map(
+													(session) => (
+														<button
+															key={session.date}
+															type="button"
+															className={`lcfab__modal__dropdown-item ${
+																selectedDate ===
+																session.date
+																	? 'lcfab__modal__dropdown-item--selected'
+																	: ''
+															}`}
+															onClick={() => {
+																setSelectedDate(
+																	session.date
+																);
+																setIsDropdownOpen(
+																	false
+																);
+															}}
+														>
+															{session.date}
+														</button>
+													)
+												)
 											)}
 										</div>
 									)}
 								</div>
-								
+
 								<label className="lcfab__modal__label">
 									Raw Notes Preview
 								</label>
-								<div className="lcfab__modal__preview" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-									{availableDates.find(d => d.date === selectedDate)?.content || 'No content'}
+								<div
+									className="lcfab__modal__preview"
+									style={{
+										maxHeight: '400px',
+										overflowY: 'auto',
+									}}
+								>
+									{availableDates.find(
+										(d) => d.date === selectedDate
+									)?.content || 'No content'}
 								</div>
 
 								<div className="lcfab__modal__actions">
@@ -642,9 +696,13 @@ const LoreCreateFab: React.FC = () => {
 									<button
 										className="modal__btn primary"
 										onClick={handleSummarizeDate}
-										disabled={isLoadingSummary || !selectedDate}
+										disabled={
+											isLoadingSummary || !selectedDate
+										}
 									>
-										{isLoadingSummary ? 'Summarizing…' : 'Summarize with AI →'}
+										{isLoadingSummary
+											? 'Summarizing…'
+											: 'Summarize with AI →'}
 									</button>
 								</div>
 							</>
@@ -652,19 +710,19 @@ const LoreCreateFab: React.FC = () => {
 							<>
 								{/* STEP 2: Preview Summary and Customize */}
 								<div className="lcfab__modal__title">
-								{assetOpen && (
-									<AssetsManagerModal
-										isOpen={assetOpen}
-										onClose={() => setAssetOpen(false)}
-										onSelect={(asset) => {
-											setBannerUrl(asset.url);
-											setAssetOpen(false);
-										}}
-									/>
-								)}
+									{assetOpen && (
+										<AssetsManagerModal
+											isOpen={assetOpen}
+											onClose={() => setAssetOpen(false)}
+											onSelect={(asset) => {
+												setBannerUrl(asset.url);
+												setAssetOpen(false);
+											}}
+										/>
+									)}
 									Preview & Customize Session
 								</div>
-								
+
 								<label className="lcfab__modal__label">
 									Title
 								</label>
@@ -672,9 +730,11 @@ const LoreCreateFab: React.FC = () => {
 									className="lcfab__modal__input"
 									placeholder="Session title"
 									value={titleInput}
-									onChange={(e) => setTitleInput(e.target.value)}
+									onChange={(e) =>
+										setTitleInput(e.target.value)
+									}
 								/>
-								
+
 								<label className="lcfab__modal__label">
 									Subtitle (optional)
 								</label>
@@ -682,9 +742,11 @@ const LoreCreateFab: React.FC = () => {
 									className="lcfab__modal__input"
 									placeholder="e.g., The Lost Temple"
 									value={subtitleInput}
-									onChange={(e) => setSubtitleInput(e.target.value)}
+									onChange={(e) =>
+										setSubtitleInput(e.target.value)
+									}
 								/>
-								
+
 								<label className="lcfab__modal__label">
 									Session Date
 								</label>
@@ -692,54 +754,68 @@ const LoreCreateFab: React.FC = () => {
 									className="lcfab__modal__input"
 									value={previewData.sessionDate || ''}
 									disabled
-									style={{ opacity: 0.6, cursor: 'not-allowed' }}
+									style={{
+										opacity: 0.6,
+										cursor: 'not-allowed',
+									}}
 								/>
-								
+
 								<label className="lcfab__modal__label">
 									World Date (optional)
 								</label>
 								{timeSystem ? (
 									<DatePicker
 										value={worldDate}
-										onChange={(parts) => setWorldDate(parts)}
+										onChange={(parts) =>
+											setWorldDate(parts)
+										}
 										ts={timeSystem}
 										placeholder="Select world date"
 									/>
 								) : (
-									<div style={{ fontSize: '0.9rem', color: '#999', marginBottom: '1rem' }}>
+									<div
+										style={{
+											fontSize: '0.9rem',
+											color: '#999',
+											marginBottom: '1rem',
+										}}
+									>
 										Loading calendar...
 									</div>
 								)}
-								
-								<label className="lcfab__modal__label">Banner Image (optional)</label>
-								<div
-									className="bannerPreview"
-									style={{
-										backgroundImage: bannerUrl
-											? `url(${Api.resolveAssetUrl(bannerUrl)})`
-											: '',
-									}}
-								>
-									{bannerUrl && bannerUrl.length > 0 && (
+
+								<label className="lcfab__modal__label">
+									Banner Image (optional)
+								</label>
+								{bannerUrl ? (
+									<div className="banner-preview-wrapper">
+										<div
+											className="bannerPreview"
+											style={{
+												backgroundImage: `url(${Api.resolveAssetUrl(
+													bannerUrl
+												)})`,
+											}}
+										/>
 										<button
-											style={{ position: 'absolute', right: '10px', top: '10px' }}
 											className="trash-btn"
 											type="button"
 											onClick={() => setBannerUrl('')}
 											title="Remove image"
 										>
-											<Trash color="white" />
+											<Trash color="white" size={18} />
 										</button>
-									)}
-									{!bannerUrl && (
-										<div className="modal__assets_manager">
-											<button type="button" onClick={() => setAssetOpen(true)}>
-												Add Image
-											</button>
-										</div>
-									)}
-								</div>
-								
+									</div>
+								) : (
+									<button
+										type="button"
+										className="draggable__btn"
+										onClick={() => setAssetOpen(true)}
+									>
+										Select Image
+									</button>
+								)}
+
 								<label className="lcfab__modal__label">
 									AI Summary Preview
 								</label>
@@ -769,7 +845,7 @@ const LoreCreateFab: React.FC = () => {
 					</div>
 				</div>
 			)}
-			
+
 			<DiscordEventModal
 				isOpen={discordEventOpen}
 				onClose={() => setDiscordEventOpen(false)}

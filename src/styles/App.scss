@@ -59,6 +59,18 @@ html,
 			}
 		}
 	}
+
+	// Hide text label on smaller screens (< 768px)
+	@media (max-width: 767px) {
+		
+		.loginButtonWrapper {
+			gap: 0;
+
+			.loginButtonLabel {
+				display: none;
+			}
+		}
+	}
 }
 
 .googleStatus {

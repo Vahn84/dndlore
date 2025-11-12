@@ -283,10 +283,14 @@
 }
 
 .pageListItem {
-	cursor: pointer;
+	cursor: grab;
 	flex: 1;
 	min-height: 250px;
-	max-width: 200px;	
+	max-width: 200px;
+	
+	&:active {
+		cursor: grabbing;
+	}
 }
 
 .pageCard {

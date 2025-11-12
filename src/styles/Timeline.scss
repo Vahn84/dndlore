@@ -454,3 +454,63 @@
 .contextMenu {
 	z-index: 3200;
 }
+
+// Hide text label on smaller screens (< 768px)
+@media (max-width: 859px) {
+	.toolbox {
+		.toolboxButton {
+			.text {
+				display: none;
+			}
+		}
+	}
+
+	.groupFilter {
+		.pill {
+			font-size: 0.65rem;
+		}
+	}
+
+	.timelineHeader {
+		padding: 0 0.5rem;
+	}
+
+	.cardWrapper .card .cardBg {
+		background-position: left 50% top 0px;
+	}
+
+	.timeline-event-wrapper {
+		.event {
+			.row {
+				height: 140px;
+				.date {
+					margin-left: 2.5rem;
+					font-size: 0.9rem;
+				}
+
+				.cardWrapper {
+					margin-left: 0.5rem;
+
+					.groupLabel {
+						font-size: 0.7rem;
+						padding: 0.15rem 0.65rem;
+					}
+					.title_wrapper {
+						padding-right: 0.4rem;
+						.title {
+							font-size: 0.8rem;
+						}
+						.icon_square-btn {
+							height: 35px;
+							width: 35px;
+						}
+
+						.subtitle {
+							font-size: 0.7rem;
+						}
+					}
+				}
+			}
+		}
+	}
+}

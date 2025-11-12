@@ -104,17 +104,30 @@ const Timeline: React.FC<TimelineProps> = () => {
 	const setGroupsFilter = useAppStore((s) => s.setGroupsFilter);
 	const setShowHidden = useAppStore((s) => s.setShowHidden);
 
-	// Read query string on mount to set group filters (e.g., ?groups=id1,id2)
+	// Read query string on mount to set group filters (e.g., ?groups=id1,id2 or ?groups=Campaign,Main)
 	useEffect(() => {
 		const groupsParam = searchParams.get('groups');
 		if (groupsParam) {
-			const ids = groupsParam.split(',').map(id => id.trim()).filter(Boolean);
-			if (ids.length > 0) {
-				setGroupsFilter(ids);
+			const values = groupsParam.split(',').map(v => v.trim()).filter(Boolean);
+			if (values.length > 0) {
+				// Check if values are IDs or names by trying to match with existing groups
+				const groupIds = values.map(val => {
+					// First try to find by exact ID match
+					const byId = groups.find(g => g._id === val);
+					if (byId) return byId._id;
+					
+					// Otherwise try to find by name (case-insensitive)
+					const byName = groups.find(g => 
+						g.name.toLowerCase() === val.toLowerCase()
+					);
+					return byName?._id || val; // Fallback to original value if not found
+				}).filter(Boolean);
+				
+				setGroupsFilter(groupIds);
 			}
 		}
-		// Only run on mount or when searchParams changes
-	}, [searchParams, setGroupsFilter]);
+		// Depend on groups so we can resolve names when groups are loaded
+	}, [searchParams, setGroupsFilter, groups]);
 
 	// Build a numeric sort key from the event's start date (Year, Month, Day)
 	const buildSortKey = (ev: Event): number => {

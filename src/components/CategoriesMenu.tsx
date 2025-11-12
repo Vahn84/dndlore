@@ -19,7 +19,13 @@ const CategoriesMenu: React.FC<CategoriesMenuProps> = ({
 	onCategoryChange,
 	title = 'Categories',
 }) => {
-	const [collapsed, setCollapsed] = useState(false);
+	// Default to collapsed if window width < 1600px
+	const [collapsed, setCollapsed] = useState(() => {
+		if (typeof window !== 'undefined') {
+			return window.innerWidth < 1600;
+		}
+		return false;
+	});
 
 	return (
 		<div className={`categoriesMenu ${collapsed ? 'collapsed' : ''}`}>

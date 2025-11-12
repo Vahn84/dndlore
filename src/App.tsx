@@ -133,64 +133,45 @@ const AppContent: React.FC = () => {
 	useEffect(() => {
 		if (isLoggedIn() && isDM()) {
 			setGoogleStatus((prev) => ({ ...prev, checking: true }));
-			Api.checkGoogleTokenStatus()
-				.then((status) => {
-					// If token is expired or will expire soon, auto-refresh
-					if (
-						status.connected &&
-						(status.expired || status.needsReauth === false)
-					) {
-						Api.refreshGoogleToken()
-							.then((result) => {
-								if (result.success && result.token) {
-									// Update localStorage with new JWT containing fresh Google token
-									localStorage.setItem('token', result.token);
-									// Update user in store
-									Api.getCurrentUser().then((me) => {
-										if (me)
-											setUser({
-												...me,
-												token: result.token,
-											});
-									});
-									setGoogleStatus({
-										connected: true,
-										expired: false,
-										checking: false,
-									});
-								} else if (result.needsReauth) {
-									// Only show reconnect if we truly need full reauth
-									setGoogleStatus({
-										connected: false,
-										expired: true,
-										checking: false,
-									});
-								}
-							})
-							.catch(() => {
-								setGoogleStatus({
-									connected: false,
-									expired: true,
-									checking: false,
-								});
-							});
-					} else {
-						setGoogleStatus({
-							connected: status.connected,
-							expired: status.expired,
-							checking: false,
-						});
+			(async () => {
+				try {
+					const status = await Api.checkGoogleTokenStatus();
+					// If user is not connected to Google at all, force logout
+					if (!status.connected) {
+						logout();
+						setGoogleStatus({ connected: false, expired: true, checking: false });
+						return;
 					}
-				})
-				.catch(() => {
-					setGoogleStatus({
-						connected: false,
-						expired: true,
-						checking: false,
-					});
-				});
+
+					// If token is expired, try to refresh; if refresh fails, log the user out
+					if (status.expired) {
+						const result = await Api.refreshGoogleToken();
+						if (result.success && result.token) {
+							localStorage.setItem('token', result.token);
+							const me = await Api.getCurrentUser();
+							if (me) setUser({ ...me, token: result.token });
+							setGoogleStatus({ connected: true, expired: false, checking: false });
+						} else {
+							// Unable to refresh: force logout
+							logout();
+							localStorage.removeItem('token');
+							setUser(null);
+							setGoogleStatus({ connected: false, expired: true, checking: false });
+						}
+					} else {
+						// Token valid
+						setGoogleStatus({ connected: true, expired: false, checking: false });
+					}
+				} catch (e) {
+					// On any error during token checks/refresh, log out to keep UI consistent
+					logout();
+					localStorage.removeItem('token');
+					setUser(null);
+					setGoogleStatus({ connected: false, expired: true, checking: false });
+				}
+			})();
 		}
-	}, [isLoggedIn, isDM, setUser]);
+	}, [isLoggedIn, isDM, setUser, logout]);
 
 	const handleGoogleLogin = () => {
 		if (!isLoggedIn()) {
@@ -204,29 +185,7 @@ const AppContent: React.FC = () => {
 		<>
 			{/* Login button/icon top right */}
 			<div className="loginContainer home-appear ">
-				{/* Google connection status indicator - only show if reauth truly needed */}
-				{isLoggedIn() &&
-					isDM() &&
-					!googleStatus.checking &&
-					googleStatus.expired &&
-					!googleStatus.connected && (
-						<div
-							className="googleStatus"
-							title="Google Docs connection lost. Click to reconnect."
-						>
-							<button
-								className="reconnectButton"
-								onClick={(e) => {
-									e.stopPropagation();
-									window.location.href = `${Api.getBaseUrl()}/auth/google`;
-								}}
-								title="Reconnect Google Docs"
-							>
-								<span style={{ color: '#ff9800' }}>⚠</span>{' '}
-								Reconnect
-							</button>
-						</div>
-					)}
+				{/* (Google reconnect prompt removed - user will be logged out if Google token can't be refreshed) */}
 				{/* Login/Logout button */}
 				<button
 					className="loginButton"
@@ -235,7 +194,7 @@ const AppContent: React.FC = () => {
 				>
 					{' '}
 					<span className="loginButtonWrapper">
-						{isLoggedIn() ? 'Logout' : 'DM Login'}
+						<span className='loginButtonLabel'>{isLoggedIn() ? 'Logout' : 'DM Login'}</span>
 						<span className="icon_square-btn">
 							{isLoggedIn() ? <SignOut /> : <SignIn />}
 						</span>

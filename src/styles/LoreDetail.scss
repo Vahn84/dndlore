@@ -373,3 +373,10 @@
 		}
 	}
 }
+
+// Hide text label on smaller screens (< 768px)
+@media (max-width: 767px) {
+	.loreDetail .contentContainer .blocks {
+		padding: 0 1rem;
+	}
+}

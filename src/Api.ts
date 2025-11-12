@@ -228,6 +228,11 @@ class Api {
 		return resp.data;
 	}
 
+	static async reorderPages(type: string, pageIds: string[]) {
+		const resp = await Api.client.patch(`/pages/reorder/${type}`, { pageIds });
+		return resp.data;
+	}
+
 	// -------------------------------------------------------------------------
 	// Time system
 	// -------------------------------------------------------------------------
@@ -361,6 +366,20 @@ class Api {
 			return resp.data;
 		} catch (error) {
 			console.warn('Discord channels API not available:', error);
+			throw error;
+		}
+	}
+
+	/**
+	 * Attempt to retrieve Discord voice channels from backend integration.
+	 * Expected response: { guildId: string, channels: Array<{ id: string; name: string }> }
+	 */
+	static async getDiscordVoiceChannels(): Promise<{ guildId: string; channels: Array<{ id: string; name: string }> }> {
+		try {
+			const resp = await Api.client.get('/integrations/discord/voice-channels');
+			return resp.data;
+		} catch (error) {
+			console.warn('Discord voice channels API not available:', error);
 			throw error;
 		}
 	}

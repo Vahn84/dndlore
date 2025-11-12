@@ -18,8 +18,6 @@
 
 		.brand-logo {
 			width: auto;
-
-			
 		}
 	}
 
@@ -28,7 +26,7 @@
 		background: $color-dark-gray;
 		border-bottom: 1px solid $color-dark-gold;
 		height: calc($navbar-height/2);
-		top:0;
+		top: 0;
 
 		.brand {
 			.brand-logo {
@@ -170,6 +168,32 @@
 	}
 	100% {
 		width: 100px;
-		
+	}
+}
+
+// Hide text label on smaller screens (< 768px)
+@media (max-width: 860px) {
+	.navBar {
+		.brand {
+			.brand-logo {
+				width: 100%;
+			}
+		}
+	}
+
+	.navLink.is-home {
+		width: 160px;
+		&.brand {
+			width: 500px;
+		}
+	}
+
+	@keyframes smmaller {
+		0% {
+			width: 500px;
+		}
+		100% {
+			width: 100px;
+		}
 	}
 }

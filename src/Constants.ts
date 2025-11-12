@@ -8,4 +8,7 @@ export default class Constants {
 		people: LibraryBg,
 		campaign: LibraryBg,
 	};
+
+	// FVTT Web Client URL - can be overridden by REACT_APP_FVTT_URL environment variable
+	static FVTT_URL = process.env.REACT_APP_FVTT_URL || 'https://www.google.com';
 }
