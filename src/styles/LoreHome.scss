@@ -283,14 +283,10 @@
 }
 
 .pageListItem {
-	cursor: grab;
+	cursor: pointer;
 	flex: 1;
 	min-height: 250px;
 	max-width: 200px;
-	
-	&:active {
-		cursor: grabbing;
-	}
 }
 
 .pageCard {
@@ -424,6 +420,37 @@
 	border-bottom-left-radius: 4px;
 	font-size: 0.7rem;
 	font-weight: 600;
+}
+
+.dragHandle {
+	position: absolute;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 30px;
+	top: 0.3rem;
+	left: 0;
+	margin-top: 0.25rem;
+	padding: 0.1rem 0.5rem;
+	background: rgba($color-dark, 0.8);
+	color: $color-dim;
+	border-top-right-radius: 4px;
+	border-bottom-right-radius: 4px;
+	font-size: 0.7rem;
+	font-weight: 600;
+	cursor: grab;
+	transition: all 0.2s ease;
+	z-index: 10;
+
+	&:hover {
+		background: rgba($color-dark-gold, 0.8);
+		color: $color-light;
+	}
+
+	&:active {
+		cursor: grabbing;
+		background: rgba($color-dark-gold, 1);
+	}
 }
 
 // Modal button styles for delete confirmation

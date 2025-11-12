@@ -6,7 +6,7 @@ import PlaceMapView from '../components/PlaceMapView';
 import { PlacePage } from '../components/InteractiveMapCanvas';
 import Api from '../Api';
 import { Page } from '../types';
-import { CaretLeft, CaretRight, FileDotted, Trash } from 'phosphor-react';
+import { CaretLeft, CaretRight, FileDotted, Trash, DotsSixVertical } from 'phosphor-react';
 import { useAppStore } from '../store/appStore';
 import ConfirmModal from '../components/ConfirmModal';
 import { toast } from 'react-hot-toast';
@@ -61,12 +61,21 @@ const SortablePageItem: React.FC<SortablePageItemProps> = ({
 		<li
 			ref={setNodeRef}
 			style={style}
-			{...attributes}
-			{...listeners}
 			className="pageListItem"
 			onClick={onNavigate}
 		>
 			<div className="pageCard">
+				{/* Drag handle - only this is draggable */}
+				<span
+					className="dragHandle"
+					{...attributes}
+					{...listeners}
+					onClick={(e) => e.stopPropagation()}
+					title="Drag to reorder"
+				>
+					<DotsSixVertical size={20} weight="bold" />
+				</span>
+				
 				{page.bannerUrl && (
 					<div
 						className="thumb"
@@ -393,7 +402,8 @@ const LoreHome: React.FC = () => {
 							>
 								{storeLoading ? (
 									<p className="loadingText">Loading…</p>
-								) : (
+								) : isDM ? (
+									// DM users: enable drag-and-drop reordering
 									<DndContext
 										sensors={sensors}
 										collisionDetection={closestCenter}
@@ -426,6 +436,53 @@ const LoreHome: React.FC = () => {
 											</ul>
 										</SortableContext>
 									</DndContext>
+								) : (
+									// Non-DM users: simple list without drag-and-drop
+									<ul className="pageList">
+										{displayPages.map((page) => (
+											<li
+												key={page._id}
+												className="pageListItem"
+												onClick={() =>
+													navigate(
+														`/lore/${selectedCategory}/${page._id}`
+													)
+												}
+											>
+												<div className="pageCard">
+													{page.bannerUrl && (
+														<div
+															className="thumb"
+															style={{
+																backgroundImage: `url(${Api.resolveThumbnailUrl(
+																	page.bannerUrl,
+																	page.bannerThumbUrl
+																)})`,
+															}}
+														/>
+													)}
+													<div className="meta">
+														<h3 className="pageTitle">{page.title}</h3>
+														{page.subtitle && (
+															<h4 className="pageSubtitle">
+																{page.subtitle.toUpperCase()}
+															</h4>
+														)}
+													</div>
+													{page.draft && isDM && (
+														<span className="draftBadge">
+															<FileDotted size={18} />
+														</span>
+													)}
+												</div>
+											</li>
+										))}
+										{displayPages.length === 0 && (
+											<p className="emptyText">
+												No pages found.
+											</p>
+										)}
+									</ul>
 								)}
 							</div>
 						</div>
