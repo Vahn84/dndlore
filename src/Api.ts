@@ -324,9 +324,11 @@ class Api {
 
 	static resolveAssetUrl(u: string) {
 		if (!u) return '';
-		return /^https?:\/\//i.test(u)
-			? u
-			: (process.env.REACT_APP_API_BASE_URL || '') + u;
+		// If already absolute URL, return as-is
+		if (/^https?:\/\//i.test(u)) return u;
+		// All relative paths (including /uploads) are served through the same origin
+		// nginx.conf proxies /uploads/ to backend
+		return u;
 	}
 
 	/**
