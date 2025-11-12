@@ -18,6 +18,21 @@
 		z-index: 0;
 	}
 
+	// Fixed publish/unpublish button top-right
+	.publish-toggle-btn {
+		position: fixed;
+		top: calc($navbar-height/2 + 1rem);
+		right: 1.2rem;
+		z-index: 10000;
+		background: $color-dark-translucent;
+		opacity: 0.2 !important;
+
+		&:hover {
+			opacity: 1 !important;
+			background: $color-dark-gray;
+		}
+	}
+
 	&.offset-container {
 		height: auto;
 		min-height: 100%;
@@ -206,17 +221,6 @@
 			text-transform: uppercase;
 		}
 
-		.publishRow {
-			margin-top: 0.5rem;
-			display: flex;
-			justify-content: center;
-		}
-
-		.publishBtn {
-			@include button--primary-btn();
-			margin-top: 0.5rem;
-		}
-
 		.blocks {
 			margin-top: 1.5rem;
 
@@ -345,7 +349,7 @@
 
 .campaignWorldDate {
 	position: relative; // positioning context for absolute popup
-	
+
 	.datepick {
 		display: flex;
 		justify-content: center;
@@ -362,7 +366,7 @@
 			color: $color-light-gray;
 			text-align: center;
 			cursor: pointer;
-			
+
 			&::placeholder {
 				color: $color-dim;
 			}

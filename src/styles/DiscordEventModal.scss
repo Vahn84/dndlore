@@ -1,0 +1,204 @@
+@use './variables.scss' as *;
+@use './mixins.scss' as *;
+
+.modal__content--discord-event {
+	max-width: 540px;
+	overflow: visible !important; // allow dropdowns to overflow
+	min-height: auto;
+	max-height: 85vh;
+	position: relative;
+	
+	.form-group {
+		margin-bottom: 1.5rem;
+		
+		.form-label {
+			display: block;
+			color: $color-dark-gold;
+			font-size: 0.9rem;
+			font-weight: 600;
+			margin-bottom: 0.5rem;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+		}
+		
+		.banner-preview-wrapper {
+			position: relative;
+			
+			.banner-preview {
+				width: 100%;
+				height: 200px;
+				background-size: cover;
+				background-position: center;
+				border-radius: 8px;
+				border: 1px solid $color-dark-gray;
+			}
+			
+			.trash-btn {
+				position: absolute;
+				top: 8px;
+				right: 8px;
+				background: rgba(0, 0, 0, 0.7);
+				border: 1px solid rgba(255, 255, 255, 0.2);
+				border-radius: 50%;
+				width: 32px;
+				height: 32px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				cursor: pointer;
+				transition: background 0.2s;
+				
+				&:hover {
+					background: rgba(0, 0, 0, 0.9);
+				}
+			}
+		}
+		
+		.custom-dropdown {
+			position: relative;
+			
+			.dropdown-trigger {
+				width: 100%;
+				padding: 0.75rem 1rem;
+				background: $color-dark-gray;
+				border: 1px solid $color-dark-gray;
+				border-radius: 8px;
+				color: $color-medium-gray;
+				text-align: left;
+				cursor: pointer;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				font-size: 0.95rem;
+				transition: border-color 0.2s;
+				
+				&:hover:not(:disabled) {
+					border-color: $color-dark-gold;
+				}
+				
+				&:disabled {
+					opacity: 0.5;
+					cursor: not-allowed;
+				}
+				
+				.dropdown-arrow {
+					font-size: 0.7rem;
+					opacity: 0.6;
+				}
+			}
+			
+			.dropdown-popup {
+				position: absolute;
+				top: calc(100% + 4px);
+				left: 0;
+				right: 0;
+				background: $color-dark-gray;
+				border: 1px solid $color-dark-gray;
+				border-radius: 8px;
+				max-height: 240px;
+				overflow-y: auto;
+				z-index: 6000; // above modal border
+				box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+				
+				.dropdown-item {
+					padding: 0.75rem 1rem;
+					color: $color-medium-gray;
+					cursor: pointer;
+					transition: background 0.15s, color 0.15s;
+					
+					&:hover {
+						background: rgba(230, 200, 150, 0.1);
+						color: $color-dark-gold;
+					}
+					
+					&:not(:last-child) {
+						border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+					}
+				}
+			}
+		}
+	}
+	
+	.modal__input {
+		width: 100%;
+		padding: 0.75rem 1rem;
+		background: $color-dark-gray;
+		border: 1px solid $color-dark-gray;
+		border-radius: 8px;
+		color: $color-light-gray;
+		font-size: 0.95rem;
+		transition: border-color 0.2s;
+		
+		&:focus {
+			outline: none;
+			border-color: $color-dark-gold;
+		}
+		
+		&::placeholder {
+			color: rgba(148, 163, 184, 0.5);
+		}
+	}
+
+	// Make the content body not scroll for this modal
+	.modal__body {
+		overflow: visible !important;
+		max-height: none !important;
+	}
+	
+	.modal__body_content {
+		overflow: visible !important;
+	}
+
+	// Date + Time row
+	.date-time-row {
+		display: flex;
+		gap: 0.75rem;
+		align-items: flex-start;
+		flex-wrap: wrap;
+
+		.datepick {
+			flex: 1;
+			min-width: 200px;
+			position: relative;
+			z-index: 100;
+		}
+
+		.time-fields {
+			display: flex;
+			align-items: center;
+			gap: 0.25rem;
+			.time-sep { padding: 0 0.1rem; opacity: 0.7; }
+			.modal__select { width: 80px; }
+		}
+	}
+	
+	// Ensure dropdowns and datepicker popups appear above modal
+	.dp-pop {
+		z-index: 7000 !important;
+	}
+	
+	// Google Calendar sync checkbox
+	.modal__checkrow {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.9rem;
+		color: $color-medium-gray;
+		cursor: pointer;
+		user-select: none;
+		
+		input[type="checkbox"] {
+			cursor: pointer;
+			width: 18px;
+			height: 18px;
+		}
+		
+		span {
+			cursor: pointer;
+		}
+		
+		&:hover {
+			color: $color-dark-gold;
+		}
+	}
+}

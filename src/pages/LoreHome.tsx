@@ -8,12 +8,10 @@ import Api from '../Api';
 import { Page } from '../types';
 import { CaretLeft, CaretRight, FileDotted, Trash } from 'phosphor-react';
 import { useAppStore } from '../store/appStore';
-import Modal from 'react-modal';
+import ConfirmModal from '../components/ConfirmModal';
 import { toast } from 'react-hot-toast';
 import CategoriesMenu from '../components/CategoriesMenu';
 import Constants from '../Constants';
-
-Modal.setAppElement('#root');
 
 /**
  * Landing page for the lore library with a two-column layout.
@@ -318,47 +316,15 @@ const LoreHome: React.FC = () => {
 			)}
 			{isDM && selectedCategory !== 'place' && <LoreCreateFab />}
 
-			{/* Delete confirmation modal */}
-			<Modal
+			<ConfirmModal
 				isOpen={deleteModalOpen}
-				onRequestClose={cancelDelete}
-				className="modal__content"
-				overlayClassName="modal__overlay"
-				contentLabel="Delete Page Confirmation"
-			>
-				<div className="modal__header">
-					<h2>Delete Page</h2>
-				</div>
-				<div className="modal__body">
-					<p>
-						Are you sure you want to delete "
-						<strong>{pageToDelete?.title}</strong>"?
-					</p>
-					<p
-						style={{
-							color: '#d5d5d5',
-							fontSize: '0.9rem',
-							marginTop: '0.5rem',
-						}}
-					>
-						This action cannot be undone.
-					</p>
-				</div>
-				<div className="modal__actions">
-					<button
-						className="modal__btn cancel"
-						onClick={cancelDelete}
-					>
-						Cancel
-					</button>
-					<button
-						className="modal__btn delete"
-						onClick={confirmDelete}
-					>
-						Delete
-					</button>
-				</div>
-			</Modal>
+				title="Delete Page"
+				message={`Are you sure you want to delete "${pageToDelete?.title || ''}"?`}
+				confirmText="Delete"
+				variant="danger"
+				onConfirm={confirmDelete}
+				onCancel={cancelDelete}
+			/>
 		</div>
 	);
 };

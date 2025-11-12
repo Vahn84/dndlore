@@ -5,6 +5,7 @@ import { useAppStore, type Asset, type AssetFolder } from '../store/appStore';
 import '../styles/AssetsManager.scss';
 import Api from '../Api';
 import { toast } from 'react-hot-toast';
+import ConfirmModal from './ConfirmModal';
 
 Modal.setAppElement('#root');
 
@@ -102,20 +103,47 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 		}
 	};
 
+	// Confirm modal state
+	const [confirmOpen, setConfirmOpen] = useState(false);
+	const [confirmConfig, setConfirmConfig] = useState<{ title: string; message: string; onConfirm: () => Promise<void> | void }>({
+		title: '',
+		message: '',
+		onConfirm: () => {},
+	});
+
+	const openConfirm = (title: string, message: string, onConfirm: () => Promise<void> | void) => {
+		setConfirmConfig({ title, message, onConfirm });
+		setConfirmOpen(true);
+	};
+
 	const onDelete = async () => {
 		if (!selectedId) return;
-		await deleteAsset(selectedId);
-		setSelectedId(null);
+		const asset = items.find((a) => a._id === selectedId);
+		openConfirm(
+			'Delete Asset',
+			`Are you sure you want to delete this asset${asset ? ` "${asset.url}"` : ''}?`,
+			async () => {
+				await deleteAsset(selectedId);
+				setSelectedId(null);
+			}
+		);
 	};
 
 	const onDeleteAsset = async (assetId: string, e?: React.MouseEvent) => {
 		if (e) {
 			e.stopPropagation();
 		}
-		await deleteAsset(assetId);
-		if (selectedId === assetId) {
-			setSelectedId(null);
-		}
+		const asset = items.find((a) => a._id === assetId);
+		openConfirm(
+			'Delete Asset',
+			`Are you sure you want to delete this asset${asset ? ` "${asset.url}"` : ''}?`,
+			async () => {
+				await deleteAsset(assetId);
+				if (selectedId === assetId) {
+					setSelectedId(null);
+				}
+			}
+		);
 	};
 
 	const onCreateFolder = async () => {
@@ -136,14 +164,21 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 
 	const onDeleteFolder = async (folderId: string, e: React.MouseEvent) => {
 		e.stopPropagation();
-		try {
-			await deleteAssetFolder(folderId);
-			toast.success('Folder deleted');
-		} catch (err: any) {
-			toast.error(
-				err?.response?.data?.error || 'Failed to delete folder'
-			);
-		}
+		const folder = foldersList.find((f) => f._id === folderId);
+		openConfirm(
+			'Delete Folder',
+			`Are you sure you want to delete the folder${folder ? ` "${folder.name}"` : ''}?`,
+			async () => {
+				try {
+					await deleteAssetFolder(folderId);
+					toast.success('Folder deleted');
+				} catch (err: any) {
+					toast.error(
+						err?.response?.data?.error || 'Failed to delete folder'
+					);
+				}
+			}
+		);
 	};
 
 	const onMoveAsset = async (
@@ -160,6 +195,7 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 	};
 
 	return (
+		<>
 		<Modal
 			isOpen={isOpen}
 			onRequestClose={onClose}
@@ -594,6 +630,19 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 				</div>
 			</div>
 		</Modal>
+		<ConfirmModal
+			isOpen={confirmOpen}
+			title={confirmConfig.title}
+			message={confirmConfig.message}
+			confirmText="Delete"
+			variant="danger"
+			onConfirm={async () => {
+				await confirmConfig.onConfirm();
+				setConfirmOpen(false);
+			}}
+			onCancel={() => setConfirmOpen(false)}
+		/>
+		</>
 	);
 };
 

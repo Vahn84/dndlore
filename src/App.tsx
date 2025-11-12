@@ -120,6 +120,15 @@ const AppContent: React.FC = () => {
 		loadAssets();
 	}, [loadGroups, loadEvents, loadTimeSystem]);
 
+	// Listen for global unauthorized events dispatched by the API client interceptor
+	useEffect(() => {
+		const handler = () => {
+			logout();
+		};
+		window.addEventListener('app:unauthorized', handler);
+		return () => window.removeEventListener('app:unauthorized', handler);
+	}, [logout]);
+
 	// Check Google token status when user is logged in and auto-refresh if needed
 	useEffect(() => {
 		if (isLoggedIn() && isDM()) {

@@ -4,6 +4,8 @@ import {
 	Sparkle,
 	UsersThree,
 	CloudArrowDown,
+	Trash,
+	DiscordLogo,
 } from 'phosphor-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +13,8 @@ import Api from '../Api';
 import { toast } from 'react-hot-toast';
 import { useAppStore } from '../store/appStore';
 import DatePicker from './DatePicker';
+import AssetsManagerModal from './AssetsManagerModal';
+import DiscordEventModal from './DiscordEventModal';
 
 type LoreType = 'history' | 'campaign' | 'people' | 'myth';
 
@@ -18,6 +22,7 @@ const LoreCreateFab: React.FC = () => {
 	const [open, setOpen] = useState(false);
 	const [syncOpen, setSyncOpen] = useState(false);
 	const [previewOpen, setPreviewOpen] = useState(false);
+	const [discordEventOpen, setDiscordEventOpen] = useState(false);
 	const [docInput, setDocInput] = useState<string>(
 		() =>
 			localStorage.getItem('drive_doc_input') ||
@@ -31,6 +36,7 @@ const LoreCreateFab: React.FC = () => {
 	// Available dates from backend (Step 1)
 	const [availableDates, setAvailableDates] = useState<Array<{date: string, content: string}>>([]);
 	const [selectedDate, setSelectedDate] = useState<string>('');
+	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	
 	// Preview data from backend (Step 2)
 	const [previewData, setPreviewData] = useState<any>(null);
@@ -43,8 +49,10 @@ const LoreCreateFab: React.FC = () => {
 	const [subtitleInput, setSubtitleInput] = useState<string>('');
 	const [worldDate, setWorldDate] = useState<any>(null);
 	const [bannerUrl, setBannerUrl] = useState<string>('');
+	const [assetOpen, setAssetOpen] = useState<boolean>(false);
 	
 	const surfaceRef = useRef<HTMLDivElement | null>(null);
+	const dropdownRef = useRef<HTMLDivElement | null>(null);
 	const navigate = useNavigate();
 	const isDM = useAppStore((s) => s.isDM());
 	const user = useAppStore((s) => s.user);
@@ -105,6 +113,20 @@ const LoreCreateFab: React.FC = () => {
 			document.removeEventListener('touchstart', onPointerDown);
 		};
 	}, [open]);
+
+	// Close dropdown when clicking outside
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+				setIsDropdownOpen(false);
+			}
+		};
+		
+		if (isDropdownOpen) {
+			document.addEventListener('mousedown', handleClickOutside);
+			return () => document.removeEventListener('mousedown', handleClickOutside);
+		}
+	}, [isDropdownOpen]);
 
 	const handleCreate = (type: string) => navigate(`/lore/${type}/new`);
 
@@ -448,20 +470,36 @@ const LoreCreateFab: React.FC = () => {
 								Myths&Legends
 							</div>
 							{isDM && (
-								<div
-									className="lcfab__content_wrapper--option sync-option"
-									onClick={() => {
-										setSyncOpen(true);
-										setOpen(false);
-									}}
-									title="Import latest session notes from Google Doc and create a draft"
-								>
-									<CloudArrowDown
-										size={22}
-										className="lcfab__content_wrapper--option-icon"
-									/>
-									Sync Session from Drive
-								</div>
+								<>
+									<div
+										className="lcfab__content_wrapper--option sync-option"
+										onClick={() => {
+											setSyncOpen(true);
+											setOpen(false);
+										}}
+										title="Import latest session notes from Google Doc and create a draft"
+									>
+										<CloudArrowDown
+											size={22}
+											className="lcfab__content_wrapper--option-icon"
+										/>
+										Sync Session from Drive
+									</div>
+									<div
+										className="lcfab__content_wrapper--option discord-option"
+										onClick={() => {
+											setDiscordEventOpen(true);
+											setOpen(false);
+										}}
+										title="Create a Discord event with Apollo bot"
+									>
+										<DiscordLogo
+											size={22}
+											className="lcfab__content_wrapper--option-icon"
+										/>
+										Create Discord Event
+									</div>
+								</>
 							)}
 						</div>
 					</div>
@@ -547,18 +585,40 @@ const LoreCreateFab: React.FC = () => {
 								<label className="lcfab__modal__label">
 									Available Sessions
 								</label>
-								<select
-									className="lcfab__modal__input"
-									value={selectedDate}
-									onChange={(e) => setSelectedDate(e.target.value)}
-									style={{ marginBottom: '1rem' }}
-								>
-									{availableDates.map((session) => (
-										<option key={session.date} value={session.date}>
-											{session.date}
-										</option>
-									))}
-								</select>
+								<div className="lcfab__modal__dropdown" ref={dropdownRef}>
+									<button
+										type="button"
+										className="lcfab__modal__dropdown-toggle"
+										onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+									>
+										<span>{selectedDate || 'Select a session'}</span>
+										<span className="lcfab__modal__dropdown-arrow">{isDropdownOpen ? '▲' : '▼'}</span>
+									</button>
+									
+									{isDropdownOpen && (
+										<div className="lcfab__modal__dropdown-menu">
+											{availableDates.length === 0 ? (
+												<div className="lcfab__modal__dropdown-empty">
+													No sessions found
+												</div>
+											) : (
+												availableDates.map((session) => (
+													<button
+														key={session.date}
+														type="button"
+														className={`lcfab__modal__dropdown-item ${selectedDate === session.date ? 'lcfab__modal__dropdown-item--selected' : ''}`}
+														onClick={() => {
+															setSelectedDate(session.date);
+															setIsDropdownOpen(false);
+														}}
+													>
+														{session.date}
+													</button>
+												))
+											)}
+										</div>
+									)}
+								</div>
 								
 								<label className="lcfab__modal__label">
 									Raw Notes Preview
@@ -592,6 +652,16 @@ const LoreCreateFab: React.FC = () => {
 							<>
 								{/* STEP 2: Preview Summary and Customize */}
 								<div className="lcfab__modal__title">
+								{assetOpen && (
+									<AssetsManagerModal
+										isOpen={assetOpen}
+										onClose={() => setAssetOpen(false)}
+										onSelect={(asset) => {
+											setBannerUrl(asset.url);
+											setAssetOpen(false);
+										}}
+									/>
+								)}
 									Preview & Customize Session
 								</div>
 								
@@ -641,15 +711,34 @@ const LoreCreateFab: React.FC = () => {
 									</div>
 								)}
 								
-								<label className="lcfab__modal__label">
-									Banner URL (optional)
-								</label>
-								<input
-									className="lcfab__modal__input"
-									placeholder="/uploads/... or https://..."
-									value={bannerUrl}
-									onChange={(e) => setBannerUrl(e.target.value)}
-								/>
+								<label className="lcfab__modal__label">Banner Image (optional)</label>
+								<div
+									className="bannerPreview"
+									style={{
+										backgroundImage: bannerUrl
+											? `url(${Api.resolveAssetUrl(bannerUrl)})`
+											: '',
+									}}
+								>
+									{bannerUrl && bannerUrl.length > 0 && (
+										<button
+											style={{ position: 'absolute', right: '10px', top: '10px' }}
+											className="trash-btn"
+											type="button"
+											onClick={() => setBannerUrl('')}
+											title="Remove image"
+										>
+											<Trash color="white" />
+										</button>
+									)}
+									{!bannerUrl && (
+										<div className="modal__assets_manager">
+											<button type="button" onClick={() => setAssetOpen(true)}>
+												Add Image
+											</button>
+										</div>
+									)}
+								</div>
 								
 								<label className="lcfab__modal__label">
 									AI Summary Preview
@@ -680,6 +769,11 @@ const LoreCreateFab: React.FC = () => {
 					</div>
 				</div>
 			)}
+			
+			<DiscordEventModal
+				isOpen={discordEventOpen}
+				onClose={() => setDiscordEventOpen(false)}
+			/>
 		</>
 	);
 };

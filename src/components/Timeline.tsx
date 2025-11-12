@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { DetailLevel, Event, Group, TimeSystemConfig } from '../types';
 import '../styles/Timeline.scss';
 import TimeSystemModal from './TimeSystemModal';
@@ -10,11 +10,13 @@ import { Virtuoso } from 'react-virtuoso';
 import { ICONS } from './Icons';
 import { CalendarBlank } from 'phosphor-react';
 import Api from '../Api';
+import ConfirmModal from './ConfirmModal';
 
 interface TimelineProps {}
 
 const Timeline: React.FC<TimelineProps> = () => {
 	const navigate = useNavigate();
+	const [searchParams] = useSearchParams();
 	// Modals control
 	const [isEventModalOpen, setEventModalOpen] = useState(false);
 	const [editingEvent, setEditingEvent] = useState<Event | null>(null);
@@ -31,6 +33,10 @@ const Timeline: React.FC<TimelineProps> = () => {
 		top: 600,
 		bottom: 800,
 	});
+
+    // Delete confirmation state
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
 
 	// Dynamically compute overscan based on viewport & average item height
 	useEffect(() => {
@@ -97,6 +103,18 @@ const Timeline: React.FC<TimelineProps> = () => {
 	const saveTimeSystem = useAppStore((s) => s.saveTimeSystem);
 	const setGroupsFilter = useAppStore((s) => s.setGroupsFilter);
 	const setShowHidden = useAppStore((s) => s.setShowHidden);
+
+	// Read query string on mount to set group filters (e.g., ?groups=id1,id2)
+	useEffect(() => {
+		const groupsParam = searchParams.get('groups');
+		if (groupsParam) {
+			const ids = groupsParam.split(',').map(id => id.trim()).filter(Boolean);
+			if (ids.length > 0) {
+				setGroupsFilter(ids);
+			}
+		}
+		// Only run on mount or when searchParams changes
+	}, [searchParams, setGroupsFilter]);
 
 	// Build a numeric sort key from the event's start date (Year, Month, Day)
 	const buildSortKey = (ev: Event): number => {
@@ -791,7 +809,8 @@ const Timeline: React.FC<TimelineProps> = () => {
 												role="menuitem"
 												onClick={(e) => {
 													e.stopPropagation();
-													handleDeleteEvent(ev._id);
+													setEventToDelete(ev);
+													setDeleteConfirmOpen(true);
 												}}
 											>
 												Delete event
@@ -846,6 +865,7 @@ const Timeline: React.FC<TimelineProps> = () => {
 				</div>
 				{/* Show hidden toggle with icon */}
 				{isDM && (
+					<>
 					<div className="toolbox">
 						<button
 							className="toolboxButton rounded-button"
@@ -878,6 +898,26 @@ const Timeline: React.FC<TimelineProps> = () => {
 							</span>
 						</button>
 					</div>
+
+					<ConfirmModal
+						isOpen={deleteConfirmOpen}
+						title="Delete Event"
+						message={`Are you sure you want to delete "${eventToDelete?.title || ''}"?`}
+						confirmText="Delete"
+						variant="danger"
+						onConfirm={async () => {
+							if (eventToDelete?._id) {
+								await handleDeleteEvent(eventToDelete._id);
+							}
+							setDeleteConfirmOpen(false);
+							setEventToDelete(null);
+						}}
+						onCancel={() => {
+							setDeleteConfirmOpen(false);
+							setEventToDelete(null);
+						}}
+					/>
+					</>
 				)}
 			</header>
 			<div className="timeline-wrapper">

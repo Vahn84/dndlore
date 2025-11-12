@@ -229,7 +229,7 @@
 			z-index: 1;
 			height: 100%;
 			background-size: cover;
-			background-position: center center;
+			background-position: left 50% top -50px;
 			border-radius: 8px;
 			opacity: 0.5;
 		}
@@ -284,6 +284,7 @@
 	font-size: 1.1rem;
 	font-weight: 600;
 	padding-right: 30px;
+	text-transform: uppercase;
 }
 
 .subtitle {

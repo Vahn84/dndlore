@@ -11,7 +11,12 @@ export type PagePickerModalProps = {
   onClose: () => void;
   onSelect: (page: Page) => void;
   placeholder?: string;
+  /**
+   * Filter pages by a single type (server-side) or multiple types (client-side).
+   * If both filterType and filterTypes are omitted or set to 'any', all types are shown.
+   */
   filterType?: Page['type'] | 'any';
+  filterTypes?: Array<Page['type']>;
 };
 
 const typeIcon = (t: Page['type']) => {
@@ -30,7 +35,7 @@ const typeIcon = (t: Page['type']) => {
   }
 };
 
-const PagePickerModal: React.FC<PagePickerModalProps> = ({ isOpen, onClose, onSelect, placeholder = 'Search pages…', filterType = 'any' }) => {
+const PagePickerModal: React.FC<PagePickerModalProps> = ({ isOpen, onClose, onSelect, placeholder = 'Search pages…', filterType = 'any', filterTypes }) => {
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<Page[]>([]);
   const [loading, setLoading] = useState(false);
@@ -38,8 +43,14 @@ const PagePickerModal: React.FC<PagePickerModalProps> = ({ isOpen, onClose, onSe
   const doSearch = async (q: string) => {
     setLoading(true);
     try {
-      const pages = await Api.searchPages(q, filterType === 'any' ? undefined : filterType, 50);
-      setItems(pages);
+      // If multiple filter types are provided, perform a broad search and filter client-side.
+      if (filterTypes && filterTypes.length > 0) {
+        const pages = await Api.searchPages(q, undefined, 50);
+        setItems(pages.filter((p) => filterTypes.includes(p.type)));
+      } else {
+        const pages = await Api.searchPages(q, filterType === 'any' ? undefined : filterType, 50);
+        setItems(pages);
+      }
     } finally {
       setLoading(false);
     }

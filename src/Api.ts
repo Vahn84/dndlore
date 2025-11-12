@@ -31,13 +31,17 @@ class Api {
 			Api.instance.interceptors.response.use(
 				(response) => response,
 				(error) => {
-					if(error.response && error.response.status === 401) {
-						// Optionally handle unauthorized errors globally
-						// e.g., redirect to login page
-						Api.logout()
-						
+					if (error.response && error.response.status === 401) {
+						// Only trigger a global unauthorized flow for core auth endpoints.
+						// Optional integration endpoints (Discord / Google calendars) may return 401 if not connected; we should NOT log the user out for those.
+						const url: string = error.config?.url || '';
+						const criticalAuthPaths = ['/auth/user', '/login', '/auth/refresh-google-token'];
+						const isCritical = criticalAuthPaths.some((p) => url.includes(p));
+						if (isCritical) {
+							// Dispatch a custom event so the React app can update UI state (avoid circular import between Api and store)
+							window.dispatchEvent(new Event('app:unauthorized'));
+						}
 					}
-					// Optionally handle global errors here
 					return Promise.reject(error);
 				}
 			);
@@ -329,6 +333,57 @@ class Api {
 		const resolved = bannerThumbUrl || url;
 		console.log('Resolved thumbnail URL:', resolved, bannerThumbUrl);
 		return Api.resolveAssetUrl(resolved);
+	}
+
+	// -------------------------------------------------------------------------
+	// Discord Integration (stubs)
+	// -------------------------------------------------------------------------
+	/**
+	 * Fetch user's Google Calendar list
+	 */
+	static async getGoogleCalendars(): Promise<Array<{ id: string; name: string; primary: boolean }>> {
+		try {
+			const resp = await Api.client.get('/integrations/google/calendars');
+			return resp.data;
+		} catch (error) {
+			console.warn('Google calendars API not available:', error);
+			throw error;
+		}
+	}
+
+	/**
+	 * Attempt to retrieve Discord text channels from backend integration.
+	 * Expected response: Array<{ id: string; name: string }>
+	 */
+	static async getDiscordChannels(): Promise<Array<{ id: string; name: string }>> {
+		try {
+			const resp = await Api.client.get('/integrations/discord/channels');
+			return resp.data;
+		} catch (error) {
+			console.warn('Discord channels API not available:', error);
+			throw error;
+		}
+	}
+
+	/**
+	 * Create a Discord scheduled event via backend integration (e.g., Apollo bot).
+	 * Payload sample: { title, bannerUrl?, dateTimeUtc, channelId, syncToCalendar?, calendarId? }
+	 */
+	static async createDiscordEvent(payload: {
+		title: string;
+		bannerUrl?: string;
+		dateTimeUtc: string; // ISO string (UTC)
+		channelId: string;
+		syncToCalendar?: boolean;
+		calendarId?: string;
+	}) {
+		try {
+			const resp = await Api.client.post('/integrations/discord/events', payload);
+			return resp.data;
+		} catch (error) {
+			console.warn('Discord event creation API not available:', error);
+			throw error;
+		}
 	}
 }
 

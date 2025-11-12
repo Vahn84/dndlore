@@ -6,6 +6,7 @@ import {
 	Draggable,
 	DropResult,
 } from 'react-beautiful-dnd';
+import ConfirmModal from './ConfirmModal';
 import { Group } from '../types';
 import { useAppStore } from '../store/appStore';
 
@@ -142,6 +143,36 @@ const GroupModal: React.FC<GroupModalProps> = ({
 			console.error('Failed to delete group', err);
 		}
 	};
+	
+	// Delete group with confirmation
+	const [confirmOpen, setConfirmOpen] = useState(false);
+	const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+	const [pendingDeleteName, setPendingDeleteName] = useState<string>('');
+
+	const requestDelete = (_id: string, name: string) => {
+		setPendingDeleteId(_id);
+		setPendingDeleteName(name);
+		setConfirmOpen(true);
+	};
+
+	const handleConfirmDelete = async () => {
+		if (!pendingDeleteId) return;
+		try {
+			if (onDelete) {
+				onDelete(pendingDeleteId);
+			} else {
+				await deleteGroupAction(pendingDeleteId);
+			}
+			setLocalGroups((prev) => prev.filter((g) => g._id !== pendingDeleteId));
+		} catch (err) {
+			// eslint-disable-next-line no-console
+			console.error('Failed to delete group', err);
+		} finally {
+			setConfirmOpen(false);
+			setPendingDeleteId(null);
+			setPendingDeleteName('');
+		}
+	};
 
 	return (
 		<Modal
@@ -223,16 +254,21 @@ const GroupModal: React.FC<GroupModalProps> = ({
 													/>
 													<button
 														type="button"
-														onClick={() =>
-															handleDelete(
-																group._id
-															)
-														}
+														onClick={() => requestDelete(group._id, group.name)}
 														className="draggable__iconbtn draggable__iconbtn--danger"
 														title="Delete group"
 													>
 														✖
 													</button>
+		<ConfirmModal
+			isOpen={confirmOpen}
+			title="Delete Group"
+			message={`Are you sure you want to delete "${pendingDeleteName}"?`}
+			confirmText="Delete"
+			variant="danger"
+			onConfirm={handleConfirmDelete}
+			onCancel={() => setConfirmOpen(false)}
+		/>
 												</div>
 											)}
 										</Draggable>

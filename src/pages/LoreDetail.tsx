@@ -12,6 +12,8 @@ import {
 	CalendarCheck,
 	Image,
 	TrashSimple,
+	CheckCircle,
+	XCircle,
 } from 'phosphor-react';
 import AssetsManagerModal from '../components/AssetsManagerModal';
 import Modal from 'react-modal';
@@ -338,7 +340,7 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 		return `${String(wd.year)}${eraAbbr ? `, ${eraAbbr}` : ''}`;
 	};
 
-	// --- Publish (toggle draft off) -----------------------------------------
+	// --- Publish/Unpublish ---------------------------------------------------
 	const publishPage = async () => {
 		try {
 			const upd = await updatePage({
@@ -430,6 +432,23 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 		}
 	};
 
+	const unpublishPage = async () => {
+		try {
+			const upd = await updatePage({
+				_id: (pageDraft as any)._id,
+				draft: true,
+			});
+			// update local state immediately
+			setPageDraft((prev: any) => ({ ...prev, draft: true }));
+			// ensure cache reflects latest
+			if (upd) replacePageInCache(upd as any);
+			toast.success('Page unpublished (linked events hidden)');
+		} catch (e: any) {
+			console.error('Failed to unpublish page', e);
+			toast.error('Failed to unpublish page');
+		}
+	};
+
 	// --- Render ---------------------------------------------------------------
 	return (
 		<div
@@ -447,6 +466,18 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 				style={{ filter: `grayscale(${bgGray}) blur(${bgBlur}px)` }}
 			/>
 			<div className="overlay"></div>
+			
+			{/* Fixed publish/unpublish button top-right */}
+			{isDM && (
+				<button
+					className="icon_square-btn publish-toggle-btn"
+					onClick={(pageDraft as any)?.draft ? publishPage : unpublishPage}
+					title={(pageDraft as any)?.draft ? 'Publish' : 'Unpublish'}
+					style={{ opacity: 0.6 }}
+				>
+					{(pageDraft as any)?.draft ? <CheckCircle size={24} weight="bold" /> : <XCircle size={24} weight="bold" />}
+				</button>
+			)}
 			{isLoadingPage && (
 				<div style={{ padding: 16, opacity: 0.7 }}>Loading…</div>
 			)}
@@ -582,16 +613,7 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 							)}
 						</div>
 					)}
-					{isDM && (pageDraft as any)?.draft && (
-						<div className="publishRow">
-							<button
-								className="publishBtn"
-								onClick={publishPage}
-							>
-								Publish
-							</button>
-						</div>
-					)}
+
 
 					<div className="blocks">
 						{(pageDraft as any)?.blocks?.map(

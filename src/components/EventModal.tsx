@@ -1,11 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Modal from 'react-modal';
-import { Event, Group, TimeSystemConfig } from '../types';
+import { Event, Group, Page, TimeSystemConfig } from '../types';
 import { useAppStore } from '../store/appStore';
 import Api from '../Api';
 import AssetsManagerModal from './AssetsManagerModal';
 import PagePickerModal from './PagePickerModal';
-import { Calendar, CalendarBlank, Trash } from 'phosphor-react';
+import {
+	Calendar,
+	CalendarBlank,
+	LinkBreak,
+	LinkSimple,
+	Trash,
+} from 'phosphor-react';
 import DatePicker from './DatePicker';
 import { _changeIcon, ICONS } from './Icons';
 
@@ -74,14 +80,20 @@ const EventModal: React.FC<EventModalProps> = ({
 			'#475569'
 	);
 	const [bannerUrl, setBannerUrl] = useState(event?.bannerUrl || '');
-	const [bannerThumbUrl, setbannerThumbUrl] = useState(event?.bannerThumbUrl || '');
+	const [bannerThumbUrl, setbannerThumbUrl] = useState(
+		event?.bannerThumbUrl || ''
+	);
 	const [hidden, setHidden] = useState<boolean>(event?.hidden ?? false);
 
 	const [assetOpen, setAssetOpen] = useState(false);
 	const [pagePickerOpen, setPagePickerOpen] = useState(false);
-	const [linkedPage, setLinkedPage] = useState<string | undefined>(event?.pageId);
+	const [linkedPage, setLinkedPage] = useState<string | undefined>(
+		event?.pageId
+	);
 	// Single sync flag for all three fields
-	const [syncEnabled, setSyncEnabled] = useState<boolean>(event?.linkSync ?? false);
+	const [syncEnabled, setSyncEnabled] = useState<boolean>(
+		event?.linkSync ?? false
+	);
 
 	// If the URL is absolute, use it; otherwise prefix with API base
 	const resolveAssetUrl = Api.resolveAssetUrl;
@@ -325,6 +337,40 @@ const EventModal: React.FC<EventModalProps> = ({
 		}
 	}, [groupId, event, effectiveGroups]);
 
+	// Apply defaults from a linked page (title, banner, world date)
+	const applyLinkedPageDefaults = (p: Page) => {
+		// Title: fill if empty
+		if (!title || title.trim().length === 0) {
+			setTitle(p.title || 'Event');
+		}
+		// Banner: fill if empty
+		if ((!bannerUrl || bannerUrl.trim().length === 0) && p.bannerUrl) {
+			setBannerUrl(p.bannerUrl);
+		}
+		if (
+			(!bannerThumbUrl || bannerThumbUrl.trim().length === 0) &&
+			p.bannerThumbUrl
+		) {
+			setbannerThumbUrl(p.bannerThumbUrl);
+		}
+		// World date: if present, set start date parts
+		if (p.worldDate) {
+			setStartEraId(p.worldDate.eraId || startEraId);
+			setStartYear(String(p.worldDate.year ?? startYear ?? ''));
+			setStartMonthIndex(
+				p.worldDate.monthIndex !== undefined &&
+					p.worldDate.monthIndex !== null
+					? String(p.worldDate.monthIndex)
+					: startMonthIndex
+			);
+			setStartDay(
+				p.worldDate.day !== undefined && p.worldDate.day !== null
+					? String(p.worldDate.day)
+					: startDay
+			);
+		}
+	};
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		let formattedStart = '';
@@ -406,7 +452,9 @@ const EventModal: React.FC<EventModalProps> = ({
 			startEraId: startEraId || undefined,
 			startYear: sYear ? parseInt(sYear, 10) : undefined,
 			startMonthIndex:
-				startMonthIndex !== '' ? parseInt(startMonthIndex, 10) : undefined,
+				startMonthIndex !== ''
+					? parseInt(startMonthIndex, 10)
+					: undefined,
 			startDay: startDay !== '' ? parseInt(startDay, 10) : undefined,
 			description,
 			bannerUrl: bannerUrl || undefined,
@@ -421,7 +469,9 @@ const EventModal: React.FC<EventModalProps> = ({
 			// send composed end date
 			payload.endDate = formattedEnd;
 			payload.endEraId = endEraId || undefined;
-			payload.endYear = endYear.trim() ? parseInt(endYear.trim(), 10) : undefined;
+			payload.endYear = endYear.trim()
+				? parseInt(endYear.trim(), 10)
+				: undefined;
 			payload.endMonthIndex =
 				endMonthIndex !== '' ? parseInt(endMonthIndex, 10) : undefined;
 			payload.endDay = endDay !== '' ? parseInt(endDay, 10) : undefined;
@@ -470,7 +520,7 @@ const EventModal: React.FC<EventModalProps> = ({
 				isOpen={true}
 				onRequestClose={onClose}
 				contentLabel="Event Editor"
-				className="modal__content modal__content--event"
+				className="modal__content modal__content--event event-modal"
 				overlayClassName="modal__overlay"
 			>
 				<div className="modal__body">
@@ -540,52 +590,104 @@ const EventModal: React.FC<EventModalProps> = ({
 
 							<div className="modal__form_wrapper">
 								{/* Link section */}
-								<fieldset style={{ border: 'none', padding: 0, margin: '0 0 1rem 0' }}>
-									<legend className="form-label" style={{ marginBottom: '0.5rem' }}>Link to Page</legend>
-									<div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+								<fieldset
+									style={{
+										border: 'none',
+										padding: 0,
+										margin: '0 0 1rem 0',
+									}}
+								>
+									<div
+										style={{
+											display: 'flex',
+											gap: '0.5rem',
+											alignItems: 'center',
+											flexWrap: 'wrap',
+										}}
+									>
 										{linkedPage ? (
 											<>
-												<span style={{ color: '#8ab4ff', fontSize: '0.9rem' }}>
-													<i className="icon icli iconly-Link" style={{ marginRight: '0.25rem' }} />
-													Page linked
-												</span>
 												<button
 													type="button"
 													className="btn-muted"
 													onClick={() => {
-														setLinkedPage(undefined);
+														setLinkedPage(
+															undefined
+														);
 														setSyncEnabled(false);
 													}}
-													style={{ padding: '0.25rem 0.75rem', fontSize: '0.85rem' }}
+													style={{
+														padding: '0.75rem',
+														fontSize: '0.85rem',
+														display: 'flex',
+														alignItems: 'center',
+														justifyContent:
+															'center',
+													}}
 												>
-													Unlink
+													<LinkBreak
+														size={16}
+														style={{
+															marginRight:
+																'0.25rem',
+														}}
+													/>
+													<span>Unlink Page</span>
 												</button>
 											</>
 										) : (
-											<button 
-												type="button" 
-												className="btn-primary" 
-												onClick={() => setPagePickerOpen(true)}
-												style={{ padding: '0.25rem 0.75rem', fontSize: '0.85rem' }}
+											<button
+												type="button"
+												className="btn-primary"
+												onClick={() =>
+													setPagePickerOpen(true)
+												}
+												style={{
+													padding: '0.75rem',
+													fontSize: '0.85rem',
+													display: 'flex',
+													alignItems: 'center',
+													justifyContent: 'center',
+												}}
 											>
-												<i className="icon icli iconly-Calendar" /> Link Page
+												<LinkSimple
+													size={16}
+													style={{
+														marginRight: '0.25rem',
+													}}
+												/>
+												<span>Link Page</span>
 											</button>
 										)}
 									</div>
-									
+
 									{/* Sync checkbox - only shown when linked */}
 									{linkedPage && (
-										<div className="checkbox-wrapper" style={{ marginTop: '0.75rem' }}>
-											<input 
-												type="checkbox" 
+										<div
+											className="checkbox-wrapper"
+											style={{ marginTop: '0.75rem' }}
+										>
+											<input
+												type="checkbox"
 												id="sync-checkbox"
-												className="input-checkbox input-checkbox-light" 
-												checked={syncEnabled} 
-												onChange={(e) => setSyncEnabled(e.target.checked)} 
+												className="input-checkbox input-checkbox-light"
+												checked={syncEnabled}
+												onChange={(e) =>
+													setSyncEnabled(
+														e.target.checked
+													)
+												}
 											/>
-											<label className="input-checkbox-btn" htmlFor="sync-checkbox" />
-											<span className="form-label" style={{ fontSize: '0.9rem' }}>
-												Keep synced (title, banner, world date)
+											<label
+												className="input-checkbox-btn"
+												htmlFor="sync-checkbox"
+											/>
+											<span
+												className="form-label"
+												style={{ fontSize: '0.9rem' }}
+											>
+												Keep synced (title, banner,
+												world date)
 											</span>
 										</div>
 									)}
@@ -691,7 +793,9 @@ const EventModal: React.FC<EventModalProps> = ({
 									onChange={(parts) => {
 										if (!parts) {
 											setEndEnabled(false);
-											setEndEraId(timeSystem?.eras[0]?.id || '');
+											setEndEraId(
+												timeSystem?.eras[0]?.id || ''
+											);
 											setEndYear('');
 											setEndMonthIndex('');
 											setEndDay('');
@@ -704,8 +808,9 @@ const EventModal: React.FC<EventModalProps> = ({
 										// Enable end date when any meaningful part is present
 										const hasAny = Boolean(
 											(parts.year && parts.year.trim()) ||
-											(parts.monthIndex && parts.monthIndex.trim()) ||
-											(parts.day && parts.day.trim())
+												(parts.monthIndex &&
+													parts.monthIndex.trim()) ||
+												(parts.day && parts.day.trim())
 										);
 										setEndEnabled(hasAny);
 									}}
@@ -774,12 +879,21 @@ const EventModal: React.FC<EventModalProps> = ({
 			<PagePickerModal
 				isOpen={pagePickerOpen}
 				onClose={() => setPagePickerOpen(false)}
-				onSelect={(page) => {
+				onSelect={async (page) => {
 					setLinkedPage(page._id);
 					// default enable sync when linking
 					setSyncEnabled(true);
+					// fetch full page details to ensure worldDate/banner are present
+					try {
+						const full = await Api.getPage(page._id);
+						applyLinkedPageDefaults(full as Page);
+					} catch (e) {
+						// fallback to the item we already have
+						applyLinkedPageDefaults(page as Page);
+					}
 				}}
 				placeholder="Search pages..."
+				filterTypes={['history', 'campaign']}
 			/>
 		</>
 	);
