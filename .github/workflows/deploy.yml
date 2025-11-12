@@ -22,9 +22,12 @@ jobs:
         run: echo "OWNER_LC=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
 
       - name: Generate .env.production
-        run: echo "REACT_APP_API_BASE_URL=${FRONTEND_API_BASE_URL:-/api}" > .env.production
+        run: |
+          echo "REACT_APP_API_BASE_URL=${FRONTEND_API_BASE_URL:-/api}" > .env.production
+          echo "REACT_APP_FVTT_URL=${REACT_APP_FVTT_URL}" >> .env.production
         env:
           FRONTEND_API_BASE_URL: ${{ secrets.FRONTEND_API_BASE_URL }}
+          REACT_APP_FVTT_URL: ${{ secrets.REACT_APP_FVTT_URL }}
       
       - name: Connect to Tailscale
         uses: tailscale/github-action@v2
