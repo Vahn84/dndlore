@@ -625,12 +625,10 @@ const Timeline: React.FC<TimelineProps> = () => {
 									style={
 										ev.bannerUrl
 											? {
-													backgroundImage: `url(${
-														process.env
-															.REACT_APP_API_BASE_URL +
-														(ev.bannerThumbUrl ||
-															ev.bannerUrl)
-													})`,
+													backgroundImage: `url(${Api.resolveThumbnailUrl(
+														ev.bannerUrl,
+														ev.bannerThumbUrl
+													)})`,
 											  }
 											: ev.color
 											? { background: ev.color }
@@ -693,32 +691,33 @@ const Timeline: React.FC<TimelineProps> = () => {
 											</p>
 										)}
 									</div>
-									<div className="editRow">
-										<button
-											ref={
-												menuOpenFor === ev._id
-													? menuButtonRef
-													: undefined
-											}
-											className="menuButton"
-											aria-haspopup="menu"
-											aria-expanded={
-												menuOpenFor === ev._id
-											}
-											onClick={(e) => {
-												e.stopPropagation();
-												e.preventDefault();
-												setMenuOpenFor(
+									{isDM && (
+										<div className="editRow">
+											<button
+												ref={
 													menuOpenFor === ev._id
-														? null
-														: ev._id
-												);
-											}}
-										>
-											⋮
-										</button>
+														? menuButtonRef
+														: undefined
+												}
+												className="menuButton"
+												aria-haspopup="menu"
+												aria-expanded={
+													menuOpenFor === ev._id
+												}
+												onClick={(e) => {
+													e.stopPropagation();
+													e.preventDefault();
+													setMenuOpenFor(
+														menuOpenFor === ev._id
+															? null
+															: ev._id
+													);
+												}}
+											>
+												⋮
+											</button>
 
-										<div
+											<div
 											ref={
 												menuOpenFor === ev._id
 													? menuRootRef
@@ -830,6 +829,7 @@ const Timeline: React.FC<TimelineProps> = () => {
 											</div>
 										</div>
 									</div>
+									)}
 								</div>
 							</div>
 						</div>
