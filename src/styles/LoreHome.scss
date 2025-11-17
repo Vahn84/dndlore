@@ -540,6 +540,14 @@
 			}
 		}
 	}
+
+	.loreTitle {
+		font-size: 1.3rem;
+	
+	}
+	.loreSubtitle {
+		font-size: 0.8rem;
+	}
 }
 
 @media (max-width: 600px) {
@@ -588,4 +596,9 @@
 	overflow-y: auto;
 	padding: 1.5rem;
 	color: rgb(226, 232, 240);
+}
+
+
+@media (max-width: 600px) {
+
 }
