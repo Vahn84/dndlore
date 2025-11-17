@@ -27,13 +27,17 @@ html,
 }
 
 .loginContainer {
-	position: fixed;
+	position: absolute;
 	z-index: 1001;
 	display: flex;
 	align-items: center;
 	gap: 0.75rem;
-	top: calc($navbar-height/6);
+	top: calc($navbar-height/6 + 2px);
 	right: 1rem;
+
+	&.hide {
+		display: none;
+	}
 }
 
 .loginButton {
@@ -64,10 +68,19 @@ html,
 	@media (max-width: 767px) {
 		
 		.loginButtonWrapper {
-			gap: 0;
+			
 
 			.loginButtonLabel {
 				display: none;
+			}
+
+			.icon_square-btn {
+				margin: 0;
+				
+				svg {
+					width: 30px !important;
+					height: 30px;
+				}
 			}
 		}
 	}

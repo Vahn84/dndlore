@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CaretLeft, CaretRight } from 'phosphor-react';
+import { CaretLeft, CaretRight, Hamburger, List, X } from 'phosphor-react';
 
 interface Category {
 	type: string;
@@ -35,15 +35,23 @@ const CategoriesMenu: React.FC<CategoriesMenuProps> = ({
 				title={collapsed ? 'Expand menu' : 'Collapse menu'}
 			>
 				{collapsed ? (
-					<CaretRight size={22} weight="bold" />
+					<List size={22} weight="bold" />
 				) : (
-					<CaretLeft size={22} weight="bold" />
+					<X size={22} weight="bold" />
 				)}
 			</button>
 
 			<div style={{ position: 'relative', height: '100%' }}>
 				<div className="categoriesColumn">
-					<h2 className="columnTitle">{title}</h2>
+					<h2 className="columnTitle">
+						{title}{' '}
+						<X
+							size={22}
+							weight="bold"
+							className="categoriesMenu--closeIcon"
+							onClick={() => setCollapsed(!collapsed)}
+						/>
+					</h2>
 					<div className="categoriesList">
 						{categories.map((cat) => (
 							<button
@@ -53,7 +61,10 @@ const CategoriesMenu: React.FC<CategoriesMenuProps> = ({
 										? 'active'
 										: ''
 								}`}
-								onClick={() => onCategoryChange(cat.type)}
+								onClick={() => {
+									setCollapsed(true);
+									onCategoryChange(cat.type)
+								}}
 							>
 								<span className="label">{cat.label}</span>
 							</button>

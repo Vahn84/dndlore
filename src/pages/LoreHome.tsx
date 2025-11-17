@@ -6,7 +6,13 @@ import PlaceMapView from '../components/PlaceMapView';
 import { PlacePage } from '../components/InteractiveMapCanvas';
 import Api from '../Api';
 import { Page } from '../types';
-import { CaretLeft, CaretRight, FileDotted, Trash, DotsSixVertical } from 'phosphor-react';
+import {
+	CaretLeft,
+	CaretRight,
+	FileDotted,
+	Trash,
+	DotsSixVertical,
+} from 'phosphor-react';
 import { useAppStore } from '../store/appStore';
 import ConfirmModal from '../components/ConfirmModal';
 import { toast } from 'react-hot-toast';
@@ -48,8 +54,14 @@ const SortablePageItem: React.FC<SortablePageItemProps> = ({
 	onDeleteClick,
 	onNavigate,
 }) => {
-	const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-		useSortable({ id: page._id });
+	const {
+		attributes,
+		listeners,
+		setNodeRef,
+		transform,
+		transition,
+		isDragging,
+	} = useSortable({ id: page._id });
 
 	const style = {
 		transform: CSS.Transform.toString(transform),
@@ -75,7 +87,7 @@ const SortablePageItem: React.FC<SortablePageItemProps> = ({
 				>
 					<DotsSixVertical size={20} weight="bold" />
 				</span>
-				
+
 				{page.bannerUrl && (
 					<div
 						className="thumb"
@@ -128,11 +140,11 @@ const LoreHome: React.FC = () => {
 	// and the corresponding type used in the API. A placeholder icon can
 	// be replaced with images if desired.
 	const categories = [
+		{ type: 'campaign', label: 'Campaign' },
 		{ type: 'place', label: 'Places' },
 		{ type: 'history', label: 'History' },
 		{ type: 'myth', label: 'Myths' },
 		{ type: 'people', label: 'People' },
-		{ type: 'campaign', label: 'Campaign' },
 	];
 
 	/**
@@ -200,7 +212,7 @@ const LoreHome: React.FC = () => {
 			// If both have order fields, use them
 			const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
 			const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
-			
+
 			if (orderA !== orderB) {
 				return orderA - orderB;
 			}
@@ -254,7 +266,7 @@ const LoreHome: React.FC = () => {
 			const oldIndex = localPageOrder.indexOf(active.id as string);
 			const newIndex = localPageOrder.indexOf(over.id as string);
 			const newOrder = arrayMove(localPageOrder, oldIndex, newIndex);
-			
+
 			setLocalPageOrder(newOrder);
 
 			// Persist order to backend
@@ -386,7 +398,9 @@ const LoreHome: React.FC = () => {
 					onScroll={handleScroll}
 				>
 					<div className="contentContainer">
-						<h1 className="loreTitle">The Great Library of Morne</h1>
+						<h1 className="loreTitle">
+							The Great Library of Morne
+						</h1>
 						<p className="loreSubtitle">
 							Welcome to the Great Library of Morne! Explore the
 							world of Aetherium through its places, history and
@@ -395,7 +409,7 @@ const LoreHome: React.FC = () => {
 
 						<div className="loreColumns">
 							{/* Pages list */}
-					
+
 							<div
 								className="pagesColumn"
 								style={{ flex: '1', maxWidth: '100%' }}
@@ -411,16 +425,22 @@ const LoreHome: React.FC = () => {
 									>
 										<SortableContext
 											items={localPageOrder}
-											strategy={verticalListSortingStrategy}
+											strategy={
+												verticalListSortingStrategy
+											}
 										>
 											<ul className="pageList">
 												{displayPages.map((page) => (
 													<SortablePageItem
 														key={page._id}
 														page={page}
-														selectedCategory={selectedCategory}
+														selectedCategory={
+															selectedCategory
+														}
 														isDM={isDM}
-														onDeleteClick={handleDeleteClick}
+														onDeleteClick={
+															handleDeleteClick
+														}
 														onNavigate={() =>
 															navigate(
 																`/lore/${selectedCategory}/${page._id}`
@@ -462,7 +482,9 @@ const LoreHome: React.FC = () => {
 														/>
 													)}
 													<div className="meta">
-														<h3 className="pageTitle">{page.title}</h3>
+														<h3 className="pageTitle">
+															{page.title}
+														</h3>
 														{page.subtitle && (
 															<h4 className="pageSubtitle">
 																{page.subtitle.toUpperCase()}
@@ -471,7 +493,9 @@ const LoreHome: React.FC = () => {
 													</div>
 													{page.draft && isDM && (
 														<span className="draftBadge">
-															<FileDotted size={18} />
+															<FileDotted
+																size={18}
+															/>
 														</span>
 													)}
 												</div>
@@ -494,7 +518,9 @@ const LoreHome: React.FC = () => {
 			<ConfirmModal
 				isOpen={deleteModalOpen}
 				title="Delete Page"
-				message={`Are you sure you want to delete "${pageToDelete?.title || ''}"?`}
+				message={`Are you sure you want to delete "${
+					pageToDelete?.title || ''
+				}"?`}
 				confirmText="Delete"
 				variant="danger"
 				onConfirm={confirmDelete}

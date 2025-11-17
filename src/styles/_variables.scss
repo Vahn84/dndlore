@@ -10,6 +10,7 @@ $color-medium-gray: rgba(73, 73, 73, 1);
 $color-medium-gray-translucent: rgba(73, 73, 73, 0.5);
 $color-light: #e2e8f0;
 $color-light-gray: #d5d5d5;
+$color-text-cornsilk: rgb(255, 248, 220);
 $color-dark-gold: rgb(153, 126, 67);
 $color-gold: rgba(208, 179, 115, 1);
 $color-light-gold: rgb(230, 217, 190);
@@ -31,3 +32,6 @@ $menu-border: $color-dark-gold;
 $font-family-title: 'Montserrat', sans-serif;
 $font-family-text: 'Crimson Text', sans-serif;
 $font-family-decorative: 'Cinzel Decorative', serif;
+
+$timeline-header-height: 30px;
+$timeline-header-height-mobile: 75px;

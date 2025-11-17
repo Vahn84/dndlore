@@ -183,24 +183,7 @@ const AppContent: React.FC = () => {
 
 	return (
 		<>
-			{/* Login button/icon top right */}
-			<div className="loginContainer home-appear ">
-				{/* (Google reconnect prompt removed - user will be logged out if Google token can't be refreshed) */}
-				{/* Login/Logout button */}
-				<button
-					className="loginButton"
-					title={isLoggedIn() ? 'Logout' : 'Login with Google'}
-					onClick={handleGoogleLogin}
-				>
-					{' '}
-					<span className="loginButtonWrapper">
-						<span className='loginButtonLabel'>{isLoggedIn() ? 'Logout' : 'DM Login'}</span>
-						<span className="icon_square-btn">
-							{isLoggedIn() ? <SignOut /> : <SignIn />}
-						</span>
-					</span>
-				</button>
-			</div>
+
 			{/* Main content container with padding to avoid overlap with nav bar */}
 			<div className={`appContent`}>
 				<Routes>

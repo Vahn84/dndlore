@@ -87,7 +87,7 @@
 }
 
 .timeline-wrapper {
-	margin-top: 70px;
+	margin-top: calc(70px + $timeline-header-height);
 }
 
 .virtuoso-timeline {
@@ -460,7 +460,8 @@
 	.toolbox {
 		.toolboxButton {
 			.text {
-				display: none;
+				// display: none;
+				font-size: 0.55rem;
 			}
 		}
 	}
@@ -507,6 +508,72 @@
 
 						.subtitle {
 							font-size: 0.7rem;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+@media (max-width: 600px) {
+	.timelineHeader {
+		flex-direction: column;
+		gap: 0.5rem;
+		height: $timeline-header-height-mobile;
+		.groupFilter {
+			.pill {
+				font-size: 0.75rem;
+			}
+		}
+	}
+
+	.timeline-wrapper {
+		margin-top: calc(3rem + $timeline-header-height-mobile);
+	}
+
+	.timeline-event-wrapper {
+		.event {
+			.row {
+				height: 100px;
+				padding-right: 1rem;
+				padding-left: 1rem;
+				.date {
+					margin-left: 0;
+					font-size: 0.7rem;
+				}
+
+				.cardWrapper {
+					margin-left: 0.1rem;
+					flex: 1;
+
+					.info {
+						padding: 0.6rem;
+
+						.groupLabel {
+							font-size: 0.6rem;
+							padding: 0.15rem 0.65rem;
+						}
+						.title_wrapper {
+							padding-right: 0.3rem;
+							.title {
+								font-size: 0.6rem;
+								padding-right: .5rem;
+							}
+							.icon_square-btn {
+								padding: 0.4rem;
+								height: 25px;
+								width: 25px;
+							}
+
+							.subtitle {
+								font-size: 0.5rem;
+							}
+						}
+
+						.editRow{
+							right: 0.2rem;
+							bottom: 0.2rem;
 						}
 					}
 				}

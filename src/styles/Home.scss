@@ -101,6 +101,6 @@
 @media (max-width: 860px) {
 	.homepage .homepage__title {
 		font-size: 2.5rem;
-		top: calc(100% - 45vh);
+		top: calc(50% - $navbar-height);
 	}
 }

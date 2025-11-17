@@ -197,3 +197,34 @@
 		}
 	}
 }
+
+@media (max-width: 600px) {
+	.navBar {
+		.navLink {
+			&.other {
+				width: auto;
+				font-size: 0.8rem;
+				margin-left: 0.3rem;
+			}
+			&.is-home {
+				width: auto;
+				font-size: 1.2rem;
+				margin-left: 0.3rem;
+			}
+		}
+
+		&.other {
+			.brand {
+				.brand-logo {
+					max-height: 50px;
+				}
+			}
+		}
+	}
+
+	.backLink {
+		span {
+			display: none;
+		}
+	}
+}

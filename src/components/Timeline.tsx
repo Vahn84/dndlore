@@ -861,9 +861,7 @@ const Timeline: React.FC<TimelineProps> = () => {
 									)
 										? group.color
 										: 'transparent',
-									color: !activeGroupIds.includes(group._id)
-										? group.color
-										: '',
+
 									borderColor: !activeGroupIds.includes(
 										group._id
 									)

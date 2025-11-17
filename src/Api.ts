@@ -35,8 +35,14 @@ class Api {
 						// Only trigger a global unauthorized flow for core auth endpoints.
 						// Optional integration endpoints (Discord / Google calendars) may return 401 if not connected; we should NOT log the user out for those.
 						const url: string = error.config?.url || '';
-						const criticalAuthPaths = ['/auth/user', '/login', '/auth/refresh-google-token'];
-						const isCritical = criticalAuthPaths.some((p) => url.includes(p));
+						const criticalAuthPaths = [
+							'/auth/user',
+							'/login',
+							'/auth/refresh-google-token',
+						];
+						const isCritical = criticalAuthPaths.some((p) =>
+							url.includes(p)
+						);
 						if (isCritical) {
 							// Dispatch a custom event so the React app can update UI state (avoid circular import between Api and store)
 							window.dispatchEvent(new Event('app:unauthorized'));
@@ -107,16 +113,20 @@ class Api {
 		try {
 			const resp = await Api.client.post('/auth/refresh-google-token');
 			const { token, googleAccessToken, tokenExpiry } = resp.data;
-			
+
 			// Update stored JWT token
 			if (token) {
 				localStorage.setItem('token', token);
 			}
-			
+
 			return { success: true, token, googleAccessToken, tokenExpiry };
 		} catch (error: any) {
 			const needsReauth = error.response?.data?.needsReauth || false;
-			return { success: false, needsReauth, error: error.response?.data?.error };
+			return {
+				success: false,
+				needsReauth,
+				error: error.response?.data?.error,
+			};
 		}
 	}
 
@@ -229,7 +239,9 @@ class Api {
 	}
 
 	static async reorderPages(type: string, pageIds: string[]) {
-		const resp = await Api.client.patch(`/pages/reorder/${type}`, { pageIds });
+		const resp = await Api.client.patch(`/pages/reorder/${type}`, {
+			pageIds,
+		});
 		return resp.data;
 	}
 
@@ -300,7 +312,9 @@ class Api {
 	 * Move an asset to a different folder (or root if folderId is null).
 	 */
 	static async moveAssetToFolder(assetId: string, folderId: string | null) {
-		const resp = await Api.client.patch(`/assets/${assetId}/move`, { folderId });
+		const resp = await Api.client.patch(`/assets/${assetId}/move`, {
+			folderId,
+		});
 		return resp.data;
 	}
 
@@ -323,6 +337,10 @@ class Api {
 	}
 
 	static resolveAssetUrl(u: string) {
+		u =
+			process.env.NODE_ENV === 'production'
+				? u
+				: `http://localhost:3001${u}`;
 		if (!u) return '';
 		// If already absolute URL, return as-is
 		if (/^https?:\/\//i.test(u)) return u;
@@ -348,7 +366,9 @@ class Api {
 	/**
 	 * Fetch user's Google Calendar list
 	 */
-	static async getGoogleCalendars(): Promise<Array<{ id: string; name: string; primary: boolean }>> {
+	static async getGoogleCalendars(): Promise<
+		Array<{ id: string; name: string; primary: boolean }>
+	> {
 		try {
 			const resp = await Api.client.get('/integrations/google/calendars');
 			return resp.data;
@@ -362,7 +382,9 @@ class Api {
 	 * Attempt to retrieve Discord text channels from backend integration.
 	 * Expected response: Array<{ id: string; name: string }>
 	 */
-	static async getDiscordChannels(): Promise<Array<{ id: string; name: string }>> {
+	static async getDiscordChannels(): Promise<
+		Array<{ id: string; name: string }>
+	> {
 		try {
 			const resp = await Api.client.get('/integrations/discord/channels');
 			return resp.data;
@@ -376,9 +398,14 @@ class Api {
 	 * Attempt to retrieve Discord voice channels from backend integration.
 	 * Expected response: { guildId: string, channels: Array<{ id: string; name: string }> }
 	 */
-	static async getDiscordVoiceChannels(): Promise<{ guildId: string; channels: Array<{ id: string; name: string }> }> {
+	static async getDiscordVoiceChannels(): Promise<{
+		guildId: string;
+		channels: Array<{ id: string; name: string }>;
+	}> {
 		try {
-			const resp = await Api.client.get('/integrations/discord/voice-channels');
+			const resp = await Api.client.get(
+				'/integrations/discord/voice-channels'
+			);
 			return resp.data;
 		} catch (error) {
 			console.warn('Discord voice channels API not available:', error);
@@ -399,7 +426,10 @@ class Api {
 		calendarId?: string;
 	}) {
 		try {
-			const resp = await Api.client.post('/integrations/discord/events', payload);
+			const resp = await Api.client.post(
+				'/integrations/discord/events',
+				payload
+			);
 			return resp.data;
 		} catch (error) {
 			console.warn('Discord event creation API not available:', error);

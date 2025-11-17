@@ -361,12 +361,14 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 					day: number;
 				};
 				const pageId = (upd as any)?._id || (pageDraft as any)?._id;
-				
+
 				// Check if an event already exists for this page
 				try {
 					const eventsResp = await Api.getEvents();
-					const existingEvent = eventsResp.find((e: any) => e.pageId === pageId);
-					
+					const existingEvent = eventsResp.find(
+						(e: any) => e.pageId === pageId
+					);
+
 					if (existingEvent) {
 						// Event exists, just unhide it
 						await updateEvent({
@@ -379,7 +381,7 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 				} catch (err) {
 					console.error('Failed to check for existing event', err);
 				}
-				
+
 				// No existing event, create a new one
 				// pick a group: prefer "Campaign" or similar, fallback to first
 				let groupId =
@@ -466,17 +468,38 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 				style={{ filter: `grayscale(${bgGray}) blur(${bgBlur}px)` }}
 			/>
 			<div className="overlay"></div>
-			
+
 			{/* Fixed publish/unpublish button top-right */}
 			{isDM && (
-				<button
-					className="icon_square-btn publish-toggle-btn"
-					onClick={(pageDraft as any)?.draft ? publishPage : unpublishPage}
-					title={(pageDraft as any)?.draft ? 'Publish' : 'Unpublish'}
-					style={{ opacity: 0.6 }}
-				>
-					{(pageDraft as any)?.draft ? <CheckCircle size={24} weight="bold" /> : <XCircle size={24} weight="bold" />}
-				</button>
+				<div className="draft-publish-btn-wrapper">
+					<span
+						onClick={
+							(pageDraft as any)?.draft
+								? publishPage
+								: unpublishPage
+						}
+						className="draft-publish-btn-label">
+						{(pageDraft as any)?.draft ? 'Publish' : 'Unpublish'}
+					</span>
+					<button
+						className="icon_square-btn publish-toggle-btn"
+						onClick={
+							(pageDraft as any)?.draft
+								? publishPage
+								: unpublishPage
+						}
+						title={
+							(pageDraft as any)?.draft ? 'Publish' : 'Unpublish'
+						}
+						style={{ opacity: 0.6 }}
+					>
+						{(pageDraft as any)?.draft ? (
+							<CheckCircle size={24} weight="bold" />
+						) : (
+							<XCircle size={24} weight="bold" />
+						)}
+					</button>
+				</div>
 			)}
 			{isLoadingPage && (
 				<div style={{ padding: 16, opacity: 0.7 }}>Loading…</div>
@@ -583,7 +606,7 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 								value={(pageDraft as any).subtitle}
 								placeholder="Subtitle"
 								onChange={(e) => updateSubtitle(e.target.value)}
-								id='subtitle-input'
+								id="subtitle-input"
 							/>
 						) : pageDraft.subtitle ? (
 							<h4>{(pageDraft as any).subtitle || ''}</h4>
@@ -613,7 +636,6 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 							)}
 						</div>
 					)}
-
 
 					<div className="blocks">
 						{(pageDraft as any)?.blocks?.map(

@@ -19,17 +19,38 @@
 	}
 
 	// Fixed publish/unpublish button top-right
-	.publish-toggle-btn {
+
+	.draft-publish-btn-wrapper {
 		position: fixed;
-		top: calc($navbar-height/2 + 1rem);
+		top: calc(130px + 1rem);
 		right: 1.2rem;
 		z-index: 10000;
-		background: $color-dark-translucent;
-		opacity: 0.2 !important;
+		display: flex;
+		align-items: center;
+		cursor: pointer;
+
+		.draft-publish-btn-label {
+			@include thin-font();
+			font-size: 0.85rem;
+			color: $color-dim;
+			margin-right: 0.5rem;
+			text-transform: uppercase;
+			display: none;
+		}
+
+		.publish-toggle-btn {
+			background: $color-dark-translucent;
+			opacity: 0.2 !important;
+		}
 
 		&:hover {
-			opacity: 1 !important;
-			background: $color-dark-gray;
+			.draft-publish-btn-label {
+				display: inline;
+			}
+			.publish-toggle-btn{
+				opacity: 1 !important;
+				background: $color-dark-gray;
+			}
 		}
 	}
 
@@ -69,8 +90,9 @@
 
 			h1 {
 				font-size: 2.5rem;
-
+				margin: 0;
 				color: $color-light;
+				text-transform: uppercase;
 			}
 
 			textarea {
@@ -133,6 +155,8 @@
 				font-size: 1.2rem;
 				color: $color-dark-gold;
 				font-weight: 400;
+				margin: 0;
+				text-transform: uppercase;
 			}
 		}
 
@@ -322,7 +346,11 @@
 					}
 
 					p {
-						color: $color-light;
+						color: $color-text-cornsilk;
+
+						strong {
+							color: $color-gold;
+						}
 					}
 				}
 
