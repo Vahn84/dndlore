@@ -529,13 +529,16 @@
 	}
 
 	.timeline-wrapper {
-		margin-top: calc(3rem + $timeline-header-height-mobile);
+		margin-top: calc(5rem);
+		&.with-dm-tools {
+			margin-top: calc(3rem + $timeline-header-height-mobile);
+		}
 	}
 
 	.timeline-event-wrapper {
 		.event {
 			.row {
-				height: 100px;
+				height: 160px;
 				padding-right: 1rem;
 				padding-left: 1rem;
 				.date {
@@ -557,21 +560,21 @@
 						.title_wrapper {
 							padding-right: 0.3rem;
 							.title {
-								font-size: 0.6rem;
-								padding-right: .5rem;
+								font-size: 0.8rem;
+								padding-right: 0.5rem;
 							}
 							.icon_square-btn {
 								padding: 0.4rem;
-								height: 25px;
-								width: 25px;
+								height: 35px;
+								width: 35px;
 							}
 
 							.subtitle {
-								font-size: 0.5rem;
+								font-size: 0.6rem;
 							}
 						}
 
-						.editRow{
+						.editRow {
 							right: 0.2rem;
 							bottom: 0.2rem;
 						}

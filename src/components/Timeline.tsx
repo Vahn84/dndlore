@@ -931,7 +931,7 @@ const Timeline: React.FC<TimelineProps> = () => {
 					</>
 				)}
 			</header>
-			<div className="timeline-wrapper">
+			<div className={`timeline-wrapper ${isDM ? 'with-dm-tools' : ''}`}>
 				<Virtuoso
 					useWindowScroll
 					data={visibleEvents}
