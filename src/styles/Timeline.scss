@@ -516,7 +516,7 @@
 	}
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
 	.timelineHeader {
 		flex-direction: column;
 		gap: 0.5rem;
@@ -534,7 +534,8 @@
 			margin-top: calc(3rem + $timeline-header-height-mobile);
 		}
 	}
-
+}
+@media (max-width: 600px) {
 	.timeline-event-wrapper {
 		.event {
 			.row {
