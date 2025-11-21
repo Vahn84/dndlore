@@ -843,7 +843,7 @@ const Timeline: React.FC<TimelineProps> = () => {
 		<div className="timeline offset-container">
 			{' '}
 			{/* Header with actions (not including nav) */}
-			<header className="timelineHeader">
+			<header className={`timelineHeader ${isDM ? 'with-dm-tools' : ''}`}>
 				<div className="groupFilter">
 					{[...groups]
 						.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))

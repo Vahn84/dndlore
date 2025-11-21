@@ -13,7 +13,7 @@
 
 .timelineHeader {
 	position: fixed;
-	
+
 	width: 100%;
 	height: $timeline-header-height;
 	display: flex;
@@ -522,6 +522,11 @@
 		flex-direction: column;
 		gap: 0.5rem;
 		height: $timeline-header-height-mobile;
+
+		&.with-dm-tools {
+			height: $timeline-header-height-mobile-dm;
+		}
+
 		.groupFilter {
 			.pill {
 				font-size: 0.75rem;
@@ -532,7 +537,7 @@
 	.timeline-wrapper {
 		margin-top: calc(5rem);
 		&.with-dm-tools {
-			margin-top: calc(3rem + $timeline-header-height-mobile);
+			margin-top: calc(3rem + $timeline-header-height-mobile-dm);
 		}
 	}
 }
