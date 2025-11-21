@@ -85,8 +85,8 @@ type AppState = {
 	getPage: (id: string) => Promise<Page>;
 	saveTimeSystem: (config: any) => Promise<void>;
 
-	createAssetFromFile: (file: File) => Promise<Asset>;
-	createAssetFromUrl: (url: string) => Promise<Asset>;
+	createAssetFromFile: (file: File, folderId?: string | null) => Promise<Asset>;
+	createAssetFromUrl: (url: string, folderId?: string | null) => Promise<Asset>;
 	deleteAsset: (id: string) => Promise<void>;
 	moveAssetToFolder: (assetId: string, folderId: string | null) => Promise<void>;
 
@@ -305,8 +305,8 @@ export const useAppStore = create<AppState>()(
 					});
 				},
 
-				createAssetFromFile: async (file) => {
-					const created = await Api.createAssetFromFile(file);
+				createAssetFromFile: async (file, folderId) => {
+					const created = await Api.createAssetFromFile(file, folderId);
 					if (!created || !created._id)
 						throw new Error('Failed to create asset');
 					set((s) => {
@@ -318,8 +318,8 @@ export const useAppStore = create<AppState>()(
 					return created as Asset;
 				},
 
-				createAssetFromUrl: async (url) => {
-					const created = await Api.createAssetFromUrl(url);
+				createAssetFromUrl: async (url, folderId) => {
+					const created = await Api.createAssetFromUrl(url, folderId);
 					if (!created || !created._id)
 						throw new Error('Failed to create asset');
 					set((s) => {

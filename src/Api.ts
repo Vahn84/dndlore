@@ -283,9 +283,12 @@ class Api {
 	/**
 	 * Create an asset from a local file. Returns the created asset { _id, url }.
 	 */
-	static async createAssetFromFile(file: File) {
+	static async createAssetFromFile(file: File, folderId?: string | null) {
 		const formData = new FormData();
 		formData.append('file', file);
+		if (folderId) {
+			formData.append('folderId', folderId);
+		}
 		const resp = await Api.client.post('/assets', formData, {
 			headers: { 'Content-Type': 'multipart/form-data' },
 		});
@@ -295,8 +298,12 @@ class Api {
 	/**
 	 * Create an asset by specifying a remote URL. Returns the created asset.
 	 */
-	static async createAssetFromUrl(url: string) {
-		const resp = await Api.client.post('/assets', { url });
+	static async createAssetFromUrl(url: string, folderId?: string | null) {
+		const payload: { url: string; folderId?: string | null } = { url };
+		if (folderId) {
+			payload.folderId = folderId;
+		}
+		const resp = await Api.client.post('/assets', payload);
 		return resp.data;
 	}
 

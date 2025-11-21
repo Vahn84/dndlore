@@ -321,3 +321,16 @@
 	white-space: nowrap;
 	border: 0;
 }
+
+
+@media screen and (max-width: 768px) {
+	.lcfab__modal {
+		&__card {
+			&--large {
+				min-width: 90vw;
+				max-width: 90vw;
+			}
+		}
+	}
+	
+}

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Modal from 'react-modal';
-import { X, Folder, FolderOpen, ArrowLeft } from 'phosphor-react';
+import { X, Folder, ArrowLeft, Trash } from 'phosphor-react';
 import { useAppStore, type Asset, type AssetFolder } from '../store/appStore';
 import '../styles/AssetsManager.scss';
 import Api from '../Api';
@@ -43,6 +43,9 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 	const [newFolderName, setNewFolderName] = useState('');
 	const [showNewFolderInput, setShowNewFolderInput] = useState(false);
 	const [movingAssetId, setMovingAssetId] = useState<string | null>(null);
+	const [previewFitMode, setPreviewFitMode] = useState<'fit' | 'cover'>(
+		'cover'
+	);
 
 	useEffect(() => {
 		if (isOpen) {
@@ -51,11 +54,16 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 			setCurrentFolderId(null);
 			setShowNewFolderInput(false);
 			setNewFolderName('');
+			setPreviewFitMode('cover');
 			loadAssetsRef.current?.();
 			loadAssetFoldersRef.current?.();
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [isOpen]);
+
+	useEffect(() => {
+		setPreviewFitMode('cover');
+	}, [selectedId]);
 
 	const items = assets?.data || [];
 	const foldersList = folders?.data || [];
@@ -76,12 +84,10 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 
 	const triggerFilePicker = () => fileInputRef.current?.click();
 	const resolveAssetUrl = Api.resolveAssetUrl;
-	const onFileChange: React.ChangeEventHandler<HTMLInputElement> = async (
-		e
-	) => {
+	const onFileChange: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
 		const file = e.target.files?.[0];
 		if (!file) return;
-		const created = await createAssetFromFile(file);
+		const created = await createAssetFromFile(file, currentFolderId);
 		if (created) setSelectedId(created._id);
 		if (fileInputRef.current) fileInputRef.current.value = '';
 	};
@@ -89,7 +95,7 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 	const onAddFromUrl = async () => {
 		const url = urlInput.trim();
 		if (!url) return;
-		const created = await createAssetFromUrl(url);
+		const created = await createAssetFromUrl(url, currentFolderId);
 		if (created) {
 			setSelectedId(created._id);
 			setUrlInput('');
@@ -105,13 +111,21 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 
 	// Confirm modal state
 	const [confirmOpen, setConfirmOpen] = useState(false);
-	const [confirmConfig, setConfirmConfig] = useState<{ title: string; message: string; onConfirm: () => Promise<void> | void }>({
+	const [confirmConfig, setConfirmConfig] = useState<{
+		title: string;
+		message: string;
+		onConfirm: () => Promise<void> | void;
+	}>({
 		title: '',
 		message: '',
 		onConfirm: () => {},
 	});
 
-	const openConfirm = (title: string, message: string, onConfirm: () => Promise<void> | void) => {
+	const openConfirm = (
+		title: string,
+		message: string,
+		onConfirm: () => Promise<void> | void
+	) => {
 		setConfirmConfig({ title, message, onConfirm });
 		setConfirmOpen(true);
 	};
@@ -121,7 +135,9 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 		const asset = items.find((a) => a._id === selectedId);
 		openConfirm(
 			'Delete Asset',
-			`Are you sure you want to delete this asset${asset ? ` "${asset.url}"` : ''}?`,
+			`Are you sure you want to delete this asset${
+				asset ? ` "${asset.url}"` : ''
+			}?`,
 			async () => {
 				await deleteAsset(selectedId);
 				setSelectedId(null);
@@ -136,7 +152,9 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 		const asset = items.find((a) => a._id === assetId);
 		openConfirm(
 			'Delete Asset',
-			`Are you sure you want to delete this asset${asset ? ` "${asset.url}"` : ''}?`,
+			`Are you sure you want to delete this asset${
+				asset ? ` "${asset.url}"` : ''
+			}?`,
 			async () => {
 				await deleteAsset(assetId);
 				if (selectedId === assetId) {
@@ -167,7 +185,9 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 		const folder = foldersList.find((f) => f._id === folderId);
 		openConfirm(
 			'Delete Folder',
-			`Are you sure you want to delete the folder${folder ? ` "${folder.name}"` : ''}?`,
+			`Are you sure you want to delete the folder${
+				folder ? ` "${folder.name}"` : ''
+			}?`,
 			async () => {
 				try {
 					await deleteAssetFolder(folderId);
@@ -196,195 +216,206 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 
 	return (
 		<>
-		<Modal
-			isOpen={isOpen}
-			onRequestClose={onClose}
-			contentLabel="Asset Manager"
-			overlayClassName="modal__overlay"
-			className="modal__content modal__content--asset_mngr"
-		>
-			<div className="modal__body">
-				<div className="modal__body_content">
-					<div className="assetmgr">
-						<header className="assetmgr__bar">
-							<div className="assetmgr__left">
-								<span className="assetmgr__title">Assets</span>
-								{loading && (
-									<span className="assetmgr__muted">
-										{' '}
-										Loading…
+			<Modal
+				isOpen={isOpen}
+				onRequestClose={onClose}
+				contentLabel="Asset Manager"
+				overlayClassName="modal__overlay"
+				className="modal__content modal__content--asset_mngr"
+			>
+				<div className="modal__body">
+					<div className="modal__body_content">
+						<div className="assetmgr">
+							<header className="assetmgr__bar modal__title_actions">
+								<div className="assetmgr__left">
+									<span className="assetmgr__title">
+										Assets
 									</span>
-								)}
-							</div>
-							<div className="assetmgr__right">
-								<div className="modal__actions">
-									<button
-										type="button"
-										className="draggable__btn draggable__btn--muted"
-										style={{ display: 'flex' }}
-										onClick={onClose}
-									>
-										<X size={16} weight="bold" />
-									</button>
-								</div>
-							</div>
-						</header>
-
-						<div className="asset-manager-columns-container">
-							<div className="assetmgr__sidebar assetmgr__sidebar--left">
-								{/* Breadcrumb navigation */}
-								<div className="assetmgr__breadcrumb">
-									{currentFolderId ? (
-										<>
-											<button
-												type="button"
-												className="assetmgr__breadcrumb-btn"
-												onClick={() =>
-													setCurrentFolderId(null)
-												}
-											>
-												<ArrowLeft
-													size={16}
-													weight="bold"
-												/>
-												Root
-											</button>
-											<span className="assetmgr__breadcrumb-sep">
-												/
-											</span>
-											<span className="assetmgr__breadcrumb-current">
-												{currentFolder?.name ||
-													'Unknown'}
-											</span>
-										</>
-									) : (
-										<span className="assetmgr__breadcrumb-current">
-											Root
+									{loading && (
+										<span className="assetmgr__muted">
+											{' '}
+											Loading…
 										</span>
 									)}
 								</div>
+								<div className="assetmgr__right">
+									<div className="modal__actions close__action">
+										<button
+											type="button"
+											className="draggable__btn draggable__btn--muted"
+											style={{ display: 'flex' }}
+											onClick={onClose}
+										>
+											<X size={16} weight="bold" />
+										</button>
+									</div>
+								</div>
+							</header>
 
-								{/* LEFT: scrollable gallery area */}
-								<div className="assetmgr__grid assetmgr__grid--scroll">
-									{/* Show folders only when in root */}
-									{!currentFolderId &&
-										foldersList.map((folder) => (
-											<button
-												key={folder._id}
-												type="button"
-												className="assetmgr__folder"
-												onClick={() =>
-													setCurrentFolderId(
-														folder._id
-													)
-												}
-											>
-												<div className="assetmgr__folder-icon">
-													<Folder
-														size={48}
-														weight="duotone"
-													/>
-												</div>
-												<div className="assetmgr__folder-name">
-													{folder.name}
-												</div>
+							<div className="asset-manager-columns-container">
+								<div className="assetmgr__sidebar assetmgr__sidebar--left">
+									{/* Breadcrumb navigation */}
+									<div className="assetmgr__breadcrumb">
+										{currentFolderId ? (
+											<>
 												<button
 													type="button"
-													className="assetmgr__deleteBtn"
-													onClick={(e) =>
-														onDeleteFolder(
-															folder._id,
-															e
+													className="assetmgr__breadcrumb-btn"
+													onClick={() =>
+														setCurrentFolderId(null)
+													}
+												>
+													<ArrowLeft
+														size={16}
+														weight="bold"
+													/>
+													Root
+												</button>
+												<span className="assetmgr__breadcrumb-sep">
+													/
+												</span>
+												<span className="assetmgr__breadcrumb-current">
+													{currentFolder?.name ||
+														'Unknown'}
+												</span>
+											</>
+										) : (
+											<span className="assetmgr__breadcrumb-current">
+												Root
+											</span>
+										)}
+									</div>
+
+									{/* LEFT: scrollable gallery area */}
+									<div className="assetmgr__grid assetmgr__grid--scroll">
+										{/* Show folders only when in root */}
+										{!currentFolderId &&
+											foldersList.map((folder) => (
+												<button
+													key={folder._id}
+													type="button"
+													className="assetmgr__folder"
+													onClick={() =>
+														setCurrentFolderId(
+															folder._id
 														)
 													}
-													title="Delete folder"
 												>
-													<X
-														size={20}
-														weight="bold"
-													/>
+													<div className="assetmgr__folder-icon">
+														<Folder
+															size={48}
+															weight="duotone"
+														/>
+													</div>
+													<div className="assetmgr__folder-name">
+														{folder.name}
+													</div>
+													<button
+														type="button"
+														className="assetmgr__deleteBtn"
+														onClick={(e) =>
+															onDeleteFolder(
+																folder._id,
+																e
+															)
+														}
+														title="Delete folder"
+													>
+														<Trash
+															size={20}
+															weight="bold"
+														/>
+													</button>
 												</button>
+											))}
+
+										{/* Show assets filtered by folder */}
+										{filteredAssets.map((a) => (
+											<button
+												key={a._id}
+												type="button"
+												className={`assetmgr__card ${
+													selectedId === a._id
+														? 'is-selected'
+														: ''
+												}`}
+												onClick={() =>
+													setSelectedId(a._id)
+												}
+												onDoubleClick={() => {
+													setSelectedId(a._id);
+													onSelect(a);
+													onClose();
+												}}
+												aria-pressed={
+													selectedId === a._id
+												}
+											>
+												<div className="assetmgr__thumbWrap">
+													<img
+														src={resolveAssetUrl(
+															a.url
+														)}
+														className="assetmgr__thumb"
+														alt=""
+													/>
+													<button
+														type="button"
+														className="assetmgr__deleteBtn"
+														onClick={(e) =>
+															onDeleteAsset(
+																a._id,
+																e
+															)
+														}
+														title="Delete asset"
+													>
+														<Trash
+															size={20}
+															weight="bold"
+														/>
+													</button>
+												</div>
+												<div className="assetmgr__meta">
+													<span className="assetmgr__name">
+														{a.url.split('/').pop()}
+													</span>
+												</div>
 											</button>
 										))}
+									</div>
+								</div>
+								{/* RIGHT: fixed details panel */}
+								<div className="assetmgr__sidebar">
+									{!selected ? (
+										<div className="assetmgr__empty">
+											<div
+												className="assetmgr__icon"
+												aria-hidden
+											>
+												▦
+											</div>
+											<div className="assetmgr__muted">
+												No asset selected
+											</div>
 
-									{/* Show assets filtered by folder */}
-									{filteredAssets.map((a) => (
-										<button
-											key={a._id}
-											type="button"
-											className={`assetmgr__card ${
-												selectedId === a._id
-													? 'is-selected'
-													: ''
-											}`}
-											onClick={() => setSelectedId(a._id)}
-											onDoubleClick={() => {
-												setSelectedId(a._id);
-												onSelect(a);
-												onClose();
-											}}
-											aria-pressed={selectedId === a._id}
-										>
-											<div className="assetmgr__thumbWrap">
-												<img
-													src={resolveAssetUrl(a.url)}
-													className="assetmgr__thumb"
-													alt=""
-												/>
+											<div className="assetmgr__upload">
 												<button
 													type="button"
-													className="assetmgr__deleteBtn"
-													onClick={(e) =>
-														onDeleteAsset(a._id, e)
-													}
-													title="Delete asset"
+													className="draggable__btn"
+													onClick={triggerFilePicker}
 												>
-													<X
-														size={20}
-														weight="bold"
-													/>
+													New asset
 												</button>
-											</div>
-											<div className="assetmgr__meta">
-												<span className="assetmgr__name">
-													{a.url.split('/').pop()}
-												</span>
-											</div>
-										</button>
-									))}
-								</div>
-							</div>
-							{/* RIGHT: fixed details panel */}
-							<div className="assetmgr__sidebar">
-								{!selected ? (
-									<div className="assetmgr__empty">
-										<div
-											className="assetmgr__icon"
-											aria-hidden
-										>
-											▦
-										</div>
-										<div className="assetmgr__muted">
-											No asset selected
-										</div>
+												<input
+													ref={fileInputRef}
+													type="file"
+													accept="image/*"
+													className="assetmgr__file"
+													onChange={onFileChange}
+												/>
 
-										<div className="assetmgr__upload">
-											<button
-												type="button"
-												className="draggable__btn"
-												onClick={triggerFilePicker}
-											>
-												New asset
-											</button>
-											<input
-												ref={fileInputRef}
-												type="file"
-												accept="image/*"
-												className="assetmgr__file"
-												onChange={onFileChange}
-											/>
-
-											{/* <div className="assetmgr__url">
+												{/* <div className="assetmgr__url">
 												<input
 													type="text"
 													placeholder="Paste image URL…"
@@ -404,208 +435,276 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 													Add from URL
 												</button>
 											</div> */}
-										</div>
-										{!showNewFolderInput && (
-											<button
-												type="button"
-												className="draggable__btn draggable__btn--small draggable__btn--muted"
-												onClick={() =>
-													setShowNewFolderInput(true)
-												}
-											>
-												New Folder
-											</button>
-										)}
-
-										{/* New folder input */}
-										{showNewFolderInput && (
-											<div className="assetmgr__newfolder-inline">
-												<input
-													style={{ margin: 0 }}
-													type="text"
-													placeholder="Folder name…"
-													value={newFolderName}
-													onChange={(e) =>
-														setNewFolderName(
-															e.target.value
+											</div>
+											{!showNewFolderInput && (
+												<button
+													type="button"
+													className="draggable__btn draggable__btn--small draggable__btn--muted"
+													onClick={() =>
+														setShowNewFolderInput(
+															true
 														)
 													}
-													onKeyDown={(e) => {
-														if (e.key === 'Enter')
-															onCreateFolder();
-														if (
-															e.key === 'Escape'
-														) {
-															setShowNewFolderInput(
-																false
-															);
-															setNewFolderName(
-																''
-															);
-														}
-													}}
-													className="tsm__input"
-													autoFocus
-												/>
-												<button
-													type="button"
-													style={{ margin: 0 }}
-													className="draggable__btn draggable__btn--small"
-													onClick={onCreateFolder}
 												>
-													Create
+													New Folder
 												</button>
-												<button
-													type="button"
-													style={{ margin: 0 }}
-													className="draggable__btn draggable__btn--small draggable__btn--muted"
-													onClick={() => {
-														setShowNewFolderInput(
-															false
-														);
-														setNewFolderName('');
-													}}
-												>
-													Cancel
-												</button>
-											</div>
-										)}
-									</div>
-								) : (
-									<div className="assetmgr__details">
-										<div className="assetmgr__preview">
-											<div className="assetmgr__previewInner">
-												<img
-													src={resolveAssetUrl(
-														selected.url
-													)}
-													className="assetmgr__previewImg"
-													alt="Preview"
-												/>
-											</div>
-										</div>
-										<div className="assetmgr__actions">
-											<button
-												type="button"
-												className="draggable__btn"
-												onClick={onUse}
-											>
-												Use asset
-											</button>
-											<button
-												type="button"
-												className="draggable__btn draggable__btn--secondary  draggable__btn--muted"
-												onClick={triggerFilePicker}
-											>
-												Upload new
-											</button>
-											<input
-												ref={fileInputRef}
-												type="file"
-												accept="image/*"
-												className="assetmgr__file"
-												onChange={onFileChange}
-											/>
-										</div>
+											)}
 
-										{/* Move asset dropdown */}
-										<div className="assetmgr__move">
-											<label className="assetmgr__move-label">
-												Move to folder:
-											</label>
-											<select
-												value={selected.folderId || ''}
-												onChange={(e) => {
-													const targetId =
-														e.target.value || null;
-													onMoveAsset(
-														selected._id,
-														targetId
-													);
-												}}
-												className="tsm__input"
-											>
-												<option value="">Root</option>
-												{foldersList.map((f) => (
-													<option
-														key={f._id}
-														value={f._id}
+											{/* New folder input */}
+											{showNewFolderInput && (
+												<div className="assetmgr__newfolder-inline">
+													<input
+														style={{ margin: 0 }}
+														type="text"
+														placeholder="Folder name…"
+														value={newFolderName}
+														onChange={(e) =>
+															setNewFolderName(
+																e.target.value
+															)
+														}
+														onKeyDown={(e) => {
+															if (
+																e.key ===
+																'Enter'
+															)
+																onCreateFolder();
+															if (
+																e.key ===
+																'Escape'
+															) {
+																setShowNewFolderInput(
+																	false
+																);
+																setNewFolderName(
+																	''
+																);
+															}
+														}}
+														className="tsm__input"
+														autoFocus
+													/>
+													<button
+														type="button"
+														style={{ margin: 0 }}
+														className="draggable__btn draggable__btn--small"
+														onClick={onCreateFolder}
 													>
-														{f.name}
-													</option>
-												))}
-											</select>
-										</div>
-										{!showNewFolderInput && (
-											<button
-												type="button"
-												className="draggable__btn draggable__btn--small  draggable__btn--muted"
-												onClick={() =>
-													setShowNewFolderInput(true)
-												}
-												style={{
-													display: 'flex',
-													margin: '0 auto',
-												}}
-											>
-												New Folder
-											</button>
-										)}
-
-										{/* New folder input */}
-										{showNewFolderInput && (
-											<div className="assetmgr__newfolder-inline">
-												<input
-													style={{ margin: 0 }}
-													type="text"
-													placeholder="Folder name…"
-													value={newFolderName}
-													onChange={(e) =>
-														setNewFolderName(
-															e.target.value
-														)
-													}
-													onKeyDown={(e) => {
-														if (e.key === 'Enter')
-															onCreateFolder();
-														if (
-															e.key === 'Escape'
-														) {
+														Create
+													</button>
+													<button
+														type="button"
+														style={{ margin: 0 }}
+														className="draggable__btn draggable__btn--small draggable__btn--muted"
+														onClick={() => {
 															setShowNewFolderInput(
 																false
 															);
 															setNewFolderName(
 																''
 															);
+														}}
+													>
+														Cancel
+													</button>
+												</div>
+											)}
+										</div>
+									) : (
+										<div className="assetmgr__details">
+												<div className="assetmgr__preview">
+													<div className="assetmgr__previewInner">
+														<div className="assetmgr__fitToggle">
+															<button
+																type="button"
+																className={`assetmgr__fitToggleBtn ${
+																	previewFitMode === 'fit'
+																		? 'is-active'
+																		: ''
+																}`}
+																onClick={() =>
+																	setPreviewFitMode('fit')
+																}
+															>
+																FIT
+															</button>
+															<button
+																type="button"
+																className={`assetmgr__fitToggleBtn ${
+																	previewFitMode === 'cover'
+																		? 'is-active'
+																		: ''
+																}`}
+																onClick={() =>
+																	setPreviewFitMode('cover')
+																}
+															>
+																COVER
+															</button>
+														</div>
+														<img
+															src={resolveAssetUrl(
+																selected.url
+															)}
+															className="assetmgr__previewImg"
+															style={{
+																objectFit:
+																	previewFitMode === 'fit'
+																		? 'contain'
+																		: 'cover',
+															}}
+															alt="Preview"
+														/>
+													<button
+														type="button"
+														className="assetmgr__deleteBtn assetmgr__deleteBtn--preview"
+														onClick={() =>
+															setSelectedId(null)
 														}
+														title="Unset selection"
+													>
+														<X
+															size={20}
+															weight="bold"
+														/>
+													</button>
+												</div>
+											</div>
+											<div className="assetmgr__actions">
+												<button
+													type="button"
+													className="draggable__btn"
+													onClick={onUse}
+												>
+													Use asset
+												</button>
+												<button
+													type="button"
+													className="draggable__btn draggable__btn--secondary  draggable__btn--muted"
+													onClick={triggerFilePicker}
+												>
+													Upload new
+												</button>
+												<input
+													ref={fileInputRef}
+													type="file"
+													accept="image/*"
+													className="assetmgr__file"
+													onChange={onFileChange}
+												/>
+											</div>
+
+											{/* Move asset dropdown */}
+											<div className="assetmgr__move">
+												<label className="assetmgr__move-label">
+													Move to folder:
+												</label>
+												<select
+													value={
+														selected.folderId || ''
+													}
+													onChange={(e) => {
+														const targetId =
+															e.target.value ||
+															null;
+														onMoveAsset(
+															selected._id,
+															targetId
+														);
 													}}
 													className="tsm__input"
-													autoFocus
-												/>
-												<button
-													type="button"
-													className="draggable__btn draggable__btn--small"
-													onClick={onCreateFolder}
-													style={{ margin: 0 }}
 												>
-													Create
-												</button>
+													<option value="">
+														Root
+													</option>
+													{foldersList.map((f) => (
+														<option
+															key={f._id}
+															value={f._id}
+														>
+															{f.name}
+														</option>
+													))}
+												</select>
+											</div>
+											{!showNewFolderInput && (
 												<button
 													type="button"
-													className="draggable__btn draggable__btn--small draggable__btn--muted"
-													style={{ margin: 0 }}
-													onClick={() => {
+													className="draggable__btn draggable__btn--small  draggable__btn--muted"
+													onClick={() =>
 														setShowNewFolderInput(
-															false
-														);
-														setNewFolderName('');
+															true
+														)
+													}
+													style={{
+														display: 'flex',
+														margin: '0 auto',
 													}}
 												>
-													Cancel
+													New Folder
 												</button>
-											</div>
-										)}
-										{/* <div className="assetmgr__upload assetmgr__upload--secondary">
+											)}
+
+											{/* New folder input */}
+											{showNewFolderInput && (
+												<div className="assetmgr__newfolder-inline">
+													<input
+														style={{ margin: 0 }}
+														type="text"
+														placeholder="Folder name…"
+														value={newFolderName}
+														onChange={(e) =>
+															setNewFolderName(
+																e.target.value
+															)
+														}
+														onKeyDown={(e) => {
+															if (
+																e.key ===
+																'Enter'
+															)
+																onCreateFolder();
+															if (
+																e.key ===
+																'Escape'
+															) {
+																setShowNewFolderInput(
+																	false
+																);
+																setNewFolderName(
+																	''
+																);
+															}
+														}}
+														className="tsm__input"
+														autoFocus
+													/>
+													<button
+														type="button"
+														className="draggable__btn draggable__btn--small"
+														onClick={onCreateFolder}
+														style={{ margin: 0 }}
+													>
+														Create
+													</button>
+													<button
+														type="button"
+														className="draggable__btn draggable__btn--small draggable__btn--muted"
+														style={{ margin: 0 }}
+														onClick={() => {
+															setShowNewFolderInput(
+																false
+															);
+															setNewFolderName(
+																''
+															);
+														}}
+													>
+														Cancel
+													</button>
+												</div>
+											)}
+											{/* <div className="assetmgr__upload assetmgr__upload--secondary">
 											<button
 												type="button"
 												className="draggable__btn"
@@ -622,26 +721,26 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 											/>
 
 										</div> */}
-									</div>
-								)}
+										</div>
+									)}
+								</div>
 							</div>
 						</div>
 					</div>
 				</div>
-			</div>
-		</Modal>
-		<ConfirmModal
-			isOpen={confirmOpen}
-			title={confirmConfig.title}
-			message={confirmConfig.message}
-			confirmText="Delete"
-			variant="danger"
-			onConfirm={async () => {
-				await confirmConfig.onConfirm();
-				setConfirmOpen(false);
-			}}
-			onCancel={() => setConfirmOpen(false)}
-		/>
+			</Modal>
+			<ConfirmModal
+				isOpen={confirmOpen}
+				title={confirmConfig.title}
+				message={confirmConfig.message}
+				confirmText="Delete"
+				variant="danger"
+				onConfirm={async () => {
+					await confirmConfig.onConfirm();
+					setConfirmOpen(false);
+				}}
+				onCancel={() => setConfirmOpen(false)}
+			/>
 		</>
 	);
 };

@@ -13,7 +13,7 @@
 
 .timelineHeader {
 	position: fixed;
-	margin-top: 20px;
+	
 	width: 100%;
 	height: $timeline-header-height;
 	display: flex;
@@ -24,8 +24,9 @@
 	animation-duration: 0.5s;
 	animation-delay: 0.8s;
 	animation-fill-mode: forwards;
-	padding: 0 1rem;
+	padding: 1rem 1rem;
 	z-index: 4;
+	background: $color-dark-translucent;
 }
 
 .actions {
@@ -92,7 +93,7 @@
 
 .virtuoso-timeline {
 	div[data-testid='virtuoso-item-list'] {
-		padding-bottom: 3rem !important;
+		padding-bottom: 5rem !important;
 	}
 }
 
@@ -351,7 +352,7 @@
 .contextMenu {
 	position: absolute;
 	top: -12rem;
-	right: -10rem;
+	right: 0rem;
 	background: $menu-bg;
 	border: 1px solid $menu-border;
 	border-radius: 8px;
@@ -473,7 +474,7 @@
 	}
 
 	.timelineHeader {
-		padding: 0 0.5rem;
+		padding: 1rem 0.5rem;
 	}
 
 	.cardWrapper .card .cardBg {

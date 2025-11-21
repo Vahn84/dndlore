@@ -60,6 +60,8 @@ const DiscordEventModal: React.FC<DiscordEventModalProps> = ({
 	const [pagePickerOpen, setPagePickerOpen] = useState(false);
 	const [availablePages, setAvailablePages] = useState<any[]>([]);
 	const [isLoadingPages, setIsLoadingPages] = useState(false);
+	const normalizeName = (value: string) =>
+		value.toLowerCase().replace(/[^a-z0-9]/g, '');
 
 	const resolveAssetUrl = Api.resolveAssetUrl;
 	const groups = useAppStore((s) => s.data.groups.data);
@@ -172,6 +174,14 @@ const DiscordEventModal: React.FC<DiscordEventModalProps> = ({
 			if (resp && resp.channels) {
 				setVoiceChannels(resp.channels);
 				setGuildId(resp.guildId || '');
+				if (!voiceChannel) {
+					const preferredVoice = resp.channels.find((vc) =>
+						normalizeName(vc.name).includes('dnd')
+					);
+					if (preferredVoice) {
+						setVoiceChannel(preferredVoice.id);
+					}
+				}
 			} else {
 				setVoiceChannels([]);
 			}
@@ -186,10 +196,19 @@ const DiscordEventModal: React.FC<DiscordEventModalProps> = ({
 			const resp = await Api.getGoogleCalendars?.();
 			if (resp && Array.isArray(resp)) {
 				setCalendars(resp);
-				// Auto-select primary calendar
-				const primary = resp.find((cal) => cal.primary);
-				if (primary) {
-					setCalendarId(primary.id);
+				const preferredCalendar = resp.find((cal) => {
+					const lower = (cal.name || '').toLowerCase();
+					return lower.includes('d&d') || lower.includes('dnd');
+				});
+				if (preferredCalendar) {
+					setCalendarId(preferredCalendar.id);
+				} else if (!calendarId || calendarId === 'primary') {
+					const primary = resp.find((cal) => cal.primary);
+					if (primary) {
+						setCalendarId(primary.id);
+					} else if (resp.length > 0) {
+						setCalendarId(resp[0].id);
+					}
 				}
 			} else {
 				setCalendars([]);
@@ -209,6 +228,18 @@ const DiscordEventModal: React.FC<DiscordEventModalProps> = ({
 			const resp = await Api.getDiscordChannels?.();
 			if (resp && Array.isArray(resp)) {
 				setChannels(resp);
+				if (!channel) {
+					const preferred =
+						resp.find(
+							(ch) => normalizeName(ch.name) === 'dndone'
+						) ||
+						resp.find((ch) =>
+							normalizeName(ch.name).includes('dnd')
+						);
+					if (preferred) {
+						setChannel(preferred.id);
+					}
+				}
 			} else {
 				setChannels([]);
 			}
