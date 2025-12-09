@@ -194,6 +194,10 @@ html,
 	padding-inline: 2px;
 }
 
+.checkbox-wrapper--inline {
+	margin-top: 0;
+}
+
 .checkbox-wrapper .input-checkbox {
 	display: none;
 }
@@ -396,9 +400,11 @@ html,
 	font-size: 1rem;
 	cursor: pointer;
 	color: #94a3b8;
-	padding: 0.2rem 0.35rem;
+	padding: 0.45rem;
 	border-radius: 6px;
 	transition: background 0.15s ease, color 0.15s ease;
+	display: flex;
+    align-items: center;
 }
 
 .draggable__iconbtn:hover {
@@ -439,7 +445,7 @@ html,
 	border-radius: 8px;
 	max-width: 90%;
 	min-height: 80vh;
-	min-width: 600px;
+	min-width: 50vw;
 	max-height: 90vh;
 	overflow: hidden;
 	color: #f0f4fc;
@@ -654,8 +660,12 @@ html,
 		justify-content: flex-end;
 		gap: 0.5rem;
 		margin-top: 1rem;
-		padding-bottom: 1rem;
+		padding-bottom: 0rem;
 		align-self: flex-end;
+
+		button {
+			margin-top: 0;
+		}
 	}
 }
 

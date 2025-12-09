@@ -6,13 +6,9 @@ import PlaceMapView from '../components/PlaceMapView';
 import { PlacePage } from '../components/InteractiveMapCanvas';
 import Api from '../Api';
 import { Page } from '../types';
-import {
-	CaretLeft,
-	CaretRight,
-	FileDotted,
-	Trash,
-	DotsSixVertical,
-} from 'phosphor-react';
+import { FileDashedIcon } from '@phosphor-icons/react/dist/csr/FileDashed';
+import { TrashIcon } from '@phosphor-icons/react/dist/csr/Trash';
+import { DotsSixVerticalIcon } from '@phosphor-icons/react/dist/csr/DotsSixVertical';
 import { useAppStore } from '../store/appStore';
 import ConfirmModal from '../components/ConfirmModal';
 import { toast } from 'react-hot-toast';
@@ -85,7 +81,7 @@ const SortablePageItem: React.FC<SortablePageItemProps> = ({
 					onClick={(e) => e.stopPropagation()}
 					title="Drag to reorder"
 				>
-					<DotsSixVertical size={20} weight="bold" />
+					<DotsSixVerticalIcon size={20} weight="bold" />
 				</span>
 
 				{page.bannerUrl && (
@@ -113,13 +109,13 @@ const SortablePageItem: React.FC<SortablePageItemProps> = ({
 							onClick={(e) => onDeleteClick(e, page)}
 							title="Delete page"
 						>
-							<Trash size={18} weight="bold" />
+							<TrashIcon size={18} weight="bold" />
 						</button>
 					)}
 				</div>
 				{page.draft && isDM && (
 					<span className="draftBadge">
-						<FileDotted size={18} />
+						<FileDashedIcon size={18} />
 					</span>
 				)}
 			</div>
@@ -493,7 +489,7 @@ const LoreHome: React.FC = () => {
 													</div>
 													{page.draft && isDM && (
 														<span className="draftBadge">
-															<FileDotted
+															<FileDashedIcon
 																size={18}
 															/>
 														</span>

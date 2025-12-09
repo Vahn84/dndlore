@@ -106,6 +106,13 @@ input[type='number']::-webkit-outer-spin-button {
 	}
 }
 
+.dp-pop--floating {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 6000; // sit above ReactModal portal (5000)
+}
+
 .dp-pop__panel {
 	/* matches your modal popover visual */
 	background: $color-dark-gray;
@@ -130,7 +137,7 @@ input[type='number']::-webkit-outer-spin-button {
 			@include flex-center();
 			cursor: pointer;
 			padding: 4px;
-			
+
 			&:hover {
 				color: $color-gold;
 			}
@@ -155,7 +162,7 @@ input[type='number']::-webkit-outer-spin-button {
 				padding: 6px 12px;
 				width: auto;
 				height: 100%;
-				
+
 				&:focus {
 					outline: none;
 					border-color: $color-gold;
@@ -179,6 +186,20 @@ input[type='number']::-webkit-outer-spin-button {
 			}
 		}
 	}
+}
+
+.dp-pop__eraChip {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 58px;
+	padding: 6px 12px;
+	border: 1px dashed $color-medium-gray;
+	border-radius: 6px;
+	font-weight: 600;
+	text-transform: uppercase;
+	background: rgba(0, 0, 0, 0.3);
+	color: $color-light-gray;
 }
 
 .dp-pop__grid {
@@ -253,6 +274,11 @@ input[type='number']::-webkit-outer-spin-button {
 	background-size: 12px 12px;
 	/* caret */
 	background-image: none;
+
+	&.hour-select,
+	&.minute-select {
+		color: $color-light-gray;
+	}
 }
 .dp-pop__panel select:hover {
 	border-color: $color-dim;

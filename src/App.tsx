@@ -18,7 +18,6 @@ import ToasterHost from './components/ToasterHost';
 import Api from './Api';
 import { useAppStore } from './store/appStore';
 import LoreHome from './pages/LoreHome';
-import { SignIn, SignOut, UserCircle } from 'phosphor-react';
 import LoreDetail from './pages/LoreDetail';
 import TestSvg from './pages/TestSvg';
 

@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Modal from 'react-modal';
-import { X, Folder, ArrowLeft, Trash } from 'phosphor-react';
+import { XIcon } from '@phosphor-icons/react/dist/csr/X';
+import { FolderIcon } from '@phosphor-icons/react/dist/csr/Folder';
+import { ArrowLeftIcon } from '@phosphor-icons/react/dist/csr/ArrowLeft';
+import { TrashIcon } from '@phosphor-icons/react/dist/csr/Trash';
 import { useAppStore, type Asset, type AssetFolder } from '../store/appStore';
 import '../styles/AssetsManager.scss';
 import Api from '../Api';
@@ -246,7 +249,7 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 											style={{ display: 'flex' }}
 											onClick={onClose}
 										>
-											<X size={16} weight="bold" />
+											<XIcon size={16} weight="bold" />
 										</button>
 									</div>
 								</div>
@@ -265,7 +268,7 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 														setCurrentFolderId(null)
 													}
 												>
-													<ArrowLeft
+													<ArrowLeftIcon
 														size={16}
 														weight="bold"
 													/>
@@ -302,7 +305,7 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 													}
 												>
 													<div className="assetmgr__folder-icon">
-														<Folder
+														<FolderIcon
 															size={48}
 															weight="duotone"
 														/>
@@ -321,7 +324,7 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 														}
 														title="Delete folder"
 													>
-														<Trash
+														<TrashIcon
 															size={20}
 															weight="bold"
 														/>
@@ -370,7 +373,7 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 														}
 														title="Delete asset"
 													>
-														<Trash
+														<TrashIcon
 															size={20}
 															weight="bold"
 														/>
@@ -563,7 +566,7 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 														}
 														title="Unset selection"
 													>
-														<X
+														<XIcon
 															size={20}
 															weight="bold"
 														/>

@@ -377,6 +377,15 @@
 .campaignWorldDate {
 	position: relative; // positioning context for absolute popup
 
+	&.loreDetail {
+		& > .datepick {
+
+			& > .datepick__inputWrap .modal__input.datepill {
+				min-width: 20rem;
+			}
+		}
+	}
+
 	.datepick {
 		display: flex;
 		justify-content: center;

@@ -2,7 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import '../styles/NavBar.scss';
 import stylized_logo from '../assets/aetherium-logo.webp';
-import { ArrowLeft, ArrowSquareLeft, CaretLeft, SignIn, SignOut } from 'phosphor-react';
+import { ArrowLeftIcon } from '@phosphor-icons/react/dist/csr/ArrowLeft';
+import { ArrowSquareLeftIcon } from '@phosphor-icons/react/dist/csr/ArrowSquareLeft';
+import { CaretLeftIcon } from '@phosphor-icons/react/dist/csr/CaretLeft';
+import { SignInIcon } from '@phosphor-icons/react/dist/csr/SignIn';
+import { SignOutIcon } from '@phosphor-icons/react/dist/csr/SignOut';
 import Api from '../Api';
 import { useAppStore } from '../store/appStore';
 
@@ -213,7 +217,7 @@ const NavBar: React.FC = () => {
 					className={`backLink ${onHome ? 'is-home' : 'other'}`}
 					aria-label={backLabel}
 				>
-					<CaretLeft size={window.innerWidth <= 600 ? 28 : 18} weight="thin" />
+					<CaretLeftIcon size={window.innerWidth <= 600 ? 28 : 18} weight="thin" />
 					<span>BACK</span>
 				</NavLink>
 			)}
@@ -275,7 +279,7 @@ const NavBar: React.FC = () => {
 							{isLoggedIn() ? 'Logout' : 'DM Login'}
 						</span>
 						<span className="icon_square-btn">
-							{isLoggedIn() ? <SignOut /> : <SignIn />}
+							{isLoggedIn() ? <SignOutIcon /> : <SignInIcon />}
 						</span>
 					</span>
 				</button>

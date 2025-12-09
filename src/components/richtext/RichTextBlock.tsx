@@ -6,14 +6,12 @@ import { editorExtensions } from './extensions';
 import { PageBlock } from '../../types';
 import Modal from 'react-modal';
 import '../../styles/RichTextEditor.scss';
-import {
-	Image,
-	Plus,
-	TextAlignCenter,
-	TextAlignJustify,
-	TextAlignLeft,
-	TextAlignRight,
-} from 'phosphor-react';
+import { ImageIcon } from '@phosphor-icons/react/dist/csr/Image';
+import { PlusIcon } from '@phosphor-icons/react/dist/csr/Plus';
+import { TextAlignCenterIcon } from '@phosphor-icons/react/dist/csr/TextAlignCenter';
+import { TextAlignJustifyIcon } from '@phosphor-icons/react/dist/csr/TextAlignJustify';
+import { TextAlignLeftIcon } from '@phosphor-icons/react/dist/csr/TextAlignLeft';
+import { TextAlignRightIcon } from '@phosphor-icons/react/dist/csr/TextAlignRight';
 import AssetsManagerModal from '../AssetsManagerModal';
 import Api from '../../Api';
 
@@ -477,7 +475,7 @@ const RichTextBlock: React.FC<Props> = ({
 														)
 													}
 												>
-													<TextAlignLeft />
+													<TextAlignLeftIcon />
 												</button>
 												<button
 													className={
@@ -491,7 +489,7 @@ const RichTextBlock: React.FC<Props> = ({
 														)
 													}
 												>
-													<TextAlignRight />
+													<TextAlignRightIcon />
 												</button>
 												<button
 													className={
@@ -505,7 +503,7 @@ const RichTextBlock: React.FC<Props> = ({
 														)
 													}
 												>
-													<TextAlignJustify />
+													<TextAlignJustifyIcon />
 												</button>
 											</>
 										);
@@ -778,7 +776,7 @@ const RichTextBlock: React.FC<Props> = ({
 												: ''
 										}
 									>
-										<TextAlignLeft />
+										<TextAlignLeftIcon />
 									</button>
 									<button
 										onClick={() =>
@@ -796,7 +794,7 @@ const RichTextBlock: React.FC<Props> = ({
 												: ''
 										}
 									>
-										<TextAlignCenter />
+										<TextAlignCenterIcon />
 									</button>
 									<button
 										onClick={() =>
@@ -814,7 +812,7 @@ const RichTextBlock: React.FC<Props> = ({
 												: ''
 										}
 									>
-										<TextAlignRight />
+										<TextAlignRightIcon />
 									</button>
 									<button
 										onClick={() =>
@@ -832,7 +830,7 @@ const RichTextBlock: React.FC<Props> = ({
 												: ''
 										}
 									>
-										<TextAlignJustify />
+										<TextAlignJustifyIcon />
 									</button>
 								</div>
 							</BubbleMenu>
@@ -898,14 +896,14 @@ const RichTextBlock: React.FC<Props> = ({
 					{toolbar && isDM && (
 						<div className="rt-toolbar">
 							<div className="rt-add-block">
-								<Plus
+								<PlusIcon
 									size={24}
 									type="button"
 									className="add-block-btn"
 									aria-label="Add block below"
 									onClick={addBlock}
 								/>
-								<Image
+								<ImageIcon
 									size={24}
 									type="button"
 									className="add-block-btn"

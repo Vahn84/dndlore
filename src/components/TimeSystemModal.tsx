@@ -6,9 +6,13 @@ import {
 	Droppable,
 	Draggable,
 	DropResult,
-} from 'react-beautiful-dnd';
+	DraggableProps,
+} from '@hello-pangea/dnd';
 import { useAppStore } from '../store/appStore';
+import DatePicker, { PickerValue, DateChangeFormatted } from './DatePicker';
 import '../styles/TimeSystem.scss';
+import { XIcon } from '@phosphor-icons/react/dist/icons/X';
+import { createPortal } from 'react-dom';
 
 interface TimeSystemModalProps {
 	timeSystem?: TimeSystemConfig;
@@ -17,6 +21,30 @@ interface TimeSystemModalProps {
 }
 
 Modal.setAppElement('#root');
+
+// Portal target for dragging inside fixed/overlay containers
+const portalEl =
+	typeof document !== 'undefined'
+		? document.getElementById('dnd-portal') ||
+		  (() => {
+				const el = document.createElement('div');
+				el.id = 'dnd-portal';
+				document.body.appendChild(el);
+				return el;
+		  })()
+		: null;
+
+// Wrap Draggable so the dragging clone renders in the portal, keeping correct positioning
+const PortalAwareDraggable: React.FC<DraggableProps> = (props) => (
+	<Draggable {...props}>
+		{(provided, snapshot, rubic) => {
+			const child = props.children(provided, snapshot, rubic);
+			return snapshot.isDragging && portalEl
+				? createPortal(child, portalEl)
+				: child;
+		}}
+	</Draggable>
+);
 
 // Helper to generate a short random ID. This replicates the generateId helper used elsewhere.
 const generateId = () => Math.random().toString(36).slice(2, 9);
@@ -37,6 +65,7 @@ const normalizeTimeSystem = (ts: TimeSystemConfig): TimeSystemConfig => {
 		abbreviation: e.abbreviation,
 		name: e.name,
 		startYear: typeof e.startYear === 'number' ? e.startYear : 0,
+		backward: !!e.backward,
 	}));
 	return {
 		name: ts.name || '',
@@ -183,7 +212,7 @@ const TimeSystemModal: React.FC<TimeSystemModalProps> = ({
 		}));
 	};
 
-	const addEra = () => {
+	const addEra = (backward: boolean = false) => {
 		setLocalTS((prev) => ({
 			...prev,
 			eras: [
@@ -192,10 +221,29 @@ const TimeSystemModal: React.FC<TimeSystemModalProps> = ({
 					id: generateId(),
 					abbreviation: `E${prev.eras.length + 1}`,
 					name: `Era ${prev.eras.length + 1}`,
-					startYear: 0,
+					startYear: backward ? 10000 : 0,
+					backward,
 				},
 			],
 		}));
+	};
+
+	const handleEraDateChange = (eraId: string, parts: PickerValue | null) => {
+		if (parts) {
+			const year = parseInt(parts.year, 10);
+			if (!isNaN(year)) {
+				updateEraField(eraId, 'startYear', year);
+			}
+		}
+	};
+
+	const getEraDatePickerValue = (era: Era): PickerValue => {
+		return {
+			eraId: era.id,
+			year: era.startYear.toString(),
+			monthIndex: '0', // First month (Primos)
+			day: '1', // First day
+		};
 	};
 
 	const deleteEra = (id: string) => {
@@ -205,12 +253,22 @@ const TimeSystemModal: React.FC<TimeSystemModalProps> = ({
 		}));
 	};
 
+	// Reorder only forward eras; backward eras stay fixed where they are
 	const onErasDragEnd = (result: DropResult) => {
 		if (!result.destination) return;
-		const items = Array.from(localTS.eras);
-		const [moved] = items.splice(result.source.index, 1);
-		items.splice(result.destination.index, 0, moved);
-		setLocalTS((prev) => ({ ...prev, eras: items }));
+		const forward = localTS.eras.filter((e) => !e.backward);
+		const reordered = Array.from(forward);
+		const [moved] = reordered.splice(result.source.index, 1);
+		if (!moved) return;
+		reordered.splice(result.destination.index, 0, moved);
+
+		// Merge back into the original layout so backward eras keep position
+		const forwardQueue = [...reordered];
+		const merged = localTS.eras.map((era) =>
+			era.backward ? era : forwardQueue.shift() || era
+		);
+
+		setLocalTS((prev) => ({ ...prev, eras: merged }));
 	};
 
 	// Handler for saving changes
@@ -239,7 +297,7 @@ const TimeSystemModal: React.FC<TimeSystemModalProps> = ({
 			isOpen={true}
 			onRequestClose={onClose}
 			contentLabel="Time System Editor"
-			className="modal__content"
+			className="modal__content tsm__content"
 			overlayClassName="modal__overlay"
 		>
 			{/* Left navigation */}
@@ -377,37 +435,51 @@ const TimeSystemModal: React.FC<TimeSystemModalProps> = ({
 									</select>
 								</label>
 							</div>
-							<div className="modal__field">
-								<label className="modal__checkrow">
-									<input
-										type="checkbox"
-										checked={localTS.weekdaysResetEachMonth}
-										onChange={(e) =>
-											setLocalTS((prev) => ({
-												...prev,
-												weekdaysResetEachMonth:
-													e.target.checked,
-											}))
-										}
-									/>
+							<div className="checkbox-wrapper">
+								<input
+									className="input-checkbox input-checkbox-light"
+									type="checkbox"
+									id="hidden-checkbox"
+									checked={localTS.weekdaysResetEachMonth}
+									onChange={(e) =>
+										setLocalTS((prev) => ({
+											...prev,
+											weekdaysResetEachMonth:
+												e.target.checked,
+										}))
+									}
+								/>
+
+								<label
+									className="input-checkbox-btn"
+									htmlFor="hidden-checkbox"
+								></label>
+								<span className="form-label">
 									Weekday numbering resets each month
-								</label>
+								</span>
 							</div>
-							<div className="modal__field">
-								<label className="modal__checkrow">
-									<input
-										type="checkbox"
-										checked={localTS.erasStartOnZeroYear}
-										onChange={(e) =>
-											setLocalTS((prev) => ({
-												...prev,
-												erasStartOnZeroYear:
-													e.target.checked,
-											}))
-										}
-									/>
+							<div className="checkbox-wrapper">
+								<input
+									className="input-checkbox input-checkbox-light"
+									type="checkbox"
+									id="second-hidden-checkbox"
+									checked={localTS.erasStartOnZeroYear}
+									onChange={(e) =>
+										setLocalTS((prev) => ({
+											...prev,
+											erasStartOnZeroYear:
+												e.target.checked,
+										}))
+									}
+								/>
+
+								<label
+									className="input-checkbox-btn"
+									htmlFor="second-hidden-checkbox"
+								></label>
+								<span className="form-label">
 									Eras start on year 0 (otherwise year 1)
-								</label>
+								</span>
 							</div>
 						</div>
 					</div>
@@ -422,16 +494,19 @@ const TimeSystemModal: React.FC<TimeSystemModalProps> = ({
 							rename each month and set the number of days it
 							contains.
 						</p>
-						<DragDropContext onDragEnd={onMonthsDragEnd}>
+						<DragDropContext
+							onDragEnd={onMonthsDragEnd}
+							key={'months-context'}
+						>
 							<Droppable droppableId="months-droppable">
 								{(provided) => (
 									<div
 										ref={provided.innerRef}
 										{...provided.droppableProps}
-										className="draggable__list"
+										className="draggable__list scrollable-dnd-list"
 									>
 										{localTS.months.map((m, index) => (
-											<Draggable
+											<PortalAwareDraggable
 												key={m.id}
 												draggableId={m.id}
 												index={index}
@@ -497,7 +572,7 @@ const TimeSystemModal: React.FC<TimeSystemModalProps> = ({
 														</button>
 													</div>
 												)}
-											</Draggable>
+											</PortalAwareDraggable>
 										))}
 										{provided.placeholder}
 									</div>
@@ -523,16 +598,19 @@ const TimeSystemModal: React.FC<TimeSystemModalProps> = ({
 							remove/add new ones. Select which weekday marks the
 							start of year zero.
 						</p>
-						<DragDropContext onDragEnd={onWeekdaysDragEnd}>
+						<DragDropContext
+							onDragEnd={onWeekdaysDragEnd}
+							key={'weekdays-context'}
+						>
 							<Droppable droppableId="weekdays-droppable">
 								{(provided) => (
 									<div
 										ref={provided.innerRef}
 										{...provided.droppableProps}
-										className="draggable__list"
+										className="draggable__list scrollable-dnd-list"
 									>
 										{localTS.weekdays.map((d, index) => (
-											<Draggable
+											<PortalAwareDraggable
 												key={d.id}
 												draggableId={d.id}
 												index={index}
@@ -582,7 +660,7 @@ const TimeSystemModal: React.FC<TimeSystemModalProps> = ({
 														</button>
 													</div>
 												)}
-											</Draggable>
+											</PortalAwareDraggable>
 										))}
 										{provided.placeholder}
 									</div>
@@ -603,117 +681,235 @@ const TimeSystemModal: React.FC<TimeSystemModalProps> = ({
 				{activeTab === 'eras' && (
 					<div className="modal__body_content">
 						<h3 className="tsm__sectionTitle">Years / Eras</h3>
-						<p className="tsm__help">
-							Define time eras. Each era requires a unique
-							abbreviation, a name and an absolute start year.
-							Drag to reorder eras. The first era is considered
-							the reference era.
-						</p>
-						<DragDropContext onDragEnd={onErasDragEnd}>
-							<Droppable droppableId="eras-droppable">
-								{(provided) => (
-									<div
-										ref={provided.innerRef}
-										{...provided.droppableProps}
-										className="draggable__list"
-									>
-										{localTS.eras.map((er, index) => (
-											<Draggable
-												key={er.id}
-												draggableId={er.id}
-												index={index}
-											>
-												{(prov) => (
-													<div
-														ref={prov.innerRef}
-														{...prov.draggableProps}
-														className="draggable__listItem"
-														style={
-															prov.draggableProps
-																.style
-														}
-													>
-														<span
-															{...prov.dragHandleProps}
-															className="draggable__handle"
-														>
-															☰
-														</span>
-														<span className="draggable__index">
-															{index + 1}
-														</span>
-														<input
-															className="draggable__input draggable__input--abbr"
-															type="text"
-															value={
-																er.abbreviation
-															}
-															onChange={(e) =>
-																updateEraField(
-																	er.id,
-																	'abbreviation',
-																	e.target
-																		.value
-																)
-															}
-															placeholder="Abbr"
-														/>
-														<input
-															className="draggable__input draggable__input--flex"
-															type="text"
-															value={er.name}
-															onChange={(e) =>
-																updateEraField(
-																	er.id,
-																	'name',
-																	e.target
-																		.value
-																)
-															}
-															placeholder="Era name"
-														/>
-														<input
-															className="draggable__input draggable__input--year"
-															type="number"
-															value={er.startYear}
-															onChange={(e) =>
-																updateEraField(
-																	er.id,
-																	'startYear',
-																	parseInt(
-																		e.target
-																			.value,
-																		10
-																	) || 0
-																)
-															}
-														/>
-														<button
-															className="draggable__iconbtn draggable__iconbtn--danger"
-															type="button"
-															onClick={() =>
-																deleteEra(er.id)
-															}
-															title="Delete era"
-														>
-															✖
-														</button>
-													</div>
+
+						{/* Backward Era Section */}
+						<div className="tsm__eraSection">
+							<div className="tsm__eraHeader">
+								<h4 className="tsm__eraTitle">
+									BACKWARD ERA (OPTIONAL)
+								</h4>
+								<span className="tsm__eraSubtitle">
+									START DATE
+								</span>
+							</div>
+							<p className="tsm__help">
+								A backward era counts from a start year down to
+								1, ending at year 0. Only one backward era is
+								allowed.
+							</p>
+							{localTS.eras
+								.filter((e) => e.backward)
+								.map((er) => (
+									<div key={er.id} className="tsm__eraItem">
+										<input
+											className="tsm__eraInput tsm__eraInput--abbr"
+											type="text"
+											value={er.abbreviation}
+											onChange={(e) =>
+												updateEraField(
+													er.id,
+													'abbreviation',
+													e.target.value
+												)
+											}
+											placeholder="DE"
+										/>
+										<input
+											className="tsm__eraInput tsm__eraInput--name"
+											type="text"
+											value={er.name}
+											onChange={(e) =>
+												updateEraField(
+													er.id,
+													'name',
+													e.target.value
+												)
+											}
+											placeholder="Divine Era"
+										/>
+										<div className="tsm__eraDate">
+											<DatePicker
+												ts={localTS}
+												value={getEraDatePickerValue(
+													er
 												)}
-											</Draggable>
-										))}
-										{provided.placeholder}
+												onChange={(parts) =>
+													handleEraDateChange(
+														er.id,
+														parts
+													)
+												}
+												format="year"
+												placeholder="Select start year"
+												hideEraSelector
+												positionAbove
+											/>
+										</div>
+										<button
+											className="tsm__eraDeleteBtn draggable__iconbtn draggable__iconbtn--danger"
+											type="button"
+											onClick={() => deleteEra(er.id)}
+											title="Delete backward era"
+										>
+											<XIcon size={16} />
+										</button>
 									</div>
-								)}
-							</Droppable>
-						</DragDropContext>
-						<button
-							type="button"
-							onClick={addEra}
-							className="draggable__btn draggable__btn--primary"
-						>
-							+ Add era
-						</button>
+								))}
+							{localTS.eras.filter((e) => e.backward).length ===
+								0 && (
+								<button
+									type="button"
+									onClick={() => addEra(true)}
+									className="draggable__btn draggable__btn--secondary"
+								>
+									+ Add era
+								</button>
+							)}
+						</div>
+
+						{/* Forward Eras Section */}
+						<div className="tsm__eraSection tsm__eraSection--forward">
+							<div className="tsm__eraHeader">
+								<h4 className="tsm__eraTitle">FORWARD ERAS</h4>
+								<span className="tsm__eraSubtitle">
+									START DATE
+								</span>
+							</div>
+							<p className="tsm__help">
+								Forward eras count from a start year upward. You
+								can have multiple forward eras. Drag to reorder.
+							</p>
+							<DragDropContext
+								onDragEnd={onErasDragEnd}
+								key={'eras-context'}
+							>
+								<Droppable droppableId="eras-droppable">
+									{(provided) => (
+										<div
+											ref={provided.innerRef}
+											{...provided.droppableProps}
+											className="tsm__eraList"
+										>
+											{localTS.eras
+												.filter((e) => !e.backward)
+												.map((er, index) => (
+													<PortalAwareDraggable
+														key={er.id}
+														draggableId={er.id}
+														index={index}
+													>
+														{(prov) => (
+															<div
+																ref={
+																	prov.innerRef
+																}
+																{...prov.draggableProps}
+																className="tsm__eraItem"
+																style={
+																	prov
+																		.draggableProps
+																		.style
+																}
+															>
+																<span
+																	{...prov.dragHandleProps}
+																	className="tsm__eraDragHandle"
+																>
+																	⋮⋮
+																</span>
+																<input
+																	className="tsm__eraInput tsm__eraInput--abbr"
+																	type="text"
+																	value={
+																		er.abbreviation
+																	}
+																	onChange={(
+																		e
+																	) =>
+																		updateEraField(
+																			er.id,
+																			'abbreviation',
+																			e
+																				.target
+																				.value
+																		)
+																	}
+																	placeholder="IE"
+																/>
+																<input
+																	className="tsm__eraInput tsm__eraInput--name"
+																	type="text"
+																	value={
+																		er.name
+																	}
+																	onChange={(
+																		e
+																	) =>
+																		updateEraField(
+																			er.id,
+																			'name',
+																			e
+																				.target
+																				.value
+																		)
+																	}
+																	placeholder="Immortals Era"
+																/>
+																<div className="tsm__eraDate">
+																	<DatePicker
+																		ts={
+																			localTS
+																		}
+																		value={getEraDatePickerValue(
+																			er
+																		)}
+																		onChange={(
+																			parts
+																		) =>
+																			handleEraDateChange(
+																				er.id,
+																				parts
+																			)
+																		}
+																		format="year"
+																		placeholder="Select start year"
+																		hideEraSelector
+																		positionAbove
+																	/>
+																</div>
+																<button
+																	className="tsm__eraDeleteBtn draggable__iconbtn draggable__iconbtn--danger"
+																	type="button"
+																	onClick={() =>
+																		deleteEra(
+																			er.id
+																		)
+																	}
+																	title="Delete group"
+																>
+																	<XIcon
+																		size={
+																			16
+																		}
+																	/>
+																</button>
+															</div>
+														)}
+													</PortalAwareDraggable>
+												))}
+											{provided.placeholder}
+										</div>
+									)}
+								</Droppable>
+							</DragDropContext>
+							<button
+								type="button"
+								onClick={() => addEra(false)}
+								className="draggable__btn draggable__btn--primary"
+							>
+								+ Add era
+							</button>
+						</div>
 					</div>
 				)}
 

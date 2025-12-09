@@ -65,11 +65,14 @@ type AppState = {
 	loadAssetFolders: () => Promise<void>;
 
 	// --- mutations (API) ---
-	createGroup: (name: string) => Promise<Group>;
+	createGroup: (name: string, extras?: { color?: string; exclude?: boolean; orderAscending?: boolean; defaultSelected?: boolean }) => Promise<Group>;
 	updateGroup: (g: {
 		_id: string;
 		name?: string;
 		color?: string;
+		exclude?: boolean;
+		orderAscending?: boolean;
+		defaultSelected?: boolean;
 		order?: number;
 	}) => Promise<Group>;
 	deleteGroup: (id: string) => Promise<void>;
@@ -404,8 +407,8 @@ export const useAppStore = create<AppState>()(
 					);
 				});
 			},				// --- mutations ---
-				createGroup: async (name) => {
-					const created = await Api.createGroup({ name });
+				createGroup: async (name, extras = {}) => {
+					const created = await Api.createGroup({ name, ...extras });
 					set((s) => {
 						s.data.groups.data.push(created);
 					});
@@ -416,9 +419,14 @@ export const useAppStore = create<AppState>()(
 					console.log('Updating group in store:', g);
 					const upd = await Api.updateGroup(g);
 					set((s) => {
-						s.data.groups.data = s.data.groups.data.map((x) =>
-							x._id === upd._id ? upd : x
-						);
+						s.data.groups.data = s.data.groups.data.map((x) => {
+							if (x._id === upd._id) return upd;
+							// Mirror backend behavior: only one default at a time
+							if (upd.defaultSelected) {
+								return { ...x, defaultSelected: false };
+							}
+							return x;
+						});
 					});
 					return upd;
 				},
@@ -576,7 +584,7 @@ export const useAppStore = create<AppState>()(
 			})),
 			{
 				name: 'dndlore-state',
-				version: 3,
+				version: 4,
 				migrate: (state: any, version) => {
 				// Ensure root objects exist
 				if (!state) return state as any;
@@ -600,6 +608,11 @@ export const useAppStore = create<AppState>()(
 						state.ui.activeGroupIds.filter(
 							(x: any) => typeof x === 'string' && !!x
 						);
+				}
+
+				// Reset group filters on migrate to honor new default-selection logic
+				if (version < 4 && state.ui) {
+					state.ui.activeGroupIds = [];
 				}
 
 				// Ensure assets slice exists after rehydrate from older versions

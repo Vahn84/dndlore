@@ -6,6 +6,12 @@ export interface Group {
 	 * Manual ordering for the group list. Lower numbers appear first.
 	 */
 	order: number;
+	/** If true, this group is exclusive: it hides all other groups when selected. */
+	exclude?: boolean;
+	/** Sorting direction for exclusive groups. Inclusive groups are always ascending. */
+	orderAscending?: boolean;
+	/** If true, this group is selected by default when no group filter is provided. */
+	defaultSelected?: boolean;
 }
 
 export interface Month {
@@ -33,6 +39,11 @@ export interface Era {
 	 * The absolute start year of this era. Subsequent years in this era are relative to this value.
 	 */
 	startYear: number;
+	/**
+	 * Whether this is a backward era (counts from startYear down to 1, ending at year 0).
+	 * There can only be one backward era in a time system.
+	 */
+	backward?: boolean;
 }
 
 export interface TimeSystemConfig {
@@ -109,11 +120,15 @@ export interface Event {
 	startYear?: number;
 	startMonthIndex?: number | null;
 	startDay?: number | null;
+	startHour?: number | null;
+	startMinute?: number | null;
 
 	endEraId?: string;
 	endYear?: number;
 	endMonthIndex?: number | null;
 	endDay?: number | null;
+	endHour?: number | null;
+	endMinute?: number | null;
 	detailLevel?: DetailLevel;
 	icon?: string;
 }
@@ -159,7 +174,14 @@ export interface Page {
 	/** Real-world session date for campaign pages (DD/MM/YYYY). */
 	sessionDate?: string;
 	/** In-world date for campaign pages (custom time system). */
-	worldDate?: { eraId: string; year: number; monthIndex: number; day: number } | null;
+	worldDate?: {
+		eraId: string;
+		year: number;
+		monthIndex: number;
+		day: number;
+		hour?: number | null;
+		minute?: number | null;
+	} | null;
 	/** If true, the entire page is hidden from public users. */
 	hidden?: boolean;
 	/** If true, this page is a draft and not published yet. */

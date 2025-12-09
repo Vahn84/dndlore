@@ -6,20 +6,14 @@ import { useAutoSave } from '../hooks/useAutoSave';
 import { Page } from '../types';
 import '../styles/LoreDetail.scss';
 import { useAppStore } from '../store/appStore';
-import {
-	Calendar,
-	CalendarBlank,
-	CalendarCheck,
-	Image,
-	TrashSimple,
-	CheckCircle,
-	XCircle,
-} from 'phosphor-react';
+import { ImageIcon } from '@phosphor-icons/react/dist/csr/Image';
+import { GlobeSimpleIcon } from '@phosphor-icons/react/dist/csr/GlobeSimple';
+import { GlobeSimpleXIcon } from '@phosphor-icons/react/dist/csr/GlobeSimpleX';
 import AssetsManagerModal from '../components/AssetsManagerModal';
 import Modal from 'react-modal';
 import Api from '../Api';
 import Divider from '../components/Divider';
-import DatePicker from '../components/DatePicker';
+import DatePicker, { PickerValue } from '../components/DatePicker';
 import SessionDatePicker from '../components/SessionDatePicker';
 import useAutoSizeTextArea from '../hooks/useAutoSizeTextArea';
 
@@ -320,24 +314,60 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 		}
 	};
 
+	const pad2 = (v: number | string | null | undefined) =>
+		v === null || v === undefined || v === ''
+			? ''
+			: String(v).padStart(2, '0');
+
+	const timeOfDayLabel = (hour?: number | null, minute?: number | null) => {
+		if (hour === undefined || hour === null) return '';
+		const mm = minute ?? 0;
+		const total = hour * 60 + mm; // 0..1439
+		const inRange = (start: number, end: number) =>
+			total >= start && total <= end;
+		if (inRange(300, 465)) return ' - Al sorgere del sole'; // 05:00-07:45
+		if (inRange(480, 645)) return ' - Mattina'; // 08:00-10:45
+		if (inRange(660, 765)) return ' - Tarda Mattinata'; // 11:00-12:45
+		if (inRange(780, 945)) return ' - Primo Pomeriggio'; // 13:00-15:45
+		if (inRange(960, 1065)) return ' - Pomeriggio'; // 16:00-17:45
+		if (inRange(1080, 1185)) return ' - Al calar del sole'; // 18:00-19:45
+		if (inRange(1200, 1305)) return ' - Dopo il tramonto'; // 20:00-21:45
+		if (inRange(1320, 1439) || inRange(0, 285)) return ' - Notte'; // 22:00-23:45 or 00:00-04:45
+		return `${pad2(hour)}:${pad2(mm)}`; // fallback to numeric
+	};
+
 	const formatWorldDate = (
 		ts: any,
-		wd: { eraId: string; year: number; monthIndex: number; day: number }
+		wd: {
+			eraId: string;
+			year: number;
+			monthIndex: number;
+			day: number;
+			hour?: number | null;
+			minute?: number | null;
+		}
 	) => {
 		const era = ts?.eras?.find((e: any) => e.id === wd.eraId);
 		const eraAbbr = era?.abbreviation || '';
 		const monthName = ts?.months?.[wd.monthIndex]?.name;
+		const hasTime = wd.hour !== undefined || wd.minute !== undefined;
+		const time = hasTime
+			? timeOfDayLabel(wd.hour ?? 0, wd.minute ?? 0)
+			: '';
+
 		if (typeof wd.day === 'number' && monthName) {
 			return `${ordinal(wd.day)} ${monthName} ${String(wd.year)}${
 				eraAbbr ? `, ${eraAbbr}` : ''
-			}`;
+			}${time ? ` ${time}` : ''}`;
 		}
 		if (monthName) {
 			return `${monthName} ${String(wd.year)}${
 				eraAbbr ? `, ${eraAbbr}` : ''
-			}`;
+			}${time ? ` ${time}` : ''}`;
 		}
-		return `${String(wd.year)}${eraAbbr ? `, ${eraAbbr}` : ''}`;
+		return `${String(wd.year)}${eraAbbr ? `, ${eraAbbr}` : ''}${
+			time ? ` ${time}` : ''
+		}`;
 	};
 
 	// --- Publish/Unpublish ---------------------------------------------------
@@ -359,6 +389,8 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 					year: number;
 					monthIndex: number;
 					day: number;
+					hour?: number | null;
+					minute?: number | null;
 				};
 				const pageId = (upd as any)?._id || (pageDraft as any)?._id;
 
@@ -415,6 +447,8 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 						startYear: wd.year,
 						startMonthIndex: wd.monthIndex,
 						startDay: wd.day,
+						startHour: wd.hour ?? null,
+						startMinute: wd.minute ?? null,
 						detailLevel: 'Day' as any,
 						description: (pageDraft as any).subtitle || '',
 						// @ts-ignore extended interface for page linkage
@@ -478,7 +512,8 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 								? publishPage
 								: unpublishPage
 						}
-						className="draft-publish-btn-label">
+						className="draft-publish-btn-label"
+					>
 						{(pageDraft as any)?.draft ? 'Publish' : 'Unpublish'}
 					</span>
 					<button
@@ -494,9 +529,9 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 						style={{ opacity: 0.6 }}
 					>
 						{(pageDraft as any)?.draft ? (
-							<CheckCircle size={24} weight="bold" />
+							<GlobeSimpleIcon size={24} weight="bold" />
 						) : (
-							<XCircle size={24} weight="bold" />
+							<GlobeSimpleXIcon size={24} weight="bold" />
 						)}
 					</button>
 				</div>
@@ -518,7 +553,7 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 										className="banner-icon loaded"
 										onClick={removeBanner}
 									>
-										<Image size={32} />
+										<ImageIcon size={32} />
 										<span>REMOVE BANNER</span>
 									</div>
 								) : (
@@ -526,7 +561,7 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 										className="banner-icon loaded"
 										onClick={() => setAssetOpen(true)}
 									>
-										<Image size={32} />
+										<ImageIcon size={32} />
 										<span>ADD BANNER</span>
 									</div>
 								)}
@@ -545,11 +580,21 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 							<h1>{(pageDraft as any).title || 'New Title'}</h1>
 						)}
 					</h1>
-					<div className="campaignWorldDate">
+					<div className="campaignWorldDate loreDetail">
 						<DatePicker
 							ts={timeSystem}
 							format="yearMonthDay"
 							positionAbove={true}
+							timeLabelFormatter={(h?: string | null, m?: string | null) =>
+								timeOfDayLabel(
+									h !== undefined && h !== null && h !== ''
+										? Number(h)
+										: undefined,
+									m !== undefined && m !== null && m !== ''
+										? Number(m)
+										: undefined
+								)
+							}
 							value={
 								(pageDraft as any).worldDate
 									? {
@@ -567,10 +612,31 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 												(pageDraft as any).worldDate
 													.day ?? '1'
 											),
+											hour:
+												(pageDraft as any).worldDate
+													.hour !== undefined &&
+												(pageDraft as any).worldDate
+													.hour !== null
+													? String(
+															(pageDraft as any)
+																.worldDate.hour
+													  )
+													: '',
+											minute:
+												(pageDraft as any).worldDate
+													.minute !== undefined &&
+												(pageDraft as any).worldDate
+													.minute !== null
+													? String(
+															(pageDraft as any)
+																.worldDate
+																.minute
+													  )
+													: '',
 									  }
 									: null
 							}
-							onChange={(parts) => {
+							onChange={(parts: PickerValue | null) => {
 								setPageDraft((prev: any) => ({
 									...prev,
 									worldDate: parts
@@ -591,6 +657,23 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 														parts.day || '1',
 														10
 													) || 1,
+												hour:
+													parts.hour !== undefined &&
+													parts.hour !== ''
+														? parseInt(
+																parts.hour,
+																10
+														  ) || 0
+														: null,
+												minute:
+													parts.minute !==
+														undefined &&
+													parts.minute !== ''
+														? parseInt(
+																parts.minute,
+																10
+														  ) || 0
+														: null,
 										  }
 										: null,
 								}));

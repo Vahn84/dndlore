@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { DetailLevel, Event, Group, TimeSystemConfig } from '../types';
+import { DetailLevel, Event, Group, TimeSystemConfig, Era } from '../types';
 import '../styles/Timeline.scss';
 import TimeSystemModal from './TimeSystemModal';
 import GroupModal from './GroupModal';
@@ -8,7 +8,7 @@ import EventModal from './EventModal';
 import { useAppStore } from '../store/appStore';
 import { Virtuoso } from 'react-virtuoso';
 import { ICONS } from './Icons';
-import { CalendarBlank } from 'phosphor-react';
+import { CalendarBlankIcon } from '@phosphor-icons/react/dist/csr/CalendarBlank';
 import Api from '../Api';
 import ConfirmModal from './ConfirmModal';
 
@@ -141,6 +141,15 @@ const Timeline: React.FC<TimelineProps> = () => {
 			else if (typeof sy === 'string' && /^\d+$/.test(sy))
 				year = Number(sy);
 		}
+		
+		// Check if this event's era is backward - if so, negate the year
+		// so that backward eras sort correctly relative to forward eras
+		const era = timeSystem?.eras?.find((e: any) => e.id === ev.startEraId);
+		const isBackward = era?.backward === true;
+		if (isBackward && year) {
+			year = -year;
+		}
+		
 		// 2) Month
 		let month = 0;
 		if (typeof ev.startMonthIndex === 'number') {
@@ -162,9 +171,30 @@ const Timeline: React.FC<TimelineProps> = () => {
 			);
 			if (m) day = Number(m[1]);
 		}
-		// Compose as YYYYMMDD to sort chronologically. Missing parts become 0.
-		return (year || 0) * 10000 + month * 100 + day;
+		// 4) Time
+		const hour =
+			typeof (ev as any).startHour === 'number'
+				? (ev as any).startHour
+				: 0;
+		const minute =
+			typeof (ev as any).startMinute === 'number'
+				? (ev as any).startMinute
+				: 0;
+		// Compose as YYYYMMDDHHMM to sort chronologically. Missing parts become 0.
+		return (year || 0) * 100000000 + month * 1000000 + day * 10000 + hour * 100 + minute;
 	};
+
+	const selectedExclusiveGroup = useMemo(
+		() =>
+			groups.find(
+				(g) => (g as any)?.exclude && activeGroupIds.includes(g._id)
+			),
+		[groups, activeGroupIds]
+	);
+	const sortAscending =
+		selectedExclusiveGroup?.orderAscending !== undefined
+			? !!selectedExclusiveGroup.orderAscending
+			: true;
 
 	const orderedEvents = _events
 		.filter((e) =>
@@ -174,7 +204,9 @@ const Timeline: React.FC<TimelineProps> = () => {
 		.sort((a, b) => {
 			const kb = buildSortKey(b);
 			const ka = buildSortKey(a);
-			if (kb !== ka) return kb - ka; // DESC by date (newest/largest first)
+			if (ka !== kb) {
+				return sortAscending ? ka - kb : kb - ka;
+			}
 			return (a.order ?? 0) - (b.order ?? 0); // tie-breaker: explicit order
 		});
 	// Final, visible list for rendering (virtualized)
@@ -319,16 +351,158 @@ const Timeline: React.FC<TimelineProps> = () => {
 
 	// Toggle group filter
 	const toggleGroupFilter = (id: string) => {
-		const next = activeGroupIds.includes(id)
-			? activeGroupIds.filter((g) => g !== id)
-			: [...activeGroupIds, id];
+		const target = groups.find((g) => g._id === id);
+		const isExclusive = !!(target as any)?.exclude;
+		const hasExclusiveSelected = activeGroupIds.some((gid) => {
+			const g = groups.find((gr) => gr._id === gid);
+			return !!(g as any)?.exclude;
+		});
+
+		let next: string[];
+		if (isExclusive) {
+			// Exclusive group: selecting it clears others; toggling it off clears selection
+			const isActive = activeGroupIds.includes(id);
+			next = isActive ? [] : [id];
+		} else if (hasExclusiveSelected) {
+			// Switching from an exclusive selection to an inclusive one replaces the exclusive
+			const isActive = activeGroupIds.includes(id);
+			next = isActive ? [] : [id];
+		} else {
+			// Normal inclusive toggle
+			next = activeGroupIds.includes(id)
+				? activeGroupIds.filter((g) => g !== id)
+				: [...activeGroupIds, id];
+		}
 		setGroupsFilter(next);
 	};
+
+	// Apply default group selection only once on first load when no query param is present
+	const appliedInitialDefaults = React.useRef(false);
+	useEffect(() => {
+		if (appliedInitialDefaults.current) return;
+		const hasQueryGroups = !!searchParams.get('groups');
+		if (hasQueryGroups) {
+			appliedInitialDefaults.current = true;
+			return;
+		}
+		if (!groups.length) return;
+		const defaults = groups
+			.filter((g) => (g as any)?.defaultSelected)
+			.map((g) => g._id);
+		if (defaults.length) {
+			setGroupsFilter(defaults);
+			appliedInitialDefaults.current = true;
+			return;
+		}
+		// Fallback: if no defaults are defined, select the first group to avoid empty timeline
+		const first = groups[0]?._id;
+		if (first) {
+			setGroupsFilter([first]);
+			appliedInitialDefaults.current = true;
+			return;
+		}
+		appliedInitialDefaults.current = true;
+	}, [groups, searchParams, setGroupsFilter]);
 	// Helper to parse year from startDate string (tolerant of undefined)
 	function parseYear(str?: string | null): number {
 		if (!str) return 0;
 		const all = str.match(/(\d{1,6})(?!.*\d)/); // last number is the year
 		return all ? parseInt(all[1], 10) : 0;
+	}
+
+	// --- Helpers for absolute timeline math (era-aware) ---
+	function getYearLengthDays(ts?: TimeSystemConfig | null): number {
+		if (!ts || !ts.months?.length) return 0;
+		return ts.months.reduce((sum, m) => sum + (m?.days || 0), 0);
+	}
+
+	function parseEraAbbreviation(str?: string | null): string | null {
+		if (!str) return null;
+		// Matches trailing era abbreviation like ", DE" or ", IE"
+		const m = str.match(/,\s*([A-Z]{1,3})\s*$/);
+		return m ? m[1] : null;
+	}
+
+	function resolveStartParts(ev: Event): {
+		era: Era | null;
+		year: number;
+		monthIndex: number;
+		day: number;
+		hour: number;
+		minute: number;
+	} {
+		const escapeReg = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		// Year
+		let year = parseYear(ev.startDate);
+		if (!year) {
+			const sy = (ev as any).startYear;
+			if (typeof sy === 'number') year = sy;
+			else if (typeof sy === 'string' && /^\d+$/.test(sy)) year = Number(sy);
+		}
+		// Era
+		let era: Era | null = null;
+		if (timeSystem?.eras?.length) {
+			if (ev.startEraId) {
+				era = (timeSystem.eras as Era[]).find((e: Era) => e.id === ev.startEraId) || null;
+			} else {
+				const abbr = parseEraAbbreviation(ev.startDate);
+				if (abbr) {
+					era = (timeSystem.eras as Era[]).find((e: Era) => (e.abbreviation || '').toUpperCase() === abbr.toUpperCase()) || null;
+				}
+			}
+		}
+		// Month index (0-based)
+		let monthIndex = 0;
+		if (typeof ev.startMonthIndex === 'number') {
+			monthIndex = (ev.startMonthIndex as number) ?? 0;
+		} else if (ev.startDate && timeSystem?.months?.length) {
+			const idx = timeSystem.months.findIndex((m: any) =>
+				new RegExp(`\\b${escapeReg(m.name)}\\b`, 'i').test(ev.startDate as string)
+			);
+			if (idx >= 0) monthIndex = idx;
+		}
+		// Day (1-based expected in formatted string/fields). Store as 1+.
+		let day = 1;
+		if (typeof ev.startDay === 'number' && ev.startDay) day = ev.startDay as number;
+		else if (ev.startDate) {
+			const m = (ev.startDate as string).match(/^(\d+)(?:st|nd|rd|th)?\b/i);
+			if (m) day = Number(m[1]);
+		}
+		// Time
+		const hour = typeof (ev as any).startHour === 'number' ? (ev as any).startHour : 0;
+		const minute = typeof (ev as any).startMinute === 'number' ? (ev as any).startMinute : 0;
+		return { era, year: year || 0, monthIndex: monthIndex || 0, day: day || 1, hour, minute };
+	}
+
+	function toAbsoluteMinutes(ev: Event, ts?: TimeSystemConfig | null): number | null {
+		if (!ts) return null;
+		const { era, year, monthIndex, day, hour, minute } = resolveStartParts(ev);
+		const yearDays = getYearLengthDays(ts);
+		if (!yearDays) return null;
+		const minutesPerDay = (ts.hoursPerDay || 24) * (ts.minutesPerHour || 60);
+		// dayOfYear: 0-based index within the year
+		let dayOfYear = 0;
+		if (ts.months?.length) {
+			for (let i = 0; i < Math.min(monthIndex, ts.months.length); i++) {
+				dayOfYear += ts.months[i].days || 0;
+			}
+			dayOfYear += Math.max(0, (day || 1) - 1);
+		}
+		// Map to a continuous absolute year coordinate relative to the epoch (IE year 0)
+		let absoluteYear = year;
+		if (era) {
+			if (era.backward) {
+				absoluteYear = -year;
+			} else {
+				absoluteYear = (era.startYear || 0) + year;
+			}
+		}
+		const totalMinutes =
+			absoluteYear * yearDays * minutesPerDay +
+			dayOfYear * minutesPerDay +
+			(hour || 0) * (ts.minutesPerHour || 60) +
+			(minute || 0);
+		return totalMinutes;
 	}
 
 	// Format any date string according to a chosen detail level.
@@ -506,23 +680,42 @@ const Timeline: React.FC<TimelineProps> = () => {
 
 	const resolveIcon = (icon?: string): React.ReactNode => {
 		if (icon) {
-			return ICONS[icon] || <CalendarBlank />;
+			return ICONS[icon] || <CalendarBlankIcon />;
 		} else {
-			return <CalendarBlank />;
+			return <CalendarBlankIcon />;
 		}
 	};
 
 	const renderEvent = (ev: Event, index: number) => {
-		// compute difference from previous event for caption
+		// compute difference from previous event for caption (era-aware, down to days)
 		const prev = index > 0 ? visibleEvents[index - 1] : null;
 		let diffLabel = '';
-		if (prev) {
-			const prevYear = parseYear(prev.startDate);
-			const currYear = parseYear(ev.startDate);
-			if (prevYear > 0 && currYear > 0) {
-				const diff = prevYear - currYear;
-				if (diff > 0) {
-					diffLabel = `${diff.toLocaleString()} years later`;
+		if (prev && timeSystem) {
+			const prevTs = toAbsoluteMinutes(prev, timeSystem);
+			const currTs = toAbsoluteMinutes(ev, timeSystem);
+			if (prevTs !== null && currTs !== null) {
+				const minutesPerDay = (timeSystem.hoursPerDay || 24) * (timeSystem.minutesPerHour || 60);
+				const yearDays = getYearLengthDays(timeSystem);
+				const avgMonthDays = yearDays && timeSystem.months?.length ? yearDays / timeSystem.months.length : 30;
+				let delta = currTs - prevTs; // positive if curr is later in time than prev
+				const absDays = Math.floor(Math.abs(delta) / minutesPerDay);
+				if (absDays >= 1) {
+					let value = 0;
+					let unit = '';
+					if (yearDays && absDays >= yearDays) {
+						value = Math.floor(absDays / yearDays);
+						unit = value === 1 ? 'year' : 'years';
+					} else if (absDays >= Math.max(1, Math.round(avgMonthDays))) {
+						value = Math.floor(absDays / Math.max(1, Math.round(avgMonthDays)));
+						unit = value === 1 ? 'month' : 'months';
+					} else {
+						value = absDays;
+						unit = value === 1 ? 'day' : 'days';
+					}
+					// Direction wording depends on sort order
+					// Direction is purely temporal relative to previous event, independent of list sort order
+					const direction = delta > 0 ? 'later' : 'before';
+					diffLabel = `${value.toLocaleString()} ${unit} ${direction}`;
 				}
 			}
 		}

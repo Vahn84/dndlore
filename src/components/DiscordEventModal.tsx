@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Modal from 'react-modal';
 import { toast } from 'react-hot-toast';
 import AssetsManagerModal from './AssetsManagerModal';
-import { Trash } from 'phosphor-react';
+import { TrashIcon } from '@phosphor-icons/react/dist/csr/Trash';
 import { useAppStore, type Asset } from '../store/appStore';
 import SessionDatePicker from './SessionDatePicker';
 import Api from '../Api';
@@ -422,7 +422,7 @@ const DiscordEventModal: React.FC<DiscordEventModalProps> = ({
 												onClick={() => setBannerUrl('')}
 												title="Remove image"
 											>
-												<Trash
+												<TrashIcon
 													color="white"
 													size={18}
 												/>

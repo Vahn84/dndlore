@@ -1,12 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-	CalendarBlank,
-	CaretLeft,
-	CaretRight,
-	Rewind,
-	FastForward,
-	XCircle,
-} from 'phosphor-react';
+import { CalendarBlankIcon } from '@phosphor-icons/react/dist/csr/CalendarBlank';
+import { CaretLeftIcon } from '@phosphor-icons/react/dist/csr/CaretLeft';
+import { CaretRightIcon } from '@phosphor-icons/react/dist/csr/CaretRight';
+import { RewindIcon } from '@phosphor-icons/react/dist/csr/Rewind';
+import { FastForwardIcon } from '@phosphor-icons/react/dist/csr/FastForward';
+import { XCircleIcon } from '@phosphor-icons/react/dist/csr/XCircle';
 import '../styles/DatePicker.scss';
 
 export type SessionDatePickerProps = {
@@ -191,7 +189,7 @@ const SessionDatePicker: React.FC<SessionDatePickerProps> = ({
 			{label && <div className="datepick__label">{label}</div>}
 
 			<div className="datepick__inputWrap session-datepicker">
-				<CalendarBlank
+				<CalendarBlankIcon
 					weight="bold"
 					size={20}
 					className="icon__hover gold_on_hover"
@@ -216,7 +214,7 @@ const SessionDatePicker: React.FC<SessionDatePickerProps> = ({
 						}}
 						aria-label="Clear date"
 					>
-						<XCircle
+						<XCircleIcon
 							size={30}
 							weight="bold"
 							className="icon__hover dim_on_hover"
@@ -236,7 +234,7 @@ const SessionDatePicker: React.FC<SessionDatePickerProps> = ({
 								onClick={prevYear}
 								aria-label="Previous year"
 							>
-								<Rewind size={16} />
+								<RewindIcon size={16} />
 							</button>
 							<button
 								type="button"
@@ -244,7 +242,7 @@ const SessionDatePicker: React.FC<SessionDatePickerProps> = ({
 								onClick={prevMonth}
 								aria-label="Previous month"
 							>
-								<CaretLeft size={16} />
+								<CaretLeftIcon size={16} />
 							</button>
 
 							<div className="dp-pop__headmain">
@@ -285,7 +283,7 @@ const SessionDatePicker: React.FC<SessionDatePickerProps> = ({
 								onClick={nextMonth}
 								aria-label="Next month"
 							>
-								<CaretRight size={16} />
+								<CaretRightIcon size={16} />
 							</button>
 							<button
 								type="button"
@@ -293,7 +291,7 @@ const SessionDatePicker: React.FC<SessionDatePickerProps> = ({
 								onClick={nextYear}
 								aria-label="Next year"
 							>
-								<FastForward size={16} />
+								<FastForwardIcon size={16} />
 							</button>
 						</div>
 

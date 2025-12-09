@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import { CaretLeft, CaretRight, Hamburger, List, X } from 'phosphor-react';
+import { CaretLeftIcon } from '@phosphor-icons/react/dist/csr/CaretLeft';
+import { CaretRightIcon } from '@phosphor-icons/react/dist/csr/CaretRight';
+import { HamburgerIcon } from '@phosphor-icons/react/dist/csr/Hamburger';
+import { ListIcon } from '@phosphor-icons/react/dist/csr/List';
+import { XIcon } from '@phosphor-icons/react/dist/csr/X';
 
 interface Category {
 	type: string;
@@ -35,9 +39,9 @@ const CategoriesMenu: React.FC<CategoriesMenuProps> = ({
 				title={collapsed ? 'Expand menu' : 'Collapse menu'}
 			>
 				{collapsed ? (
-					<List size={22} weight="bold" />
+					<ListIcon size={22} weight="bold" />
 				) : (
-					<X size={22} weight="bold" />
+					<XIcon size={22} weight="bold" />
 				)}
 			</button>
 
@@ -45,7 +49,7 @@ const CategoriesMenu: React.FC<CategoriesMenuProps> = ({
 				<div className="categoriesColumn">
 					<h2 className="columnTitle">
 						{title}{' '}
-						<X
+						<XIcon
 							size={22}
 							weight="bold"
 							className="categoriesMenu--closeIcon"

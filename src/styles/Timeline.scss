@@ -551,6 +551,11 @@
 				.date {
 					margin-left: 0;
 					font-size: 0.7rem;
+					min-width: 46px;
+
+					.diff {
+						font-size: .6rem;
+					}
 				}
 
 				.cardWrapper {

@@ -1,12 +1,10 @@
-import {
-	Books,
-	GlobeHemisphereWest,
-	Sparkle,
-	UsersThree,
-	CloudArrowDown,
-	Trash,
-	DiscordLogo,
-} from 'phosphor-react';
+import { BooksIcon } from '@phosphor-icons/react/dist/csr/Books';
+import { GlobeHemisphereWestIcon } from '@phosphor-icons/react/dist/csr/GlobeHemisphereWest';
+import { SparkleIcon } from '@phosphor-icons/react/dist/csr/Sparkle';
+import { UsersThreeIcon } from '@phosphor-icons/react/dist/csr/UsersThree';
+import { CloudArrowDownIcon } from '@phosphor-icons/react/dist/csr/CloudArrowDown';
+import { TrashIcon } from '@phosphor-icons/react/dist/csr/Trash';
+import { DiscordLogoIcon } from '@phosphor-icons/react/dist/csr/DiscordLogo';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Api from '../Api';
@@ -455,7 +453,7 @@ const LoreCreateFab: React.FC = () => {
 								className="lcfab__content_wrapper--option history-option"
 								onClick={() => handleCreate('history')}
 							>
-								<Books
+								<BooksIcon
 									size={18}
 									className="lcfab__content_wrapper--option-icon"
 								/>
@@ -465,7 +463,7 @@ const LoreCreateFab: React.FC = () => {
 								className="lcfab__content_wrapper--option campaign-option"
 								onClick={() => handleCreate('campaign')}
 							>
-								<GlobeHemisphereWest
+								<GlobeHemisphereWestIcon
 									size={18}
 									className="lcfab__content_wrapper--option-icon"
 								/>
@@ -475,7 +473,7 @@ const LoreCreateFab: React.FC = () => {
 								className="lcfab__content_wrapper--option myth-option"
 								onClick={() => handleCreate('myth')}
 							>
-								<Sparkle
+								<SparkleIcon
 									size={18}
 									className="lcfab__content_wrapper--option-icon"
 								/>
@@ -485,7 +483,7 @@ const LoreCreateFab: React.FC = () => {
 								className="lcfab__content_wrapper--option people-option"
 								onClick={() => handleCreate('people')}
 							>
-								<UsersThree
+								<UsersThreeIcon
 									size={18}
 									className="lcfab__content_wrapper--option-icon"
 								/>
@@ -502,7 +500,7 @@ const LoreCreateFab: React.FC = () => {
 										}}
 										title="Import latest session notes from Google Doc and create a draft"
 									>
-										<CloudArrowDown
+										<CloudArrowDownIcon
 											size={22}
 											className="lcfab__content_wrapper--option-icon"
 										/>
@@ -516,7 +514,7 @@ const LoreCreateFab: React.FC = () => {
 										}}
 										title="Create a Discord event with Apollo bot"
 									>
-										<DiscordLogo
+										<DiscordLogoIcon
 											size={22}
 											className="lcfab__content_wrapper--option-icon"
 										/>
@@ -803,7 +801,7 @@ const LoreCreateFab: React.FC = () => {
 											onClick={() => setBannerUrl('')}
 											title="Remove image"
 										>
-											<Trash color="white" size={18} />
+											<TrashIcon color="white" size={18} />
 										</button>
 									</div>
 								) : (

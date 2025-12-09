@@ -5,10 +5,16 @@ import {
 	Droppable,
 	Draggable,
 	DropResult,
-} from 'react-beautiful-dnd';
+} from '@hello-pangea/dnd';
 import ConfirmModal from './ConfirmModal';
 import { Group } from '../types';
 import { useAppStore } from '../store/appStore';
+import { SortAscendingIcon } from '@phosphor-icons/react/dist/csr/SortAscending';
+import { SortDescendingIcon } from '@phosphor-icons/react/dist/csr/SortDescending';
+import { XIcon } from '@phosphor-icons/react/dist/csr/X';
+import { SubtractIcon } from '@phosphor-icons/react/dist/csr/Subtract';
+import { IntersectIcon } from '@phosphor-icons/react/dist/csr/Intersect';
+import { StarIcon } from '@phosphor-icons/react/dist/csr/Star';
 
 interface GroupModalProps {
 	groups?: Group[]; // optional: if omitted, will use store groups
@@ -36,15 +42,23 @@ const GroupModal: React.FC<GroupModalProps> = ({
 	const setGroupsFilter = useAppStore((s) => s.setGroupsFilter);
 	const activeGroupIds = useAppStore((s) => s.ui.activeGroupIds);
 
+	const normalizeGroups = (list: Group[]) =>
+		[...list]
+			.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+			.map((g) => ({
+				...g,
+				exclude: (g as any).exclude ?? false,
+				orderAscending: (g as any).orderAscending ?? true,
+				defaultSelected: (g as any).defaultSelected ?? false,
+			}));
+
 	const sourceGroups = useMemo(
-		() => groups ?? storeGroups,
+		() => normalizeGroups(groups ?? storeGroups),
 		[groups, storeGroups]
 	);
 
 	// Local editable copy (sorted, non-mutating)
-	const [localGroups, setLocalGroups] = useState<Group[]>(
-		[...sourceGroups].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-	);
+	const [localGroups, setLocalGroups] = useState<Group[]>(sourceGroups);
 
 	// For new group fields
 	const [newName, setNewName] = useState('');
@@ -52,9 +66,7 @@ const GroupModal: React.FC<GroupModalProps> = ({
 
 	// Keep local state in sync if source changes from outside
 	useEffect(() => {
-		setLocalGroups(
-			[...sourceGroups].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-		);
+		setLocalGroups(sourceGroups);
 	}, [sourceGroups]);
 
 	// Handle drag end to reorder groups (local only; we persist on Apply)
@@ -70,13 +82,55 @@ const GroupModal: React.FC<GroupModalProps> = ({
 	// Handle input change for group
 	const updateGroupField = (
 		_id: string,
-		field: keyof Omit<Group, '_id' | 'order'>,
-		value: string
+		field: keyof Omit<Group, '_id'>,
+		value: any
 	) => {
 		setLocalGroups((prev) =>
 			prev.map((g) =>
 				g._id === _id ? ({ ...g, [field]: value } as Group) : g
 			)
+		);
+	};
+
+	const toggleExclude = (_id: string) => {
+		setLocalGroups((prev) => {
+			const target = prev.find((g) => g._id === _id);
+			if (!target) return prev;
+			const nextExclude = !((target as any).exclude ?? false);
+			return prev.map((g) => {
+				const base = {
+					...g,
+					exclude: nextExclude && g._id === _id,
+					orderAscending: (g as any).orderAscending ?? true,
+				};
+				// If one group is exclusive, force others inclusive + ascending
+				if (nextExclude && g._id !== _id) {
+					return { ...base, exclude: false, orderAscending: true };
+				}
+				return base;
+			});
+		});
+	};
+
+	const toggleOrderAscending = (_id: string) => {
+		setLocalGroups((prev) =>
+			prev.map((g) => {
+				if (g._id !== _id) return g;
+				if (!(g as any).exclude) return g;
+				return {
+					...g,
+					orderAscending: !((g as any).orderAscending ?? true),
+				};
+			})
+		);
+	};
+
+	const toggleDefaultSelected = (_id: string) => {
+		setLocalGroups((prev) =>
+			prev.map((g) => ({
+				...g,
+				defaultSelected: g._id === _id ? !(g as any).defaultSelected : false,
+			}))
 		);
 	};
 
@@ -90,12 +144,18 @@ const GroupModal: React.FC<GroupModalProps> = ({
 					name: g.name,
 					order: g.order,
 					color: g.color,
+					exclude: (g as any).exclude ?? false,
+					orderAscending: (g as any).orderAscending ?? true,
+					defaultSelected: (g as any).defaultSelected ?? false,
 				});
 				// Optionally notify parent, but persistence is handled here to avoid missing updates
 				onSave?.({
 					_id: g._id,
 					name: g.name,
 					color: g.color,
+					exclude: (g as any).exclude ?? false,
+					orderAscending: (g as any).orderAscending ?? true,
+					defaultSelected: (g as any).defaultSelected ?? false,
 				} as any);
 			}
 
@@ -105,8 +165,12 @@ const GroupModal: React.FC<GroupModalProps> = ({
 			} else {
 				await reorderGroups(localGroups.map((g) => g._id));
 				// opzionale: riallinea i filtri attivi allo stesso ordine
-				const nextFilter = localGroups.map((g) => g._id);
-				if (activeGroupIds.length) setGroupsFilter(nextFilter);
+				if (activeGroupIds.length) {
+					const nextFilter = localGroups
+						.map((g) => g._id)
+						.filter((id) => activeGroupIds.includes(id));
+					setGroupsFilter(nextFilter);
+				}
 			}
 
 			// Create new group if provided
@@ -143,7 +207,7 @@ const GroupModal: React.FC<GroupModalProps> = ({
 			console.error('Failed to delete group', err);
 		}
 	};
-	
+
 	// Delete group with confirmation
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -163,7 +227,9 @@ const GroupModal: React.FC<GroupModalProps> = ({
 			} else {
 				await deleteGroupAction(pendingDeleteId);
 			}
-			setLocalGroups((prev) => prev.filter((g) => g._id !== pendingDeleteId));
+			setLocalGroups((prev) =>
+				prev.filter((g) => g._id !== pendingDeleteId)
+			);
 		} catch (err) {
 			// eslint-disable-next-line no-console
 			console.error('Failed to delete group', err);
@@ -233,6 +299,7 @@ const GroupModal: React.FC<GroupModalProps> = ({
 															)
 														}
 														className="draggable__input"
+														style={{ marginTop: 0 }}
 													/>
 													<input
 														type="color"
@@ -250,25 +317,116 @@ const GroupModal: React.FC<GroupModalProps> = ({
 															width: '36px',
 															height: '36px',
 															border: 'none',
+															marginTop: 0,
 														}}
 													/>
 													<button
 														type="button"
-														onClick={() => requestDelete(group._id, group.name)}
+														onClick={() =>
+															toggleExclude(
+																group._id
+															)
+														}
+														className="draggable__iconbtn draggable__iconbtn--danger sort-order-btn"
+														title={
+															(group as any)
+																.exclude
+																? 'Set as inclusive'
+																: 'Set as exclusive'
+														}
+													>
+														{(group as any)
+															.exclude ? (
+															<SubtractIcon
+																size={16}
+															/>
+														) : (
+															<IntersectIcon
+																size={16}
+															/>
+														)}
+													</button>
+													<button
+														type="button"
+														onClick={() =>
+															toggleDefaultSelected(
+																group._id
+															)
+														}
+														className="draggable__iconbtn sort-order-btn"
+														title={
+															(group as any)
+																.defaultSelected
+																? 'Unset default selection'
+																: 'Set as default selection'
+														}
+													>
+														<StarIcon
+															size={16}
+															weight={
+																(group as any)
+																	.defaultSelected
+																	? 'fill'
+																	: 'regular'
+															}
+														/>
+													</button>
+													{(group as any).exclude && (
+														<button
+															type="button"
+															onClick={() =>
+																toggleOrderAscending(
+																	group._id
+																)
+															}
+															className="draggable__iconbtn draggable__iconbtn--danger sort-order-btn"
+															title={
+																(group as any)
+																	.orderAscending
+																	? 'Order Ascending'
+																	: 'Order Descending'
+															}
+														>
+															{(group as any)
+																.orderAscending ? (
+																<SortAscendingIcon
+																	size={16}
+																/>
+															) : (
+																<SortDescendingIcon
+																	size={16}
+																/>
+															)}
+														</button>
+													)}
+													<button
+														type="button"
+														onClick={() =>
+															requestDelete(
+																group._id,
+																group.name
+															)
+														}
 														className="draggable__iconbtn draggable__iconbtn--danger"
 														title="Delete group"
 													>
-														✖
+														<XIcon size={16} />
 													</button>
-		<ConfirmModal
-			isOpen={confirmOpen}
-			title="Delete Group"
-			message={`Are you sure you want to delete "${pendingDeleteName}"?`}
-			confirmText="Delete"
-			variant="danger"
-			onConfirm={handleConfirmDelete}
-			onCancel={() => setConfirmOpen(false)}
-		/>
+													<ConfirmModal
+														isOpen={confirmOpen}
+														title="Delete Group"
+														message={`Are you sure you want to delete "${pendingDeleteName}"?`}
+														confirmText="Delete"
+														variant="danger"
+														onConfirm={
+															handleConfirmDelete
+														}
+														onCancel={() =>
+															setConfirmOpen(
+																false
+															)
+														}
+													/>
 												</div>
 											)}
 										</Draggable>

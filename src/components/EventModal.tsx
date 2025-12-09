@@ -5,13 +5,11 @@ import { useAppStore } from '../store/appStore';
 import Api from '../Api';
 import AssetsManagerModal from './AssetsManagerModal';
 import PagePickerModal from './PagePickerModal';
-import {
-	Calendar,
-	CalendarBlank,
-	LinkBreak,
-	LinkSimple,
-	Trash,
-} from 'phosphor-react';
+import { CalendarIcon } from '@phosphor-icons/react/dist/csr/Calendar';
+import { CalendarBlankIcon } from '@phosphor-icons/react/dist/csr/CalendarBlank';
+import { LinkBreakIcon } from '@phosphor-icons/react/dist/csr/LinkBreak';
+import { LinkSimpleIcon } from '@phosphor-icons/react/dist/csr/LinkSimple';
+import { TrashIcon } from '@phosphor-icons/react/dist/csr/Trash';
 import DatePicker from './DatePicker';
 import { _changeIcon, ICONS } from './Icons';
 
@@ -123,7 +121,14 @@ const EventModal: React.FC<EventModalProps> = ({
 	const parseDateString = (
 		dateStr: string | undefined,
 		t: TimeSystemConfig
-	): { eraId: string; year: string; monthIndex: string; day: string } => {
+	): {
+		eraId: string;
+		year: string;
+		monthIndex: string;
+		day: string;
+		hour?: string;
+		minute?: string;
+	} => {
 		if (!dateStr) {
 			return {
 				eraId: t.eras[0]?.id ?? '',
@@ -175,7 +180,7 @@ const EventModal: React.FC<EventModalProps> = ({
 			year = day ? nums[nums.length - 1] : nums[0] ? nums[0] : '0';
 		}
 
-		return { eraId, year, monthIndex, day };
+		return { eraId, year, monthIndex, day, hour: '', minute: '' };
 	};
 
 	const initialStart = useMemo(() => {
@@ -196,6 +201,15 @@ const EventModal: React.FC<EventModalProps> = ({
 					event.startDay !== undefined && event.startDay !== null
 						? String(event.startDay)
 						: parsed.day,
+				hour:
+					event.startHour !== undefined && event.startHour !== null
+						? String(event.startHour)
+						: '',
+				minute:
+					event.startMinute !== undefined &&
+					event.startMinute !== null
+						? String(event.startMinute)
+						: '',
 			};
 		}
 		return parseDateString(undefined, ts);
@@ -219,6 +233,14 @@ const EventModal: React.FC<EventModalProps> = ({
 					event.endDay !== undefined && event.endDay !== null
 						? String(event.endDay)
 						: parsed.day,
+				hour:
+					event.endHour !== undefined && event.endHour !== null
+						? String(event.endHour)
+						: '',
+				minute:
+					event.endMinute !== undefined && event.endMinute !== null
+						? String(event.endMinute)
+						: '',
 			};
 		}
 
@@ -231,6 +253,10 @@ const EventModal: React.FC<EventModalProps> = ({
 		initialStart.monthIndex
 	);
 	const [startDay, setStartDay] = useState<string>(initialStart.day);
+	const [startHour, setStartHour] = useState<string>(initialStart.hour ?? '');
+	const [startMinute, setStartMinute] = useState<string>(
+		initialStart.minute ?? ''
+	);
 
 	const [endEnabled, setEndEnabled] = useState<boolean>(!!event?.endDate);
 	const [endEraId, setEndEraId] = useState(initialEnd.eraId);
@@ -239,6 +265,8 @@ const EventModal: React.FC<EventModalProps> = ({
 		initialEnd.monthIndex
 	);
 	const [endDay, setEndDay] = useState<string>(initialEnd.day);
+	const [endHour, setEndHour] = useState<string>(initialEnd.hour ?? '');
+	const [endMinute, setEndMinute] = useState<string>(initialEnd.minute ?? '');
 	const [icon, setIcon] = useState<string>(event?.icon || 'calendar');
 
 	useEffect(() => {
@@ -246,11 +274,15 @@ const EventModal: React.FC<EventModalProps> = ({
 		setStartYear(initialStart.year);
 		setStartMonthIndex(initialStart.monthIndex);
 		setStartDay(initialStart.day);
+		setStartHour(initialStart.hour ?? '');
+		setStartMinute(initialStart.minute ?? '');
 		setEndEnabled(!!event?.endDate);
 		setEndEraId(initialEnd.eraId);
 		setEndYear(initialEnd.year);
 		setEndMonthIndex(initialEnd.monthIndex);
 		setEndDay(initialEnd.day);
+		setEndHour(initialEnd.hour ?? '');
+		setEndMinute(initialEnd.minute ?? '');
 		console.log('ENDERAID', initialEnd.eraId);
 		console.log('STARTERAID', initialStart.eraId);
 	}, [initialStart, initialEnd, event?.endDate]);
@@ -368,6 +400,20 @@ const EventModal: React.FC<EventModalProps> = ({
 					? String(p.worldDate.day)
 					: startDay
 			);
+			if (p.worldDate.hour !== undefined) {
+				setStartHour(
+					p.worldDate.hour !== null
+						? String(p.worldDate.hour)
+						: ''
+				);
+			}
+			if (p.worldDate.minute !== undefined) {
+				setStartMinute(
+					p.worldDate.minute !== null
+						? String(p.worldDate.minute)
+						: ''
+				);
+			}
 		}
 	};
 
@@ -456,6 +502,9 @@ const EventModal: React.FC<EventModalProps> = ({
 					? parseInt(startMonthIndex, 10)
 					: undefined,
 			startDay: startDay !== '' ? parseInt(startDay, 10) : undefined,
+			startHour: startHour !== '' ? parseInt(startHour, 10) : undefined,
+			startMinute:
+				startMinute !== '' ? parseInt(startMinute, 10) : undefined,
 			description,
 			bannerUrl: bannerUrl || undefined,
 			bannerThumbUrl: bannerThumbUrl || undefined,
@@ -475,6 +524,10 @@ const EventModal: React.FC<EventModalProps> = ({
 			payload.endMonthIndex =
 				endMonthIndex !== '' ? parseInt(endMonthIndex, 10) : undefined;
 			payload.endDay = endDay !== '' ? parseInt(endDay, 10) : undefined;
+			payload.endHour =
+				endHour !== '' ? parseInt(endHour, 10) : undefined;
+			payload.endMinute =
+				endMinute !== '' ? parseInt(endMinute, 10) : undefined;
 		} else if (clearingEnd) {
 			// explicitly clear end date on the server
 			payload.endDate = null;
@@ -507,7 +560,7 @@ const EventModal: React.FC<EventModalProps> = ({
 	};
 
 	const resolveIcon = (icon: string): React.ReactNode => {
-		return ICONS[icon] || <CalendarBlank />;
+		return ICONS[icon] || <CalendarBlankIcon />;
 	};
 
 	const changeIcon = () => {
@@ -551,7 +604,7 @@ const EventModal: React.FC<EventModalProps> = ({
 											onClick={() => setBannerUrl('')}
 											title="Delete month"
 										>
-											<Trash color="white" />
+											<TrashIcon color="white" />
 										</button>
 									)}
 									{!bannerUrl && (
@@ -625,7 +678,7 @@ const EventModal: React.FC<EventModalProps> = ({
 															'center',
 													}}
 												>
-													<LinkBreak
+													<LinkBreakIcon
 														size={16}
 														style={{
 															marginRight:
@@ -650,7 +703,7 @@ const EventModal: React.FC<EventModalProps> = ({
 													justifyContent: 'center',
 												}}
 											>
-												<LinkSimple
+												<LinkSimpleIcon
 													size={16}
 													style={{
 														marginRight: '0.25rem',
@@ -770,6 +823,8 @@ const EventModal: React.FC<EventModalProps> = ({
 										year: startYear,
 										monthIndex: startMonthIndex || '0',
 										day: startDay || '1',
+										hour: startHour,
+										minute: startMinute,
 									}}
 									onChange={(parts) => {
 										if (!parts) return; // Start required
@@ -777,6 +832,8 @@ const EventModal: React.FC<EventModalProps> = ({
 										setStartYear(parts.year);
 										setStartMonthIndex(parts.monthIndex);
 										setStartDay(parts.day);
+										setStartHour(parts.hour ?? '');
+										setStartMinute(parts.minute ?? '');
 									}}
 								/>
 								<DatePicker
@@ -789,22 +846,28 @@ const EventModal: React.FC<EventModalProps> = ({
 										year: endYear,
 										monthIndex: endMonthIndex || '0',
 										day: endDay || '1',
+										hour: endHour,
+										minute: endMinute,
 									}}
 									onChange={(parts) => {
-										if (!parts) {
-											setEndEnabled(false);
-											setEndEraId(
-												timeSystem?.eras[0]?.id || ''
-											);
-											setEndYear('');
-											setEndMonthIndex('');
-											setEndDay('');
-											return;
-										}
+									if (!parts) {
+										setEndEnabled(false);
+										setEndEraId(
+											timeSystem?.eras[0]?.id || ''
+										);
+										setEndYear('');
+										setEndMonthIndex('');
+										setEndDay('');
+										setEndHour('');
+										setEndMinute('');
+										return;
+									}
 										setEndEraId(parts.eraId);
 										setEndYear(parts.year);
 										setEndMonthIndex(parts.monthIndex);
 										setEndDay(parts.day);
+										setEndHour(parts.hour ?? '');
+										setEndMinute(parts.minute ?? '');
 										// Enable end date when any meaningful part is present
 										const hasAny = Boolean(
 											(parts.year && parts.year.trim()) ||

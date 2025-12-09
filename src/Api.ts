@@ -138,7 +138,13 @@ class Api {
 		return resp.data;
 	}
 
-	static async createGroup(data: { name: string }) {
+	static async createGroup(data: {
+		name: string;
+		color?: string;
+		exclude?: boolean;
+		orderAscending?: boolean;
+		defaultSelected?: boolean;
+	}) {
 		const resp = await Api.client.post('/groups', data);
 		return resp.data;
 	}
@@ -148,6 +154,9 @@ class Api {
 		name?: string;
 		order?: number;
 		color?: string;
+		exclude?: boolean;
+		orderAscending?: boolean;
+		defaultSelected?: boolean;
 	}) {
 		const resp = await Api.client.put(`/groups/${data._id}`, data);
 		return resp.data;
