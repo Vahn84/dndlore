@@ -163,7 +163,7 @@
 	}
 
 	.modal__body_content {
-		overflow: visible !important;
+		overflow-y: scroll;
 	}
 
 	// Date + Time row
