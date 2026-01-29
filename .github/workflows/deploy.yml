@@ -25,6 +25,7 @@ jobs:
         run: |
           echo "REACT_APP_API_BASE_URL=${REACT_APP_API_BASE_URL:-/api}" > .env.production
           echo "REACT_APP_FVTT_URL=${REACT_APP_FVTT_URL}" >> .env.production
+          echo "REACT_APP_GOOGLE_DOC_URL=${REACT_APP_GOOGLE_DOC_URL}" >> .env.production
         env:
           FRONTEND_API_BASE_URL: ${{ secrets.REACT_APP_API_BASE_URL }}
           REACT_APP_FVTT_URL: ${{ secrets.REACT_APP_FVTT_URL }}
@@ -54,8 +55,6 @@ jobs:
             ghcr.io/${{ env.OWNER_LC }}/dndlore-frontend:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          build-args: |
-                FORCE_REBUILD=true
 
       - name: Deploy frontend to NAS
         uses: appleboy/ssh-action@v1.0.0
