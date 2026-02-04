@@ -18,7 +18,8 @@ class Api {
   private static get client(): AxiosInstance {
     if (!Api.instance) {
       const baseURL = process.env.REACT_APP_API_BASE_URL || "/api";
-      Api.instance = axios.create({ baseURL });
+      Api.instance = axios.create({ baseURL, timeout: 300000 });
+
       // Attach interceptor to include token on every request
       Api.instance.interceptors.request.use((config: any) => {
         const token = localStorage.getItem("token");
