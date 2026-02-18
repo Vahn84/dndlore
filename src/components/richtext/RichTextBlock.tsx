@@ -111,7 +111,7 @@ const RichTextBlock: React.FC<Props> = ({
 	const initialContent = useMemo(() => {
 		const content = value?.rich ? value.rich : emptyDoc;
 		if (value?.rich && content.content) {
-			console.log(`[RichTextBlock] Rendering TipTap doc with ${content.content.length} nodes`);
+			// console.log(`[RichTextBlock] Rendering TipTap doc with ${content.content.length} nodes`);
 		}
 		return content;
 	}, [value?.rich]);

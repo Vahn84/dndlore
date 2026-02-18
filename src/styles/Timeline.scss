@@ -1,5 +1,5 @@
-@use './variables' as *;
-@use './_mixins' as *;
+@use "./variables" as *;
+@use "./_mixins" as *;
 
 .timeline {
 	position: relative;
@@ -19,11 +19,11 @@
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	opacity: 0;
-	animation-name: wrapperFromTopToBottom;
+	opacity: 1;
+	/* animation-name: wrapperFromTopToBottom;
 	animation-duration: 0.5s;
 	animation-delay: 0.8s;
-	animation-fill-mode: forwards;
+	animation-fill-mode: forwards; */
 	padding: 1rem 1rem;
 	z-index: 4;
 	background: $color-dark-translucent;
@@ -78,7 +78,9 @@
 	cursor: pointer;
 	color: $color-light;
 	background: transparent;
-	transition: background 0.2s, color 0.2s;
+	transition:
+		background 0.2s,
+		color 0.2s;
 }
 
 .pill.active {
@@ -88,12 +90,17 @@
 }
 
 .timeline-wrapper {
-	margin-top: calc(70px + $timeline-header-height);
+	margin-top: 0;
+	height: calc(100% - $timeline-header-height);
 }
 
 .virtuoso-timeline {
-	div[data-testid='virtuoso-item-list'] {
-		padding-bottom: 5rem !important;
+	div[data-testid="virtuoso-item-list"] {
+		padding-bottom: 7rem !important;
+
+		& > div:first-child {
+			padding-top: $navbar-height-half;
+		}
 	}
 }
 
@@ -101,14 +108,14 @@
 	// padding: 2rem;
 	max-width: 1060px;
 	margin: 0 auto;
-	opacity: 0;
+	opacity: 1;
 	padding-top: 10px;
 	position: relative;
 	z-index: 0; // baseline so we can promote the open one above neighbors
-	animation-name: wrapperFromTopToBottom;
+	/* animation-name: wrapperFromTopToBottom;
 	animation-duration: 0.5s;
 	animation-delay: 0.8s;
-	animation-fill-mode: forwards;
+	animation-fill-mode: forwards; */
 }
 
 .timeline-event-wrapper:has(.contextMenu.open) {
@@ -196,12 +203,14 @@
 		background-size: cover;
 		background-position: center;
 		border: 1px solid $color-dark;
-		transition: border 0.2s ease, box-shadow 0.2s ease;
+		transition:
+			border 0.2s ease,
+			box-shadow 0.2s ease;
 		height: 100%;
 
 		// bottom fade-to-black overlay over background image
 		&::after {
-			content: '';
+			content: "";
 			position: absolute;
 			left: 0;
 			right: 0;
@@ -393,7 +402,7 @@
 	position: relative;
 }
 .contextMenu .submenu::after {
-	content: '›';
+	content: "›";
 	position: absolute;
 	right: 10px;
 }
@@ -542,6 +551,15 @@
 	}
 }
 @media (max-width: 600px) {
+	.virtuoso-timeline {
+		div[data-testid="virtuoso-item-list"] {
+			padding-bottom: 8rem !important;
+
+			& > div:first-child {
+				padding-top: 0;
+			}
+		}
+	}
 	.timeline-event-wrapper {
 		.event {
 			.row {
@@ -554,7 +572,7 @@
 					min-width: 46px;
 
 					.diff {
-						font-size: .6rem;
+						font-size: 0.6rem;
 					}
 				}
 

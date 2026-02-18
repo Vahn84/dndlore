@@ -368,7 +368,7 @@ class Api {
    */
   static resolveThumbnailUrl(url: string, bannerThumbUrl?: string) {
     const resolved = bannerThumbUrl || url;
-    console.log("Resolved thumbnail URL:", resolved, bannerThumbUrl);
+    // console.log("Resolved thumbnail URL:", resolved, bannerThumbUrl);
     return Api.resolveAssetUrl(resolved);
   }
 

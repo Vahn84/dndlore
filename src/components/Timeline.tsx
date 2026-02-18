@@ -1,16 +1,16 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { DetailLevel, Event, Group, TimeSystemConfig, Era } from '../types';
-import '../styles/Timeline.scss';
-import TimeSystemModal from './TimeSystemModal';
-import GroupModal from './GroupModal';
-import EventModal from './EventModal';
-import { useAppStore } from '../store/appStore';
-import { Virtuoso } from 'react-virtuoso';
-import { ICONS } from './Icons';
-import { CalendarBlankIcon } from '@phosphor-icons/react/dist/csr/CalendarBlank';
-import Api from '../Api';
-import ConfirmModal from './ConfirmModal';
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { DetailLevel, Event, Group, TimeSystemConfig, Era } from "../types";
+import "../styles/Timeline.scss";
+import TimeSystemModal from "./TimeSystemModal";
+import GroupModal from "./GroupModal";
+import EventModal from "./EventModal";
+import { useAppStore } from "../store/appStore";
+import { Virtuoso } from "react-virtuoso";
+import { ICONS } from "./Icons";
+import { CalendarBlankIcon } from "@phosphor-icons/react/dist/csr/CalendarBlank";
+import Api from "../Api";
+import ConfirmModal from "./ConfirmModal";
 
 interface TimelineProps {}
 
@@ -34,34 +34,31 @@ const Timeline: React.FC<TimelineProps> = () => {
 		bottom: 800,
 	});
 
-    // Delete confirmation state
-    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-    const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
+	// Delete confirmation state
+	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+	const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
 
 	// Dynamically compute overscan based on viewport & average item height
 	useEffect(() => {
 		const compute = () => {
 			const vh =
-				typeof window !== 'undefined' ? window.innerHeight || 800 : 800;
-			const itemH =
-				firstItemRef.current?.getBoundingClientRect().height || 260; // sensible default
+				typeof window !== "undefined" ? window.innerHeight || 800 : 800;
+			const itemH = firstItemRef.current?.getBoundingClientRect().height || 180; // sensible default
 			// Keep ~1 viewport worth OR ~6 items worth buffered (whichever is larger)
-			const buffer = Math.max(
-				Math.round(vh * 0.9),
-				Math.round(itemH * 6)
-			);
+
+			const buffer = Math.max(Math.round(vh * 0.9), Math.round(itemH * 10));
 			setOverscan({ top: buffer, bottom: buffer });
 		};
 		compute();
 		// Recompute on resize and when the first item resizes
 		let ro: ResizeObserver | undefined;
-		if (typeof ResizeObserver !== 'undefined') {
+		if (typeof ResizeObserver !== "undefined") {
 			ro = new ResizeObserver(() => compute());
 			if (firstItemRef.current) ro.observe(firstItemRef.current);
 		}
-		window.addEventListener('resize', compute);
+		window.addEventListener("resize", compute);
 		return () => {
-			window.removeEventListener('resize', compute);
+			window.removeEventListener("resize", compute);
 			if (ro) ro.disconnect();
 		};
 	}, []);
@@ -70,22 +67,21 @@ const Timeline: React.FC<TimelineProps> = () => {
 		if (!menuOpenFor) return;
 		const onPointerDown = (e: MouseEvent | TouchEvent) => {
 			const target = e.target as Node;
-			if (menuRootRef.current && menuRootRef.current.contains(target))
-				return;
+			if (menuRootRef.current && menuRootRef.current.contains(target)) return;
 			if (menuButtonRef.current && menuButtonRef.current.contains(target))
 				return;
 			setMenuOpenFor(null);
 		};
 		const onKey = (e: KeyboardEvent) => {
-			if (e.key === 'Escape') setMenuOpenFor(null);
+			if (e.key === "Escape") setMenuOpenFor(null);
 		};
-		document.addEventListener('mousedown', onPointerDown, true);
-		document.addEventListener('touchstart', onPointerDown, true);
-		document.addEventListener('keydown', onKey, true);
+		document.addEventListener("mousedown", onPointerDown, true);
+		document.addEventListener("touchstart", onPointerDown, true);
+		document.addEventListener("keydown", onKey, true);
 		return () => {
-			document.removeEventListener('mousedown', onPointerDown, true);
-			document.removeEventListener('touchstart', onPointerDown, true);
-			document.removeEventListener('keydown', onKey, true);
+			document.removeEventListener("mousedown", onPointerDown, true);
+			document.removeEventListener("touchstart", onPointerDown, true);
+			document.removeEventListener("keydown", onKey, true);
 		};
 	}, [menuOpenFor]);
 
@@ -106,23 +102,28 @@ const Timeline: React.FC<TimelineProps> = () => {
 
 	// Read query string on mount to set group filters (e.g., ?groups=id1,id2 or ?groups=Campaign,Main)
 	useEffect(() => {
-		const groupsParam = searchParams.get('groups');
+		const groupsParam = searchParams.get("groups");
 		if (groupsParam) {
-			const values = groupsParam.split(',').map(v => v.trim()).filter(Boolean);
+			const values = groupsParam
+				.split(",")
+				.map((v) => v.trim())
+				.filter(Boolean);
 			if (values.length > 0) {
 				// Check if values are IDs or names by trying to match with existing groups
-				const groupIds = values.map(val => {
-					// First try to find by exact ID match
-					const byId = groups.find(g => g._id === val);
-					if (byId) return byId._id;
-					
-					// Otherwise try to find by name (case-insensitive)
-					const byName = groups.find(g => 
-						g.name.toLowerCase() === val.toLowerCase()
-					);
-					return byName?._id || val; // Fallback to original value if not found
-				}).filter(Boolean);
-				
+				const groupIds = values
+					.map((val) => {
+						// First try to find by exact ID match
+						const byId = groups.find((g) => g._id === val);
+						if (byId) return byId._id;
+
+						// Otherwise try to find by name (case-insensitive)
+						const byName = groups.find(
+							(g) => g.name.toLowerCase() === val.toLowerCase(),
+						);
+						return byName?._id || val; // Fallback to original value if not found
+					})
+					.filter(Boolean);
+
 				setGroupsFilter(groupIds);
 			}
 		}
@@ -131,17 +132,15 @@ const Timeline: React.FC<TimelineProps> = () => {
 
 	// Build a numeric sort key from the event's start date (Year, Month, Day)
 	const buildSortKey = (ev: Event): number => {
-		const escapeReg = (s: string) =>
-			s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		const escapeReg = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 		// 1) Year
 		let year = parseYear(ev.startDate);
 		if (!year) {
 			const sy = (ev as any).startYear;
-			if (typeof sy === 'number') year = sy;
-			else if (typeof sy === 'string' && /^\d+$/.test(sy))
-				year = Number(sy);
+			if (typeof sy === "number") year = sy;
+			else if (typeof sy === "string" && /^\d+$/.test(sy)) year = Number(sy);
 		}
-		
+
 		// Check if this event's era is backward - if so, negate the year
 		// so that backward eras sort correctly relative to forward eras
 		const era = timeSystem?.eras?.find((e: any) => e.id === ev.startEraId);
@@ -149,47 +148,45 @@ const Timeline: React.FC<TimelineProps> = () => {
 		if (isBackward && year) {
 			year = -year;
 		}
-		
+
 		// 2) Month
 		let month = 0;
-		if (typeof ev.startMonthIndex === 'number') {
+		if (typeof ev.startMonthIndex === "number") {
 			month = (ev.startMonthIndex as number) + 1; // 1..N
 		} else if (ev.startDate && timeSystem?.months?.length) {
 			const idx = timeSystem.months.findIndex((m: any) =>
-				new RegExp(`\\b${escapeReg(m.name)}\\b`, 'i').test(
-					ev.startDate as string
-				)
+				new RegExp(`\\b${escapeReg(m.name)}\\b`, "i").test(
+					ev.startDate as string,
+				),
 			);
 			if (idx >= 0) month = idx + 1;
 		}
 		// 3) Day
 		let day = 0;
-		if (typeof ev.startDay === 'number') day = ev.startDay as number;
+		if (typeof ev.startDay === "number") day = ev.startDay as number;
 		else if (ev.startDate) {
-			const m = (ev.startDate as string).match(
-				/^(\d+)(?:st|nd|rd|th)?\b/i
-			);
+			const m = (ev.startDate as string).match(/^(\d+)(?:st|nd|rd|th)?\b/i);
 			if (m) day = Number(m[1]);
 		}
 		// 4) Time
 		const hour =
-			typeof (ev as any).startHour === 'number'
-				? (ev as any).startHour
-				: 0;
+			typeof (ev as any).startHour === "number" ? (ev as any).startHour : 0;
 		const minute =
-			typeof (ev as any).startMinute === 'number'
-				? (ev as any).startMinute
-				: 0;
+			typeof (ev as any).startMinute === "number" ? (ev as any).startMinute : 0;
 		// Compose as YYYYMMDDHHMM to sort chronologically. Missing parts become 0.
-		return (year || 0) * 100000000 + month * 1000000 + day * 10000 + hour * 100 + minute;
+		return (
+			(year || 0) * 100000000 +
+			month * 1000000 +
+			day * 10000 +
+			hour * 100 +
+			minute
+		);
 	};
 
 	const selectedExclusiveGroup = useMemo(
 		() =>
-			groups.find(
-				(g) => (g as any)?.exclude && activeGroupIds.includes(g._id)
-			),
-		[groups, activeGroupIds]
+			groups.find((g) => (g as any)?.exclude && activeGroupIds.includes(g._id)),
+		[groups, activeGroupIds],
 	);
 	const sortAscending =
 		selectedExclusiveGroup?.orderAscending !== undefined
@@ -198,7 +195,7 @@ const Timeline: React.FC<TimelineProps> = () => {
 
 	const orderedEvents = _events
 		.filter((e) =>
-			activeGroupIds.length ? activeGroupIds.includes(e.groupId) : false
+			activeGroupIds.length ? activeGroupIds.includes(e.groupId) : false,
 		)
 		.filter((e) => (showHidden ? true : !e.hidden))
 		.sort((a, b) => {
@@ -211,7 +208,7 @@ const Timeline: React.FC<TimelineProps> = () => {
 		});
 	// Final, visible list for rendering (virtualized)
 	const visibleEvents = orderedEvents.filter((e) =>
-		activeGroupIds.length ? activeGroupIds.includes(e.groupId) : true
+		activeGroupIds.length ? activeGroupIds.includes(e.groupId) : true,
 	);
 
 	// --- Helpers to ensure startDate/endDate strings exist when saving ---
@@ -232,30 +229,30 @@ const Timeline: React.FC<TimelineProps> = () => {
 
 	const pickYearFrom = (
 		obj: any,
-		prefix: 'start' | 'end'
+		prefix: "start" | "end",
 	): number | undefined => {
 		const candidates = [
 			`${prefix}Year`,
 			`${prefix}DateYear`,
 			`${prefix}_year`,
 			`${prefix}_date_year`,
-			'year',
+			"year",
 		];
 		for (const key of candidates) {
 			const v = obj?.[key];
-			if (typeof v === 'number' && Number.isFinite(v)) return v;
-			if (typeof v === 'string' && v.trim() && /^\d+$/.test(v.trim()))
+			if (typeof v === "number" && Number.isFinite(v)) return v;
+			if (typeof v === "string" && v.trim() && /^\d+$/.test(v.trim()))
 				return Number(v.trim());
 		}
 		return undefined;
 	};
 
 	const composeDate = (
-		prefix: 'start' | 'end',
-		ev: any
+		prefix: "start" | "end",
+		ev: any,
 	): string | undefined => {
 		const explicit = ev?.[`${prefix}Date`];
-		if (explicit && typeof explicit === 'string' && explicit.trim())
+		if (explicit && typeof explicit === "string" && explicit.trim())
 			return explicit.trim();
 
 		const year = pickYearFrom(ev, prefix);
@@ -266,44 +263,41 @@ const Timeline: React.FC<TimelineProps> = () => {
 		const eraId = ev?.[`${prefix}EraId`];
 
 		const monthName: string | undefined =
-			typeof monthIndex === 'number'
-				? timeSystem?.months?.[monthIndex]?.name ||
-				  `Month ${monthIndex + 1}`
+			typeof monthIndex === "number"
+				? timeSystem?.months?.[monthIndex]?.name || `Month ${monthIndex + 1}`
 				: undefined;
 		const eraCode: string | undefined = eraId
 			? timeSystem?.eras?.find((e: any) => e._id === eraId)?.code ||
-			  timeSystem?.eras?.find((e: any) => e._id === eraId)?.name
+				timeSystem?.eras?.find((e: any) => e._id === eraId)?.name
 			: undefined;
 
-		if (typeof day === 'number' && monthName) {
+		if (typeof day === "number" && monthName) {
 			return `${ordinal(day)} ${monthName} ${String(year)}${
-				eraCode ? `, ${eraCode}` : ''
+				eraCode ? `, ${eraCode}` : ""
 			}`;
 		}
 		if (monthName) {
-			return `${monthName} ${String(year)}${
-				eraCode ? `, ${eraCode}` : ''
-			}`;
+			return `${monthName} ${String(year)}${eraCode ? `, ${eraCode}` : ""}`;
 		}
-		return `${String(year)}${eraCode ? `, ${eraCode}` : ''}`;
+		return `${String(year)}${eraCode ? `, ${eraCode}` : ""}`;
 	};
 
 	const ensureEventDates = (ev: any) => {
 		const next = { ...ev };
 		if (!next.startDate) {
-			const s = composeDate('start', next);
+			const s = composeDate("start", next);
 			if (s) next.startDate = s;
 		}
 		// Only try to build endDate if end parts exist and endDate is missing
 		const hasEndParts =
 			next.endDate ||
-			typeof next.endDay !== 'undefined' ||
-			typeof next.endMonthIndex !== 'undefined' ||
-			typeof next.endEraId !== 'undefined' ||
-			typeof (next as any).endYear !== 'undefined' ||
-			typeof (next as any).end_date_year !== 'undefined';
+			typeof next.endDay !== "undefined" ||
+			typeof next.endMonthIndex !== "undefined" ||
+			typeof next.endEraId !== "undefined" ||
+			typeof (next as any).endYear !== "undefined" ||
+			typeof (next as any).end_date_year !== "undefined";
 		if (!next.endDate && hasEndParts) {
-			const e = composeDate('end', next);
+			const e = composeDate("end", next);
 			if (e) next.endDate = e;
 		}
 		return next;
@@ -311,16 +305,14 @@ const Timeline: React.FC<TimelineProps> = () => {
 
 	// Create or update an event
 	const handleSaveEvent = async (
-		data: Omit<Event, '_id'> & { _id?: string }
+		data: Omit<Event, "_id"> & { _id?: string },
 	) => {
 		try {
-			const base = editingEvent
-				? { ...editingEvent, ...data }
-				: { ...data };
+			const base = editingEvent ? { ...editingEvent, ...data } : { ...data };
 			const payload = ensureEventDates(base);
 			if (!payload.startDate) {
 				console.error(
-					'Missing startDate. Ensure at least a year (and optionally month/day) is selected.'
+					"Missing startDate. Ensure at least a year (and optionally month/day) is selected.",
 				);
 				// Early return to avoid 400s from the backend
 				return;
@@ -328,10 +320,10 @@ const Timeline: React.FC<TimelineProps> = () => {
 			if (payload._id) {
 				await updateEvent({ ...payload, _id: payload._id });
 			} else {
-				await createEvent(payload as Omit<Event, 'id'>);
+				await createEvent(payload as Omit<Event, "id">);
 			}
 		} catch (err) {
-			console.error('Failed to save event', err);
+			console.error("Failed to save event", err);
 		} finally {
 			setEventModalOpen(false);
 			setEditingEvent(null);
@@ -343,7 +335,7 @@ const Timeline: React.FC<TimelineProps> = () => {
 		try {
 			await saveTimeSystem(data);
 		} catch (err) {
-			console.error('Failed to save time system', err);
+			console.error("Failed to save time system", err);
 		} finally {
 			setTimeSystemModalOpen(false);
 		}
@@ -380,7 +372,7 @@ const Timeline: React.FC<TimelineProps> = () => {
 	const appliedInitialDefaults = React.useRef(false);
 	useEffect(() => {
 		if (appliedInitialDefaults.current) return;
-		const hasQueryGroups = !!searchParams.get('groups');
+		const hasQueryGroups = !!searchParams.get("groups");
 		if (hasQueryGroups) {
 			appliedInitialDefaults.current = true;
 			return;
@@ -431,50 +423,71 @@ const Timeline: React.FC<TimelineProps> = () => {
 		hour: number;
 		minute: number;
 	} {
-		const escapeReg = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		const escapeReg = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 		// Year
 		let year = parseYear(ev.startDate);
 		if (!year) {
 			const sy = (ev as any).startYear;
-			if (typeof sy === 'number') year = sy;
-			else if (typeof sy === 'string' && /^\d+$/.test(sy)) year = Number(sy);
+			if (typeof sy === "number") year = sy;
+			else if (typeof sy === "string" && /^\d+$/.test(sy)) year = Number(sy);
 		}
 		// Era
 		let era: Era | null = null;
 		if (timeSystem?.eras?.length) {
 			if (ev.startEraId) {
-				era = (timeSystem.eras as Era[]).find((e: Era) => e.id === ev.startEraId) || null;
+				era =
+					(timeSystem.eras as Era[]).find((e: Era) => e.id === ev.startEraId) ||
+					null;
 			} else {
 				const abbr = parseEraAbbreviation(ev.startDate);
 				if (abbr) {
-					era = (timeSystem.eras as Era[]).find((e: Era) => (e.abbreviation || '').toUpperCase() === abbr.toUpperCase()) || null;
+					era =
+						(timeSystem.eras as Era[]).find(
+							(e: Era) =>
+								(e.abbreviation || "").toUpperCase() === abbr.toUpperCase(),
+						) || null;
 				}
 			}
 		}
 		// Month index (0-based)
 		let monthIndex = 0;
-		if (typeof ev.startMonthIndex === 'number') {
+		if (typeof ev.startMonthIndex === "number") {
 			monthIndex = (ev.startMonthIndex as number) ?? 0;
 		} else if (ev.startDate && timeSystem?.months?.length) {
 			const idx = timeSystem.months.findIndex((m: any) =>
-				new RegExp(`\\b${escapeReg(m.name)}\\b`, 'i').test(ev.startDate as string)
+				new RegExp(`\\b${escapeReg(m.name)}\\b`, "i").test(
+					ev.startDate as string,
+				),
 			);
 			if (idx >= 0) monthIndex = idx;
 		}
 		// Day (1-based expected in formatted string/fields). Store as 1+.
 		let day = 1;
-		if (typeof ev.startDay === 'number' && ev.startDay) day = ev.startDay as number;
+		if (typeof ev.startDay === "number" && ev.startDay)
+			day = ev.startDay as number;
 		else if (ev.startDate) {
 			const m = (ev.startDate as string).match(/^(\d+)(?:st|nd|rd|th)?\b/i);
 			if (m) day = Number(m[1]);
 		}
 		// Time
-		const hour = typeof (ev as any).startHour === 'number' ? (ev as any).startHour : 0;
-		const minute = typeof (ev as any).startMinute === 'number' ? (ev as any).startMinute : 0;
-		return { era, year: year || 0, monthIndex: monthIndex || 0, day: day || 1, hour, minute };
+		const hour =
+			typeof (ev as any).startHour === "number" ? (ev as any).startHour : 0;
+		const minute =
+			typeof (ev as any).startMinute === "number" ? (ev as any).startMinute : 0;
+		return {
+			era,
+			year: year || 0,
+			monthIndex: monthIndex || 0,
+			day: day || 1,
+			hour,
+			minute,
+		};
 	}
 
-	function toAbsoluteMinutes(ev: Event, ts?: TimeSystemConfig | null): number | null {
+	function toAbsoluteMinutes(
+		ev: Event,
+		ts?: TimeSystemConfig | null,
+	): number | null {
 		if (!ts) return null;
 		const { era, year, monthIndex, day, hour, minute } = resolveStartParts(ev);
 		const yearDays = getYearLengthDays(ts);
@@ -506,8 +519,8 @@ const Timeline: React.FC<TimelineProps> = () => {
 	}
 
 	// Format any date string according to a chosen detail level.
-	const formatDateLeft = (dateStr?: string, level: DetailLevel = 'Year') => {
-		if (!dateStr) return '';
+	const formatDateLeft = (dateStr?: string, level: DetailLevel = "Year") => {
+		if (!dateStr) return "";
 		const prettifyYear = (s: string) => s;
 
 		const ordinal = (n: number) => {
@@ -527,7 +540,7 @@ const Timeline: React.FC<TimelineProps> = () => {
 
 		// 1) Ordinal + Month + Year (e.g., "1st Primos 10000, DE")
 		const ordinalMonthYear = dateStr.match(
-			/(\d+)(?:st|nd|rd|th)?\s+([A-Za-zÀ-ÖØ-öø-ÿ']+)\s+(\d{1,6})(?:,\s*([A-Z]{1,3}))?/
+			/(\d+)(?:st|nd|rd|th)?\s+([A-Za-zÀ-ÖØ-öø-ÿ']+)\s+(\d{1,6})(?:,\s*([A-Z]{1,3}))?/,
 		);
 		if (ordinalMonthYear) {
 			const day = Number(ordinalMonthYear[1]);
@@ -535,75 +548,68 @@ const Timeline: React.FC<TimelineProps> = () => {
 			const year = Number(ordinalMonthYear[3]);
 			const era = ordinalMonthYear[4];
 			switch (level) {
-				case 'Day':
+				case "Day":
 					return `${ordinal(day)} ${monthName} ${String(year)}${
-						era ? `, ${era}` : ''
+						era ? `, ${era}` : ""
 					}`;
-				case 'Month':
-					return `${monthName} ${String(year)}${
-						era ? `, ${era}` : ''
-					}`;
-				case 'Year':
+				case "Month":
+					return `${monthName} ${String(year)}${era ? `, ${era}` : ""}`;
+				case "Year":
 				default:
-					return `${String(year)}${era ? `, ${era}` : ''}`;
+					return `${String(year)}${era ? `, ${era}` : ""}`;
 			}
 		}
 
 		// 2) Month + Year (e.g., "Primos 10000, DE")
 		const monthYear = dateStr.match(
-			/([A-Za-zÀ-ÖØ-öø-ÿ']+)\s+(\d{1,6})(?:,\s*([A-Z]{1,3}))?/
+			/([A-Za-zÀ-ÖØ-öø-ÿ']+)\s+(\d{1,6})(?:,\s*([A-Z]{1,3}))?/,
 		);
 		if (monthYear) {
 			const monthName = monthYear[1];
 			const year = Number(monthYear[2]);
 			const era = monthYear[3];
 			switch (level) {
-				case 'Month':
-					return `${monthName} ${String(year)}${
-						era ? `, ${era}` : ''
-					}`;
-				case 'Year':
+				case "Month":
+					return `${monthName} ${String(year)}${era ? `, ${era}` : ""}`;
+				case "Year":
 				default:
-					return `${String(year)}${era ? `, ${era}` : ''}`;
+					return `${String(year)}${era ? `, ${era}` : ""}`;
 			}
 		}
 
 		// 3) Strict ISO-like ONLY (e.g., "10000-01-01" or "10000") – must match the whole string
 		const iso = dateStr.match(
-			/^(\d{1,6})(?:[-/.](\d{1,2})(?:[-/.](\d{1,2}))?)?(?:[ T](\d{1,2}):(\d{2}))?$/
+			/^(\d{1,6})(?:[-/.](\d{1,2})(?:[-/.](\d{1,2}))?)?(?:[ T](\d{1,2}):(\d{2}))?$/,
 		);
 		if (iso) {
 			const year = Number(iso[1]);
 			const month = iso[2] ? Number(iso[2]) : undefined;
 			const day = iso[3] ? Number(iso[3]) : undefined;
 			const monthNames = [
-				'Jan',
-				'Feb',
-				'Mar',
-				'Apr',
-				'May',
-				'Jun',
-				'Jul',
-				'Aug',
-				'Sep',
-				'Oct',
-				'Nov',
-				'Dec',
+				"Jan",
+				"Feb",
+				"Mar",
+				"Apr",
+				"May",
+				"Jun",
+				"Jul",
+				"Aug",
+				"Sep",
+				"Oct",
+				"Nov",
+				"Dec",
 			];
 			switch (level) {
-				case 'Day':
+				case "Day":
 					if (month && day)
 						return `${ordinal(day)} ${
 							monthNames[(month - 1) % 12]
 						} ${String(year)}`;
 				// fallthrough
-				case 'Month':
-					if (month)
-						return `${monthNames[(month - 1) % 12]} ${String(
-							year
-						)}`;
+				case "Month":
+					if (month) return `${monthNames[(month - 1) % 12]} ${String(year)}`;
 				// fallthrough
-				case 'Year':
+				case "Year":
 				default:
 					return String(year);
 			}
@@ -614,7 +620,7 @@ const Timeline: React.FC<TimelineProps> = () => {
 		if (lastNumber) {
 			const year = Number(lastNumber[1]);
 			const era = eraMatch ? eraMatch[1] : undefined;
-			return `${String(year)}${era ? `, ${era}` : ''}`;
+			return `${String(year)}${era ? `, ${era}` : ""}`;
 		}
 
 		return prettifyYear(dateStr);
@@ -624,7 +630,7 @@ const Timeline: React.FC<TimelineProps> = () => {
 		try {
 			await updateEvent({ ...ev, detailLevel: level });
 		} catch (err) {
-			console.error('Failed to set detail level', err);
+			console.error("Failed to set detail level", err);
 		} finally {
 			setMenuOpenFor(null);
 		}
@@ -649,10 +655,10 @@ const Timeline: React.FC<TimelineProps> = () => {
 				bannerUrl: (ev as any).bannerUrl,
 				hidden: ev.hidden,
 				order: (ev.order ?? 0) + 0.01,
-				detailLevel: ev.detailLevel || 'Year',
-			} as unknown as Omit<Event, '_id'>);
+				detailLevel: ev.detailLevel || "Year",
+			} as unknown as Omit<Event, "_id">);
 		} catch (err) {
-			console.error('Failed to duplicate event', err);
+			console.error("Failed to duplicate event", err);
 		} finally {
 			setMenuOpenFor(null);
 		}
@@ -662,7 +668,7 @@ const Timeline: React.FC<TimelineProps> = () => {
 		try {
 			await updateEvent({ ...ev, groupId });
 		} catch (err) {
-			console.error('Failed to move event', err);
+			console.error("Failed to move event", err);
 		} finally {
 			setMenuOpenFor(null);
 		}
@@ -672,7 +678,7 @@ const Timeline: React.FC<TimelineProps> = () => {
 		try {
 			await deleteEvent(id);
 		} catch (err) {
-			console.error('Failed to delete event', err);
+			console.error("Failed to delete event", err);
 		} finally {
 			setMenuOpenFor(null);
 		}
@@ -689,32 +695,36 @@ const Timeline: React.FC<TimelineProps> = () => {
 	const renderEvent = (ev: Event, index: number) => {
 		// compute difference from previous event for caption (era-aware, down to days)
 		const prev = index > 0 ? visibleEvents[index - 1] : null;
-		let diffLabel = '';
+		let diffLabel = "";
 		if (prev && timeSystem) {
 			const prevTs = toAbsoluteMinutes(prev, timeSystem);
 			const currTs = toAbsoluteMinutes(ev, timeSystem);
 			if (prevTs !== null && currTs !== null) {
-				const minutesPerDay = (timeSystem.hoursPerDay || 24) * (timeSystem.minutesPerHour || 60);
+				const minutesPerDay =
+					(timeSystem.hoursPerDay || 24) * (timeSystem.minutesPerHour || 60);
 				const yearDays = getYearLengthDays(timeSystem);
-				const avgMonthDays = yearDays && timeSystem.months?.length ? yearDays / timeSystem.months.length : 30;
+				const avgMonthDays =
+					yearDays && timeSystem.months?.length
+						? yearDays / timeSystem.months.length
+						: 30;
 				let delta = currTs - prevTs; // positive if curr is later in time than prev
 				const absDays = Math.floor(Math.abs(delta) / minutesPerDay);
 				if (absDays >= 1) {
 					let value = 0;
-					let unit = '';
+					let unit = "";
 					if (yearDays && absDays >= yearDays) {
 						value = Math.floor(absDays / yearDays);
-						unit = value === 1 ? 'year' : 'years';
+						unit = value === 1 ? "year" : "years";
 					} else if (absDays >= Math.max(1, Math.round(avgMonthDays))) {
 						value = Math.floor(absDays / Math.max(1, Math.round(avgMonthDays)));
-						unit = value === 1 ? 'month' : 'months';
+						unit = value === 1 ? "month" : "months";
 					} else {
 						value = absDays;
-						unit = value === 1 ? 'day' : 'days';
+						unit = value === 1 ? "day" : "days";
 					}
 					// Direction wording depends on sort order
 					// Direction is purely temporal relative to previous event, independent of list sort order
-					const direction = delta > 0 ? 'later' : 'before';
+					const direction = delta > 0 ? "later" : "before";
 					diffLabel = `${value.toLocaleString()} ${unit} ${direction}`;
 				}
 			}
@@ -732,11 +742,11 @@ const Timeline: React.FC<TimelineProps> = () => {
 				const page = await Api.getPage(pageId);
 				if (page && page._id && page.type) {
 					navigate(`/lore/${page.type}/${page._id}`, {
-						state: { from: 'timeline' },
+						state: { from: "timeline" },
 					});
 				}
 			} catch (e) {
-				console.error('Failed to open linked page', e);
+				console.error("Failed to open linked page", e);
 			}
 		};
 
@@ -755,7 +765,7 @@ const Timeline: React.FC<TimelineProps> = () => {
 					className="event"
 					style={
 						{
-							'--group-color': group?.color || '#475569',
+							"--group-color": group?.color || "#475569",
 						} as React.CSSProperties
 					}
 				>
@@ -767,12 +777,10 @@ const Timeline: React.FC<TimelineProps> = () => {
 							<div className="detailLevel">
 								{formatDateLeft(
 									ev.startDate,
-									(ev as any).detailLevel || 'Year'
+									(ev as any).detailLevel || "Year",
 								)}
 							</div>
-							{diffLabel && (
-								<div className="diff">{diffLabel}</div>
-							)}
+							{diffLabel && <div className="diff">{diffLabel}</div>}
 						</div>
 						{/* Triangle marker (diamond) */}
 						<div className="marker">
@@ -787,7 +795,7 @@ const Timeline: React.FC<TimelineProps> = () => {
 									<path
 										d="M29.793 15L15.5 29.293L1.20703 15L15.5 0.707031L29.793 15Z"
 										fill="#27272A"
-										fill-opacity="0.8"
+										fillOpacity="0.8"
 										stroke="rgba(115,107,1,1)"
 									></path>
 								</svg>
@@ -797,20 +805,15 @@ const Timeline: React.FC<TimelineProps> = () => {
 						{/* Event card */}
 						<div className="cardWrapper">
 							<div
-								className={`card ${
-									ev.pageId ? 'clickable' : ''
-								}`}
+								className={`card ${ev.pageId ? "clickable" : ""}`}
 								onClick={(e) => {
 									// Only navigate if clicking the card itself, not buttons
-									if (
-										ev.pageId &&
-										e.target === e.currentTarget
-									) {
+									if (ev.pageId && e.target === e.currentTarget) {
 										openLinkedPage(ev.pageId);
 									}
 								}}
 								style={{
-									cursor: ev.pageId ? 'pointer' : 'default',
+									cursor: ev.pageId ? "pointer" : "default",
 								}}
 							>
 								<div
@@ -820,12 +823,12 @@ const Timeline: React.FC<TimelineProps> = () => {
 											? {
 													backgroundImage: `url(${Api.resolveThumbnailUrl(
 														ev.bannerUrl,
-														ev.bannerThumbUrl
+														ev.bannerThumbUrl,
 													)})`,
-											  }
+												}
 											: ev.color
-											? { background: ev.color }
-											: {}
+												? { background: ev.color }
+												: {}
 									}
 									onClick={(e) => {
 										if (ev.pageId) {
@@ -845,7 +848,7 @@ const Timeline: React.FC<TimelineProps> = () => {
 								>
 									{/* Group label */}
 									<span className="groupLabel">
-										{group?.name?.toUpperCase() || 'Group'}
+										{group?.name?.toUpperCase() || "Group"}
 									</span>
 
 									<div className="title_wrapper">
@@ -853,33 +856,25 @@ const Timeline: React.FC<TimelineProps> = () => {
 											{resolveIcon(ev.icon)}
 										</span>
 										<div className="title_subtitle_wrapper">
-											<h3 className="title">
-												{ev.title}
-											</h3>
+											<h3 className="title">{ev.title}</h3>
 											<div className="subtitle">
 												{formatDateLeft(
 													ev.startDate,
-													(ev as any).detailLevel ||
-														'Year'
+													(ev as any).detailLevel || "Year",
 												)}
 												{ev.endDate
 													? ` → ${formatDateLeft(
 															ev.endDate,
-															(ev as any)
-																.detailLevel ||
-																'Year'
-													  )}`
-													: ''}
+															(ev as any).detailLevel || "Year",
+														)}`
+													: ""}
 											</div>
 										</div>
 
 										{ev.description && (
 											<p className="description">
 												{ev.description.length > 200
-													? `${ev.description.slice(
-															0,
-															200
-													  )}…`
+													? `${ev.description.slice(0, 200)}…`
 													: ev.description}
 											</p>
 										)}
@@ -887,23 +882,15 @@ const Timeline: React.FC<TimelineProps> = () => {
 									{isDM && (
 										<div className="editRow">
 											<button
-												ref={
-													menuOpenFor === ev._id
-														? menuButtonRef
-														: undefined
-												}
+												ref={menuOpenFor === ev._id ? menuButtonRef : undefined}
 												className="menuButton"
 												aria-haspopup="menu"
-												aria-expanded={
-													menuOpenFor === ev._id
-												}
+												aria-expanded={menuOpenFor === ev._id}
 												onClick={(e) => {
 													e.stopPropagation();
 													e.preventDefault();
 													setMenuOpenFor(
-														menuOpenFor === ev._id
-															? null
-															: ev._id
+														menuOpenFor === ev._id ? null : ev._id,
 													);
 												}}
 											>
@@ -911,117 +898,90 @@ const Timeline: React.FC<TimelineProps> = () => {
 											</button>
 
 											<div
-											ref={
-												menuOpenFor === ev._id
-													? menuRootRef
-													: undefined
-											}
-											className={`contextMenu ${
-												menuOpenFor === ev._id
-													? 'open'
-													: ''
-											}`}
-											role="menu"
-											onClick={(e) => {
-												e.stopPropagation();
-												e.preventDefault();
-											}}
-										>
-											<div
-												className="menuItem"
-												role="menuitem"
+												ref={menuOpenFor === ev._id ? menuRootRef : undefined}
+												className={`contextMenu ${
+													menuOpenFor === ev._id ? "open" : ""
+												}`}
+												role="menu"
 												onClick={(e) => {
 													e.stopPropagation();
-													onEditEvent(ev);
+													e.preventDefault();
 												}}
 											>
-												Edit event
-											</div>
-											<div
-												className="menuItem"
-												role="menuitem"
-												onClick={(e) => {
-													e.stopPropagation();
-													handleDuplicateEvent(ev);
-												}}
-											>
-												Duplicate event
-											</div>
-											<div
-												className="menuItem submenu"
-												role="menuitem"
-											>
-												Move to group
-												<div className="submenu-list">
-													{groups.map((g) => (
-														<div
-															key={g._id}
-															className="menuItem"
-															onClick={(e) => {
-																e.stopPropagation();
-																handleMoveToGroup(
-																	ev,
-																	g._id
-																);
-															}}
-														>
-															{g.name}
-															{g._id ===
-															ev.groupId
-																? ' •'
-																: ''}
-														</div>
-													))}
+												<div
+													className="menuItem"
+													role="menuitem"
+													onClick={(e) => {
+														e.stopPropagation();
+														onEditEvent(ev);
+													}}
+												>
+													Edit event
 												</div>
-											</div>
-											<div
-												className="menuItem submenu"
-												role="menuitem"
-											>
-												Detail level
-												<div className="submenu-list">
-													{(
-														[
-															'Year',
-															'Month',
-															'Day',
-														] as DetailLevel[]
-													).map((lvl) => (
-														<div
-															key={lvl}
-															className="menuItem"
-															onClick={(e) => {
-																e.stopPropagation();
-																setDetailLevelFor(
-																	ev,
-																	lvl
-																);
-															}}
-														>
-															{((ev as any)
-																.detailLevel ||
-																'Year') === lvl
-																? '● '
-																: '○ '}
-															{lvl}
-														</div>
-													))}
+												<div
+													className="menuItem"
+													role="menuitem"
+													onClick={(e) => {
+														e.stopPropagation();
+														handleDuplicateEvent(ev);
+													}}
+												>
+													Duplicate event
 												</div>
-											</div>
-											<div className="separator"></div>
-											<div
-												className="menuItem"
-												role="menuitem"
-												onClick={(e) => {
-													e.stopPropagation();
-													setEventToDelete(ev);
-													setDeleteConfirmOpen(true);
-												}}
-											>
-												Delete event
+												<div className="menuItem submenu" role="menuitem">
+													Move to group
+													<div className="submenu-list">
+														{groups.map((g) => (
+															<div
+																key={g._id}
+																className="menuItem"
+																onClick={(e) => {
+																	e.stopPropagation();
+																	handleMoveToGroup(ev, g._id);
+																}}
+															>
+																{g.name}
+																{g._id === ev.groupId ? " •" : ""}
+															</div>
+														))}
+													</div>
+												</div>
+												<div className="menuItem submenu" role="menuitem">
+													Detail level
+													<div className="submenu-list">
+														{(["Year", "Month", "Day"] as DetailLevel[]).map(
+															(lvl) => (
+																<div
+																	key={lvl}
+																	className="menuItem"
+																	onClick={(e) => {
+																		e.stopPropagation();
+																		setDetailLevelFor(ev, lvl);
+																	}}
+																>
+																	{((ev as any).detailLevel || "Year") === lvl
+																		? "● "
+																		: "○ "}
+																	{lvl}
+																</div>
+															),
+														)}
+													</div>
+												</div>
+												<div className="separator"></div>
+												<div
+													className="menuItem"
+													role="menuitem"
+													onClick={(e) => {
+														e.stopPropagation();
+														setEventToDelete(ev);
+														setDeleteConfirmOpen(true);
+													}}
+												>
+													Delete event
+												</div>
 											</div>
 										</div>
-									</div>
 									)}
 								</div>
 							</div>
@@ -1034,9 +994,9 @@ const Timeline: React.FC<TimelineProps> = () => {
 
 	return (
 		<div className="timeline offset-container">
-			{' '}
+			{" "}
 			{/* Header with actions (not including nav) */}
-			<header className={`timelineHeader ${isDM ? 'with-dm-tools' : ''}`}>
+			<header className={`timelineHeader ${isDM ? "with-dm-tools" : ""}`}>
 				<div className="groupFilter">
 					{[...groups]
 						.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
@@ -1044,22 +1004,16 @@ const Timeline: React.FC<TimelineProps> = () => {
 							<button
 								key={group._id}
 								className={`pill ${
-									activeGroupIds.includes(group._id)
-										? 'active'
-										: ''
+									activeGroupIds.includes(group._id) ? "active" : ""
 								}`}
 								style={{
-									background: activeGroupIds.includes(
-										group._id
-									)
+									background: activeGroupIds.includes(group._id)
 										? group.color
-										: 'transparent',
+										: "transparent",
 
-									borderColor: !activeGroupIds.includes(
-										group._id
-									)
+									borderColor: !activeGroupIds.includes(group._id)
 										? group.color
-										: '',
+										: "",
 								}}
 								onClick={() => toggleGroupFilter(group._id)}
 							>
@@ -1070,63 +1024,61 @@ const Timeline: React.FC<TimelineProps> = () => {
 				{/* Show hidden toggle with icon */}
 				{isDM && (
 					<>
-					<div className="toolbox">
-						<button
-							className="toolboxButton rounded-button"
-							onClick={() => setGroupModalOpen(!isGroupModalOpen)}
-						>
-							<i className={`icon icli iconly-Category`}></i>
-							<span className="text">GROUPS</span>
-						</button>
-						<button
-							className="toolboxButton rounded-button"
-							onClick={() =>
-								setTimeSystemModalOpen(!isTimeSystemModalOpen)
-							}
-						>
-							<i className={`icon icli iconly-Calendar`}></i>
-							<span className="text">TIME SYSTEM</span>
-						</button>
+						<div className="toolbox">
+							<button
+								className="toolboxButton rounded-button"
+								onClick={() => setGroupModalOpen(!isGroupModalOpen)}
+							>
+								<i className={`icon icli iconly-Category`}></i>
+								<span className="text">GROUPS</span>
+							</button>
+							<button
+								className="toolboxButton rounded-button"
+								onClick={() => setTimeSystemModalOpen(!isTimeSystemModalOpen)}
+							>
+								<i className={`icon icli iconly-Calendar`}></i>
+								<span className="text">TIME SYSTEM</span>
+							</button>
 
-						<button
-							className="toolboxButton rounded-button"
-							onClick={() => setShowHidden(!showHidden)}
-						>
-							<i
-								className={`icon icli ${
-									showHidden ? 'iconly-Hide ' : 'iconly-Show'
-								}`}
-							></i>
-							<span className="text">
-								{showHidden ? 'HIDE HIDDEN' : 'SHOW HIDDEN'}
-							</span>
-						</button>
-					</div>
+							<button
+								className="toolboxButton rounded-button"
+								onClick={() => setShowHidden(!showHidden)}
+							>
+								<i
+									className={`icon icli ${
+										showHidden ? "iconly-Hide " : "iconly-Show"
+									}`}
+								></i>
+								<span className="text">
+									{showHidden ? "HIDE HIDDEN" : "SHOW HIDDEN"}
+								</span>
+							</button>
+						</div>
 
-					<ConfirmModal
-						isOpen={deleteConfirmOpen}
-						title="Delete Event"
-						message={`Are you sure you want to delete "${eventToDelete?.title || ''}"?`}
-						confirmText="Delete"
-						variant="danger"
-						onConfirm={async () => {
-							if (eventToDelete?._id) {
-								await handleDeleteEvent(eventToDelete._id);
-							}
-							setDeleteConfirmOpen(false);
-							setEventToDelete(null);
-						}}
-						onCancel={() => {
-							setDeleteConfirmOpen(false);
-							setEventToDelete(null);
-						}}
-					/>
+						<ConfirmModal
+							isOpen={deleteConfirmOpen}
+							title="Delete Event"
+							message={`Are you sure you want to delete "${eventToDelete?.title || ""}"?`}
+							confirmText="Delete"
+							variant="danger"
+							onConfirm={async () => {
+								if (eventToDelete?._id) {
+									await handleDeleteEvent(eventToDelete._id);
+								}
+								setDeleteConfirmOpen(false);
+								setEventToDelete(null);
+							}}
+							onCancel={() => {
+								setDeleteConfirmOpen(false);
+								setEventToDelete(null);
+							}}
+						/>
 					</>
 				)}
 			</header>
-			<div className={`timeline-wrapper ${isDM ? 'with-dm-tools' : ''}`}>
+			<div className={`timeline-wrapper ${isDM ? "with-dm-tools" : ""}`}>
 				<Virtuoso
-					useWindowScroll
+					totalCount={visibleEvents.length}
 					data={visibleEvents}
 					itemContent={(index, ev) => renderEvent(ev, index)}
 					increaseViewportBy={overscan}
@@ -1146,10 +1098,7 @@ const Timeline: React.FC<TimelineProps> = () => {
 				/>
 			)}
 			{isGroupModalOpen && (
-				<GroupModal
-					groups={groups}
-					onClose={() => setGroupModalOpen(false)}
-				/>
+				<GroupModal groups={groups} onClose={() => setGroupModalOpen(false)} />
 			)}
 			{isTimeSystemModalOpen && (
 				<TimeSystemModal
