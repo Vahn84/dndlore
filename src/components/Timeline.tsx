@@ -43,11 +43,12 @@ const Timeline: React.FC<TimelineProps> = () => {
 		const compute = () => {
 			const vh =
 				typeof window !== "undefined" ? window.innerHeight || 800 : 800;
-			const itemH = firstItemRef.current?.getBoundingClientRect().height || 180; // sensible default
+			const itemH = firstItemRef.current?.getBoundingClientRect().height || 210; // sensible default
 			// Keep ~1 viewport worth OR ~6 items worth buffered (whichever is larger)
-
+			const vw = window.innerWidth || 800;
 			const buffer = Math.max(Math.round(vh * 0.9), Math.round(itemH * 10));
-			setOverscan({ top: buffer, bottom: buffer });
+			const minTopBuffer = vw > 600 ? 130 : 0;
+			setOverscan({ top: buffer < 130 ? minTopBuffer : buffer, bottom: buffer });
 		};
 		compute();
 		// Recompute on resize and when the first item resizes

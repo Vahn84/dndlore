@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Api from '../Api';
 import { Page } from '../types';
@@ -41,6 +41,11 @@ const LoreList: React.FC<LoreListProps> = ({ isDM }) => {
 		}
 	};
 
+
+	const handlePageClick = (pageId: string) => {
+		navigate(`/lore/${type}/${pageId}`);
+	};
+
 	return (
 		<div className="loreList offset-container">
 			<h1 className="listTitle">{type}</h1>
@@ -54,7 +59,7 @@ const LoreList: React.FC<LoreListProps> = ({ isDM }) => {
 							key={page._id}
 							className="pageListItem"
 							onClick={() =>
-								navigate(`/lore/${type}/${page._id}`)
+								handlePageClick(page._id)
 							}
 						>
 							<div className="pageCard">

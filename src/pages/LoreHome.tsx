@@ -1,19 +1,19 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import '../styles/LoreHome.scss';
-import LoreCreateFab from '../components/LoreCreateFab';
-import PlaceMapView from '../components/PlaceMapView';
-import { PlacePage } from '../components/InteractiveMapCanvas';
-import Api from '../Api';
-import { Page } from '../types';
-import { FileDashedIcon } from '@phosphor-icons/react/dist/csr/FileDashed';
-import { TrashIcon } from '@phosphor-icons/react/dist/csr/Trash';
-import { DotsSixVerticalIcon } from '@phosphor-icons/react/dist/csr/DotsSixVertical';
-import { useAppStore } from '../store/appStore';
-import ConfirmModal from '../components/ConfirmModal';
-import { toast } from 'react-hot-toast';
-import CategoriesMenu from '../components/CategoriesMenu';
-import Constants from '../Constants';
+import React, { useEffect, useState, useRef, useMemo } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import "../styles/LoreHome.scss";
+import LoreCreateFab from "../components/LoreCreateFab";
+import PlaceMapView from "../components/PlaceMapView";
+import { PlacePage } from "../components/InteractiveMapCanvas";
+import Api from "../Api";
+import { Page } from "../types";
+import { FileDashedIcon } from "@phosphor-icons/react/dist/csr/FileDashed";
+import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
+import { DotsSixVerticalIcon } from "@phosphor-icons/react/dist/csr/DotsSixVertical";
+import { useAppStore } from "../store/appStore";
+import ConfirmModal from "../components/ConfirmModal";
+import { toast } from "react-hot-toast";
+import CategoriesMenu from "../components/CategoriesMenu";
+import Constants from "../Constants";
 import {
 	DndContext,
 	closestCenter,
@@ -22,15 +22,15 @@ import {
 	useSensor,
 	useSensors,
 	DragEndEvent,
-} from '@dnd-kit/core';
+} from "@dnd-kit/core";
 import {
 	arrayMove,
 	SortableContext,
 	sortableKeyboardCoordinates,
 	useSortable,
 	verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 /**
  * Sortable page item component for drag-and-drop
@@ -90,7 +90,7 @@ const SortablePageItem: React.FC<SortablePageItemProps> = ({
 						style={{
 							backgroundImage: `url(${Api.resolveThumbnailUrl(
 								page.bannerUrl,
-								page.bannerThumbUrl
+								page.bannerThumbUrl,
 							)})`,
 						}}
 					/>
@@ -98,9 +98,7 @@ const SortablePageItem: React.FC<SortablePageItemProps> = ({
 				<div className="meta">
 					<h3 className="pageTitle">{page.title}</h3>
 					{page.subtitle && (
-						<h4 className="pageSubtitle">
-							{page.subtitle.toUpperCase()}
-						</h4>
+						<h4 className="pageSubtitle">{page.subtitle.toUpperCase()}</h4>
 					)}
 
 					{isDM && (
@@ -132,15 +130,19 @@ const LoreHome: React.FC = () => {
 	const navigate = useNavigate();
 	const [searchParams, setSearchParams] = useSearchParams();
 
+	// Scroll position preservation
+	const overflowRef = useRef<HTMLDivElement | null>(null);
+	const [restoredScroll, setRestoredScroll] = useState(false);
+
 	// Define the categories available. We include a user‑friendly label
 	// and the corresponding type used in the API. A placeholder icon can
 	// be replaced with images if desired.
 	const categories = [
-		{ type: 'campaign', label: 'Campaign' },
-		{ type: 'place', label: 'Places' },
-		{ type: 'history', label: 'History' },
-		{ type: 'myth', label: 'Myths' },
-		{ type: 'people', label: 'People' },
+		{ type: "campaign", label: "Campaign" },
+		{ type: "place", label: "Places" },
+		{ type: "history", label: "History" },
+		{ type: "myth", label: "Myths" },
+		{ type: "people", label: "People" },
 	];
 
 	/**
@@ -154,19 +156,17 @@ const LoreHome: React.FC = () => {
 
 		// Find the last space within the maxLength limit
 		const truncated = text.substring(0, maxLength);
-		const lastSpaceIndex = truncated.lastIndexOf(' ');
+		const lastSpaceIndex = truncated.lastIndexOf(" ");
 
 		// If we found a space, cut there; otherwise use the full maxLength
 		const excerpt =
-			lastSpaceIndex > 0
-				? truncated.substring(0, lastSpaceIndex)
-				: truncated;
+			lastSpaceIndex > 0 ? truncated.substring(0, lastSpaceIndex) : truncated;
 
 		return excerpt + '<span class="moreIndicator"> ...MORE</span>';
 	};
 
 	// Get category from URL query params, default to first category
-	const categoryFromUrl = searchParams.get('category');
+	const categoryFromUrl = searchParams.get("category");
 	const initialCategory =
 		categories.find((c) => c.type === categoryFromUrl)?.type ||
 		categories[0].type;
@@ -194,7 +194,7 @@ const LoreHome: React.FC = () => {
 		useSensor(PointerSensor),
 		useSensor(KeyboardSensor, {
 			coordinateGetter: sortableKeyboardCoordinates,
-		})
+		}),
 	);
 
 	// Sorted and filtered pages with default sorting
@@ -214,17 +214,17 @@ const LoreHome: React.FC = () => {
 			}
 
 			// If order is the same (or both unset), apply category-specific sorting
-			if (selectedCategory === 'campaign') {
+			if (selectedCategory === "campaign") {
 				// Campaign pages: sort by sessionDate descending (newest first)
 				const parseDate = (dateStr?: string) => {
 					if (!dateStr) return 0;
-					const [day, month, year] = dateStr.split('/').map(Number);
+					const [day, month, year] = dateStr.split("/").map(Number);
 					return new Date(year, month - 1, day).getTime();
 				};
 				const dateA = parseDate(a.sessionDate);
 				const dateB = parseDate(b.sessionDate);
 				return dateB - dateA; // descending
-			} else if (selectedCategory === 'history') {
+			} else if (selectedCategory === "history") {
 				// History pages: sort by worldDate ascending (oldest first)
 				const getWorldYear = (p: Page) => {
 					if (!p.worldDate) return 0;
@@ -268,10 +268,10 @@ const LoreHome: React.FC = () => {
 			// Persist order to backend
 			try {
 				await Api.reorderPages(selectedCategory, newOrder);
-				toast.success('Page order updated');
+				toast.success("Page order updated");
 			} catch (error) {
-				console.error('Failed to update page order:', error);
-				toast.error('Failed to save page order');
+				console.error("Failed to update page order:", error);
+				toast.error("Failed to save page order");
 				// Revert to previous order on error
 				setLocalPageOrder(localPageOrder);
 			}
@@ -288,14 +288,14 @@ const LoreHome: React.FC = () => {
 		if (!pageToDelete) return;
 		try {
 			await deletePage(pageToDelete._id);
-			toast.success('Page deleted successfully');
+			toast.success("Page deleted successfully");
 			setDeleteModalOpen(false);
 			setPageToDelete(null);
 			// Reload pages to update the list
 			loadPages(selectedCategory as any);
 		} catch (error) {
-			console.error('Failed to delete page:', error);
-			toast.error('Failed to delete page');
+			console.error("Failed to delete page:", error);
+			toast.error("Failed to delete page");
 		}
 	};
 
@@ -305,15 +305,28 @@ const LoreHome: React.FC = () => {
 	};
 
 	// Background blur on scroll
-	const overflowRef = useRef<HTMLDivElement | null>(null);
 	const [bgBlur, setBgBlur] = useState(0);
 	const [bgGray, setBgGray] = useState(0);
 	const rafId = useRef<number | null>(null);
+
+	// Restore scroll position on mount if we're coming from a lore detail page
+	useEffect(() => {
+		if (!restoredScroll && overflowRef.current) {
+			const scrollPosition = sessionStorage.getItem(
+				`lore-scroll-${searchParams.get("category") || "campaign"}`,
+			);
+			if (scrollPosition !== null) {
+				overflowRef.current.scrollTop = parseInt(scrollPosition, 10);
+			}
+			setRestoredScroll(true);
+		}
+	}, [restoredScroll, searchParams]);
 
 	const handleScroll = () => {
 		const el = overflowRef.current;
 		if (!el) return;
 		const scrollTop = el.scrollTop;
+
 		const MAX_BLUR = 12;
 		const THRESHOLD = 1200;
 		const ratio = Math.min(1, scrollTop / THRESHOLD);
@@ -325,22 +338,45 @@ const LoreHome: React.FC = () => {
 		});
 	};
 
-	useEffect(
-		() => () => {
+	useEffect(() => {
+		if (overflowRef.current && restoredScroll) {
+			console.log("SALVO LO SCROLL:", overflowRef.current.scrollTop);
+			sessionStorage.setItem(
+				`lore-scroll-${searchParams.get("category") || "campaign"}`,
+				String(overflowRef.current.scrollTop),
+			);
+			setRestoredScroll(false);
+		}
+		() => {
 			if (rafId.current) cancelAnimationFrame(rafId.current);
-		},
-		[]
-	);
+		};
+	}, []);
 
-	// Update URL when category changes
+	// Save scroll position before navigating away
 	const handleCategoryChange = (categoryType: string) => {
+		if (overflowRef.current && overflowRef.current.scrollTop > 0) {
+			sessionStorage.setItem(
+				`lore-scroll-${searchParams.get("category") || "campaign"}`,
+				String(overflowRef.current.scrollTop),
+			);
+		}
 		setSelectedCategory(categoryType);
 		setSearchParams({ category: categoryType });
 	};
 
+	// Save scroll position when navigating to a detail page
+	useEffect(() => {
+		if (overflowRef.current && overflowRef.current.scrollTop > 0) {
+			sessionStorage.setItem(
+				`lore-scroll-${searchParams.get("category") || "campaign"}`,
+				String(overflowRef.current.scrollTop),
+			);
+		}
+	}, [searchParams]);
+
 	// Sync state with URL on mount and when URL changes
 	useEffect(() => {
-		const urlCategory = searchParams.get('category');
+		const urlCategory = searchParams.get("category");
 		if (urlCategory && categories.find((c) => c.type === urlCategory)) {
 			setSelectedCategory(urlCategory);
 		}
@@ -352,14 +388,43 @@ const LoreHome: React.FC = () => {
 		loadPages(selectedCategory as any);
 	}, [selectedCategory, loadPages]);
 
+	// Restore scroll position on mount if we're coming from a lore detail page
+	useEffect(() => {
+		if (!restoredScroll && overflowRef.current) {
+			const scrollPosition = sessionStorage.getItem(
+				`lore-scroll-${searchParams.get("category") || "campaign"}`,
+			);
+			if (scrollPosition !== null && scrollPosition !== "0") {
+				setTimeout(() => {
+					if (overflowRef.current) {
+						overflowRef.current.scrollTop = parseInt(scrollPosition, 10);
+					}
+				}, 500);
+			}
+			setRestoredScroll(true);
+		}
+	}, [restoredScroll, searchParams]);
+
 	return (
 		<div
 			className="loreHome offset-container"
 			style={{
 				background:
-					selectedCategory !== 'place'
+					selectedCategory !== "place"
 						? `url(${Constants.LORE_BG[selectedCategory]})`
-						: 'none',
+						: "none",
+			}}
+			ref={overflowRef}
+			onScroll={(e) => {
+				handleScroll();
+
+				// Save scroll position on each scroll event
+
+				console.log("Scroll position:", e.currentTarget.scrollTop);
+				sessionStorage.setItem(
+					`lore-scroll-${searchParams.get("category") || "campaign"}`,
+					String(e.currentTarget.scrollTop),
+				);
 			}}
 		>
 			{/* Left Categories Menu - Always visible */}
@@ -368,12 +433,10 @@ const LoreHome: React.FC = () => {
 				selectedCategory={selectedCategory}
 				onCategoryChange={handleCategoryChange}
 			/>
-			{selectedCategory === 'place' ? (
+			{selectedCategory === "place" ? (
 				<PlaceMapView
-					imageUrl={require('../assets/Aetherium-Tyriandor.webp')}
-					onPlaceClick={(place) =>
-						navigate(`/lore/place/${place._id}`)
-					}
+					imageUrl={require("../assets/Aetherium-Tyriandor.webp")}
+					onPlaceClick={(place) => navigate(`/lore/place/${place._id}`)}
 					leftMenuCollapsed={leftMenuCollapsed}
 				/>
 			) : (
@@ -387,20 +450,13 @@ const LoreHome: React.FC = () => {
 			<div className="overlay"></div>
 
 			{/* Hide overflow container when viewing places category */}
-			{selectedCategory !== 'place' && (
-				<div
-					className="overflow-container"
-					ref={overflowRef}
-					onScroll={handleScroll}
-				>
+			{selectedCategory !== "place" && (
+				<div className="overflow-container">
 					<div className="contentContainer">
-						<h1 className="loreTitle">
-							The Great Library of Morne
-						</h1>
+						<h1 className="loreTitle">The Great Library of Morne</h1>
 						<p className="loreSubtitle">
-							Welcome to the Great Library of Morne! Explore the
-							world of Aetherium through its places, history and
-							myths.
+							Welcome to the Great Library of Morne! Explore the world of
+							Aetherium through its places, history and myths.
 						</p>
 
 						<div className="loreColumns">
@@ -408,7 +464,7 @@ const LoreHome: React.FC = () => {
 
 							<div
 								className="pagesColumn"
-								style={{ flex: '1', maxWidth: '100%' }}
+								style={{ flex: "1", maxWidth: "100%" }}
 							>
 								{storeLoading ? (
 									<p className="loadingText">Loading…</p>
@@ -421,33 +477,23 @@ const LoreHome: React.FC = () => {
 									>
 										<SortableContext
 											items={localPageOrder}
-											strategy={
-												verticalListSortingStrategy
-											}
+											strategy={verticalListSortingStrategy}
 										>
 											<ul className="pageList">
 												{displayPages.map((page) => (
 													<SortablePageItem
 														key={page._id}
 														page={page}
-														selectedCategory={
-															selectedCategory
-														}
+														selectedCategory={selectedCategory}
 														isDM={isDM}
-														onDeleteClick={
-															handleDeleteClick
-														}
+														onDeleteClick={handleDeleteClick}
 														onNavigate={() =>
-															navigate(
-																`/lore/${selectedCategory}/${page._id}`
-															)
+															navigate(`/lore/${selectedCategory}/${page._id}`)
 														}
 													/>
 												))}
 												{displayPages.length === 0 && (
-													<p className="emptyText">
-														No pages found.
-													</p>
+													<p className="emptyText">No pages found.</p>
 												)}
 											</ul>
 										</SortableContext>
@@ -460,9 +506,7 @@ const LoreHome: React.FC = () => {
 												key={page._id}
 												className="pageListItem"
 												onClick={() =>
-													navigate(
-														`/lore/${selectedCategory}/${page._id}`
-													)
+													navigate(`/lore/${selectedCategory}/${page._id}`)
 												}
 											>
 												<div className="pageCard">
@@ -472,15 +516,13 @@ const LoreHome: React.FC = () => {
 															style={{
 																backgroundImage: `url(${Api.resolveThumbnailUrl(
 																	page.bannerUrl,
-																	page.bannerThumbUrl
+																	page.bannerThumbUrl,
 																)})`,
 															}}
 														/>
 													)}
 													<div className="meta">
-														<h3 className="pageTitle">
-															{page.title}
-														</h3>
+														<h3 className="pageTitle">{page.title}</h3>
 														{page.subtitle && (
 															<h4 className="pageSubtitle">
 																{page.subtitle.toUpperCase()}
@@ -489,18 +531,14 @@ const LoreHome: React.FC = () => {
 													</div>
 													{page.draft && isDM && (
 														<span className="draftBadge">
-															<FileDashedIcon
-																size={18}
-															/>
+															<FileDashedIcon size={18} />
 														</span>
 													)}
 												</div>
 											</li>
 										))}
 										{displayPages.length === 0 && (
-											<p className="emptyText">
-												No pages found.
-											</p>
+											<p className="emptyText">No pages found.</p>
 										)}
 									</ul>
 								)}
@@ -509,13 +547,13 @@ const LoreHome: React.FC = () => {
 					</div>
 				</div>
 			)}
-			{isDM && selectedCategory !== 'place' && <LoreCreateFab />}
+			{isDM && selectedCategory !== "place" && <LoreCreateFab />}
 
 			<ConfirmModal
 				isOpen={deleteModalOpen}
 				title="Delete Page"
 				message={`Are you sure you want to delete "${
-					pageToDelete?.title || ''
+					pageToDelete?.title || ""
 				}"?`}
 				confirmText="Delete"
 				variant="danger"

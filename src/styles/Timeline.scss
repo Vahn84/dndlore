@@ -97,10 +97,7 @@
 .virtuoso-timeline {
 	div[data-testid="virtuoso-item-list"] {
 		padding-bottom: 7rem !important;
-
-		& > div:first-child {
-			padding-top: $navbar-height-half;
-		}
+		padding-top: $navbar-height-half !important;
 	}
 }
 
@@ -554,10 +551,7 @@
 	.virtuoso-timeline {
 		div[data-testid="virtuoso-item-list"] {
 			padding-bottom: 8rem !important;
-
-			& > div:first-child {
-				padding-top: 0;
-			}
+			padding-top: 0 !important;
 		}
 	}
 	.timeline-event-wrapper {
