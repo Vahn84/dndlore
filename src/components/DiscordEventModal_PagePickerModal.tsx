@@ -51,14 +51,21 @@ const PagePickerModal: React.FC<PagePickerModalProps> = ({
 								overflowY: 'auto',
 							}}
 						>
-							{availablePages.map((page) => (
-								<div
-									key={page._id}
-									style={{
-										padding: '0.5rem',
-										borderBottom: '1px solid #334155',
-									}}
-								>
+							{availablePages
+								.slice()
+								.sort((a, b) => {
+									const dateA = a.sessionDate ? new Date(a.sessionDate.split('/').reverse().join('-')) : new Date('9999-12-31');
+									const dateB = b.sessionDate ? new Date(b.sessionDate.split('/').reverse().join('-')) : new Date('9999-12-31');
+									return dateB.getTime() - dateA.getTime();
+								})
+								.map((page) => (
+									<div
+										key={page._id}
+										style={{
+											padding: '0.5rem',
+											borderBottom: '1px solid #334155',
+										}}
+									>
 									<label
 										style={{
 											display: 'flex',
