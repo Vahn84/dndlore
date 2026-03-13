@@ -132,11 +132,11 @@
 		bottom: 0;
 		width: 100%;
 		overflow-y: auto;
+		height: fit-content;
 		-webkit-overflow-scrolling: touch;
 		scroll-padding-top: 16px;
 		z-index: 2;
 		pointer-events: none;
-		height: fit-content;
 
 		// Allow pointer events on child elements
 		& > * {
