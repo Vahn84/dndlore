@@ -100,6 +100,50 @@
         }
     }
 
+    // OWUI Sync button - positioned slightly to the left of the publish button
+    .owui-sync-btn-wrapper {
+        position: fixed;
+        top: calc(130px + 4rem);
+        right: 1.2rem;
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+
+        .owui-sync-btn-label {
+            @include thin-font();
+            font-size: 0.85rem;
+            color: $color-dim;
+            margin-right: 0.5rem;
+            text-transform: uppercase;
+            display: none;
+        }
+
+        .owui-sync-toggle-btn {
+            background: $color-dark-translucent;
+            opacity: 0.2 !important;
+        }
+
+        &:hover {
+            &.active {
+                .owui-sync-btn-label {
+                    color: #4CAF50;
+                }
+
+                .owui-sync-toggle-btn {
+                    border-color: #4CAF50;
+                }
+            }
+            .owui-sync-btn-label {
+                display: inline;
+            }
+            .owui-sync-toggle-btn {
+                opacity: 1 !important;
+                background: $color-dark-gray;
+            }
+        }
+    }
+
     &.offset-container {
         height: auto;
         min-height: 100%;

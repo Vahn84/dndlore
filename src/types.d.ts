@@ -188,7 +188,9 @@ export interface Page {
   draft?: boolean;
   /** Manual ordering for display within the same type (lower numbers appear first). */
   order?: number;
-  /** If true, this page is a light RAG document. */
+  /** Open WebUI file ID for tracking knowledge base sync status */
+  owuiFileId?: string;
+  /** LightRag document name (deprecated, kept for reference) */
   lightRagDocumentName?: string;
 }
 

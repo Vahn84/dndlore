@@ -464,6 +464,36 @@ class Api {
     });
     return resp.data;
   }
+
+  // -------------------------------------------------------------------------
+  // Open WebUI Knowledge Base Integration
+  // -------------------------------------------------------------------------
+  /**
+   * Sync single page to Open WebUI knowledge base
+   */
+  static async syncPageToOwui(pageId: string) {
+    const resp = await Api.client.post(`/pages/${pageId}/sync-to-owui`);
+    return resp.data;
+  }
+
+  /**
+   * Export pages to Open WebUI knowledge base
+   * @param mode - "individual", "all", or "delete"
+   * @param knowledgeId - Optional override for knowledge base ID
+   * @param types - Optional array of page types to export
+   */
+  static async exportToKnowledge(
+    mode: "individual" | "all" | "delete",
+    knowledgeId?: string,
+    types?: string[]
+  ) {
+    const resp = await Api.client.post("/pages/export-to-knowledge", {
+      mode,
+      knowledgeId,
+      types,
+    });
+    return resp.data;
+  }
 }
 
 export default Api;

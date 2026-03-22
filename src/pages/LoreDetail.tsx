@@ -9,6 +9,7 @@ import { useAppStore } from "../store/appStore";
 import { ImageIcon } from "@phosphor-icons/react/dist/csr/Image";
 import { GlobeSimpleIcon } from "@phosphor-icons/react/dist/csr/GlobeSimple";
 import { GlobeSimpleXIcon } from "@phosphor-icons/react/dist/csr/GlobeSimpleX";
+import { CheckCircleIcon } from "@phosphor-icons/react/dist/csr/CheckCircle";
 import AssetsManagerModal from "../components/AssetsManagerModal";
 import Modal from "react-modal";
 import Api from "../Api";
@@ -479,29 +480,34 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
     }
   };
 
-  const toggleLightRagDocument = async () => {
+  const syncToOwui = async () => {
     try {
       if (!id) {
-        console.error("Page ID is undefined");
-        toast.error("Failed to process LightRag operation: Invalid page ID");
+        toast.error("Failed to sync: Invalid page ID");
         return;
       }
 
-      // Save to LightRag
-      const data = await useAppStore
-        .getState()
-        .toggleLightRagDocument(id, "save");
-      // Update local state with document name
-      if (data && data.lightRagDocumentName) {
+      const data = await Api.syncPageToOwui(id);
+      
+      if (data.success) {
         setPageDraft((prev: any) => ({
           ...prev,
-          lightRagDocumentName: data.lightRagDocumentName,
+          owuiFileId: data.owuiFileId,
         }));
+        
+        const message =
+          data.action === "update"
+            ? "Page updated in Knowledge Base"
+            : "Page synced to Knowledge Base";
+        toast.success(message);
       }
-      toast.success("Document saved to LightRag");
-    } catch (error) {
-      console.error("LightRag operation failed:", error);
-      toast.error("Failed to process LightRag operation");
+    } catch (error: any) {
+      console.error("OWUI sync failed:", error);
+      
+      const errorMessage = error?.response?.data?.details || 
+                          error?.response?.data?.error || 
+                          "Failed to sync page to Knowledge Base";
+      toast.error(errorMessage);
     }
   };
 
@@ -546,28 +552,28 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
           </button>
         </div>
       )}
-      {/* LightRag button - positioned slightly to the left of the publish button */}
+      {/* OWUI Sync button - positioned slightly to the left of the publish button */}
       {isDM && (
         <div
-          className={`lightrag-btn-wrapper ${pageDraft.lightRagDocumentName ? "active" : ""}`}
+          className={`owui-sync-btn-wrapper ${pageDraft.owuiFileId ? "active" : ""}`}
         >
-          <span onClick={toggleLightRagDocument} className="lightrag-btn-label">
-            Sync to Knowledge Base
+          <span onClick={syncToOwui} className="owui-sync-btn-label">
+            {pageDraft.owuiFileId ? "Synced" : "Sync to KB"}
           </span>
           <button
-            className="icon_square-btn lightrag-toggle-btn"
-            onClick={toggleLightRagDocument}
+            className="icon_square-btn owui-sync-toggle-btn"
+            onClick={syncToOwui}
             title={
-              (pageDraft as any)?.lightRagDocumentName
-                ? "Remove from LightRag"
-                : "Save to LightRag"
+              pageDraft.owuiFileId
+                ? "Remove from Knowledge Base"
+                : "Save to Knowledge Base"
             }
             style={{ opacity: 0.6 }}
           >
-            {pageDraft?.lightRagDocumentName ? (
-              <GlobeSimpleXIcon size={20} />
+            {pageDraft.owuiFileId ? (
+              <CheckCircleIcon size={20} weight="bold" />
             ) : (
-              <GlobeSimpleIcon size={20} />
+              <GlobeSimpleIcon size={20} weight="bold" />
             )}
           </button>
         </div>

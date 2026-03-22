@@ -6,7 +6,7 @@ import { CloudArrowDownIcon } from "@phosphor-icons/react/dist/csr/CloudArrowDow
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { DiscordLogoIcon } from "@phosphor-icons/react/dist/csr/DiscordLogo";
 import React, { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Api from "../Api";
 import { toast } from "react-hot-toast";
 import { useAppStore } from "../store/appStore";
@@ -15,6 +15,7 @@ import AssetsManagerModal from "./AssetsManagerModal";
 import DiscordEventModal from "./DiscordEventModal";
 import SyncFromGoogleDocsModal from "./modals/SyncFromGoogleDocsModal";
 import SessionPreviewModal from "./modals/SessionPreviewModal";
+import KnowledgeBaseExportModal from "./KnowledgeBaseExportModal";
 
 type LoreType = "history" | "campaign" | "people" | "myth";
 
@@ -52,6 +53,14 @@ const LoreCreateFab: React.FC = () => {
   const [worldDate, setWorldDate] = useState<any>(null);
   const [bannerUrl, setBannerUrl] = useState<string>("");
   const [assetOpen, setAssetOpen] = useState<boolean>(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState({
+    total: 0,
+    uploaded: 0,
+    failed: 0,
+    updated: 0,
+  });
 
   const surfaceRef = useRef<HTMLDivElement | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
@@ -151,6 +160,52 @@ const LoreCreateFab: React.FC = () => {
 
   // handleCreateFromPreview function moved to SessionPreviewModal component
 
+  const handleExportToKnowledge = async () => {
+    const { type } = useParams();
+    const currentType = type || "campaign";
+
+    setExportModalOpen(true);
+    setOpen(false);
+    setExporting(true);
+    setExportProgress({ total: 0, uploaded: 0, failed: 0, updated: 0 });
+
+    try {
+      const pages = await Api.getPages(currentType);
+      setExportProgress((prev) => ({ ...prev, total: pages.length }));
+
+      const result = await Api.exportToKnowledge(
+        "individual",
+        undefined,
+        [currentType]
+      );
+
+      const uploadedArray = result.uploaded || [];
+      const updatedCount = uploadedArray.filter(
+        (p: any) => p.action === "update"
+      ).length;
+
+      const failedCount = result.failed || 0;
+
+      setExportProgress({
+        total: result.total,
+        uploaded: uploadedArray.length,
+        failed: result.failed,
+        updated: updatedCount,
+      });
+
+      if (result.failed > 0) {
+        toast.error(`Exported ${uploadedArray.length} pages, ${result.failed} failed`);
+      } else {
+        toast.success(`Successfully exported ${uploadedArray.length} pages`);
+      }
+    } catch (error) {
+      console.error("Export failed:", error);
+      toast.error("Export failed");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const onSurfaceKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (e) => {
     if (!open && (e.key === "Enter" || e.key === " ")) {
       e.preventDefault();
@@ -238,6 +293,20 @@ const LoreCreateFab: React.FC = () => {
                     Sync Session
                   </div>
                   <div
+                    className="lcfab__content_wrapper--option export-kb-option"
+                    onClick={() => {
+                      handleExportToKnowledge();
+                      setOpen(false);
+                    }}
+                    title="Export current type pages to Knowledge Base"
+                  >
+                    <CloudArrowDownIcon
+                      size={22}
+                      className="lcfab__content_wrapper--option-icon"
+                    />
+                    Export to KB
+                  </div>
+                  <div
                     className="lcfab__content_wrapper--option discord-option"
                     onClick={() => {
                       setDiscordEventOpen(true);
@@ -308,6 +377,13 @@ const LoreCreateFab: React.FC = () => {
       <DiscordEventModal
         isOpen={discordEventOpen}
         onClose={() => setDiscordEventOpen(false)}
+      />
+
+      <KnowledgeBaseExportModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        exporting={exporting}
+        progress={exportProgress}
       />
     </>
   );
