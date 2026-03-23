@@ -60,6 +60,7 @@ export type DatePickerProps = {
 	) => string | null | undefined;
 	/** Option to hide the era selector */
 	hideEraSelector?: boolean;
+	editable?: boolean;
 };
 
 /* ---------------- helpers ---------------- */
@@ -202,6 +203,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
 	positionAbove = false,
 	timeLabelFormatter,
  	hideEraSelector = false,
+  editable = false
 }) => {
 	const hasTS = !!(
 		ts &&
@@ -452,7 +454,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
 			? weekShort
 			: ['L', 'Ma', 'Me', 'G', 'V', 'S', 'D'];
 
-	const disabled = !hasTS;
+	const disabled = !hasTS || !editable;
 	const finalPlaceholder = disabled ? 'Time system not ready' : placeholder;
 	const currentEra = useMemo(() => {
 		if (!hasTS) return undefined;
