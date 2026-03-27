@@ -30,37 +30,26 @@ const Timeline: React.FC<TimelineProps> = () => {
 	// Measure first rendered item to tune overscan
 	const firstItemRef = useRef<HTMLDivElement | null>(null);
 	const [overscan, setOverscan] = useState<{ top: number; bottom: number }>({
-		top: 600,
-		bottom: 800,
+		top: 2000,
+		bottom: 2000,
 	});
 
 	// Delete confirmation state
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 	const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
+	const [itemHeight, setItemHeight] = useState<number>(180);
 
 	// Dynamically compute overscan based on viewport & average item height
 	useEffect(() => {
 		const compute = () => {
-			const vh =
-				typeof window !== "undefined" ? window.innerHeight || 800 : 800;
 			const itemH = firstItemRef.current?.getBoundingClientRect().height || 210; // sensible default
-			// Keep ~1 viewport worth OR ~6 items worth buffered (whichever is larger)
-			const vw = window.innerWidth || 800;
-			const buffer = Math.max(Math.round(vh * 0.9), Math.round(itemH * 10));
-			const minTopBuffer = vw > 600 ? 130 : 0;
-			setOverscan({ top: buffer < 130 ? minTopBuffer : buffer, bottom: buffer });
+			setItemHeight(itemH)
 		};
 		compute();
-		// Recompute on resize and when the first item resizes
-		let ro: ResizeObserver | undefined;
-		if (typeof ResizeObserver !== "undefined") {
-			ro = new ResizeObserver(() => compute());
-			if (firstItemRef.current) ro.observe(firstItemRef.current);
-		}
+
 		window.addEventListener("resize", compute);
 		return () => {
 			window.removeEventListener("resize", compute);
-			if (ro) ro.disconnect();
 		};
 	}, []);
 	// Close menu on outside click or ESC
@@ -1084,6 +1073,7 @@ const Timeline: React.FC<TimelineProps> = () => {
 					itemContent={(index, ev) => renderEvent(ev, index)}
 					increaseViewportBy={overscan}
 					className="virtuoso-timeline"
+					itemSize={() => itemHeight}
 				/>
 			</div>
 			{isEventModalOpen && (
