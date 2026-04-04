@@ -43,6 +43,7 @@ type UIState = {
   activeGroupIds: string[];
 };
 
+
 type AppState = {
   // --- slices ---
   user: User | null;
@@ -119,6 +120,11 @@ type AppState = {
     pageId: string,
     action: "save" | "remove",
   ) => Promise<any>;
+
+  // --- lightrag sync ---
+  lightRagSyncTick: number;
+  triggerLightRagSync: () => void;
+
 };
 
 const initialLoadable = <T>(data: T): Loadable<T> => ({
@@ -575,6 +581,14 @@ export const useAppStore = create<AppState>()(
           const data = await Api.toggleLightRagDocument(pageId, action);
           return data;
         },
+
+        lightRagSyncTick: 0,
+        triggerLightRagSync: () =>
+          set((s) => {
+            s.lightRagSyncTick += 1;
+          }),
+
+
       })),
       {
         name: "dndlore-state",
@@ -611,6 +625,7 @@ export const useAppStore = create<AppState>()(
           if (!state.data.assets) state.data.assets = initialLoadable([]);
           if (!state.data.assetFolders)
             state.data.assetFolders = initialLoadable([]);
+
           return state as any;
         },
       },

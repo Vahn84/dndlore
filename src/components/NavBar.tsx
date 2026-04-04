@@ -7,6 +7,7 @@ import { ArrowSquareLeftIcon } from '@phosphor-icons/react/dist/csr/ArrowSquareL
 import { CaretLeftIcon } from '@phosphor-icons/react/dist/csr/CaretLeft';
 import { SignInIcon } from '@phosphor-icons/react/dist/csr/SignIn';
 import { SignOutIcon } from '@phosphor-icons/react/dist/csr/SignOut';
+import { GearSixIcon } from '@phosphor-icons/react/dist/csr/GearSix';
 import Api from '../Api';
 import { useAppStore } from '../store/appStore';
 
@@ -266,7 +267,11 @@ const NavBar: React.FC = () => {
 			</NavLink>
 			{/* Login button/icon top right */}
 			<div className={`loginContainer ${onHome ? 'hide' : ''}`}>
-				{/* (Google reconnect prompt removed - user will be logged out if Google token can't be refreshed) */}
+				{isDM() && (
+					<NavLink to="/dm/settings" className="dm-settings-link" title="DM Settings">
+						<GearSixIcon size={18} />
+					</NavLink>
+				)}
 				{/* Login/Logout button */}
 				<button
 					className="loginButton"

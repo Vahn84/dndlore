@@ -158,6 +158,24 @@
 		white-space: pre-wrap;
 		line-height: 1.6;
 		font-size: 0.9rem;
+
+		&--editor {
+			white-space: normal;
+			cursor: text;
+
+			.tiptap {
+				outline: none;
+				min-height: 120px;
+				line-height: 1.6;
+				font-size: 0.9rem;
+
+				p { margin: 0 0 0.6em; }
+				p:last-child { margin-bottom: 0; }
+
+				strong { color: $color-light; }
+				em { color: rgba($color-light-gray, 0.85); }
+			}
+		}
 	}
 
 	.banner-preview-wrapper {

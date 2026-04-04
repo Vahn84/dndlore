@@ -24,6 +24,10 @@ Modal.setAppElement("#root");
 const emptyDoc = { type: "doc", content: [{ type: "paragraph" }] } as const;
 
 const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
+	const whichRAG: string | undefined =
+		process.env.REACT_APP_WHICH_RAG_ENABLED || undefined;
+	const isOWUI = () => whichRAG === "owui";
+	const isLightRAG = () => whichRAG === "lightRAG";
 	const navigate = useNavigate();
 	const { type, id } = useParams<{ type: string; id?: string }>();
 	const creatingRef = useRef(false);
@@ -512,6 +516,41 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 		}
 	};
 
+	const toggleLightRagDocument = async () => {
+		try {
+			if (!id) {
+				console.error("Page ID is undefined");
+				toast.error("Failed to process LightRag operation: Invalid page ID");
+				return;
+			}
+
+			const alreadySynced = !!(pageDraft as any)?.lightRagDocumentName;
+			const action = alreadySynced ? "remove" : "save";
+
+			const data = await useAppStore
+				.getState()
+				.toggleLightRagDocument(id, action);
+
+			if (action === "save") {
+				setPageDraft((prev: any) => ({
+					...prev,
+					lightRagDocumentName: data?.lightRagDocumentName ?? null,
+				}));
+				useAppStore.getState().triggerLightRagSync();
+				toast.success("Document saved to LightRag");
+			} else {
+				setPageDraft((prev: any) => ({
+					...prev,
+					lightRagDocumentName: null,
+				}));
+				toast.success("Document removed from LightRag");
+			}
+		} catch (error) {
+			console.error("LightRag operation failed:", error);
+			toast.error("Failed to process LightRag operation");
+		}
+	};
+
 	// --- Render ---------------------------------------------------------------
 	return (
 		<div
@@ -554,7 +593,7 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 				</div>
 			)}
 			{/* OWUI Sync button - positioned slightly to the left of the publish button */}
-			{isDM && (
+			{isDM && isOWUI() && (
 				<div
 					className={`owui-sync-btn-wrapper ${pageDraft.owuiFileId ? "active" : ""}`}
 				>
@@ -579,6 +618,34 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 					</button>
 				</div>
 			)}
+
+			{/* LightRag button - positioned slightly to the left of the publish button */}
+			{isDM && isLightRAG() && (
+				<div
+					className={`lightrag-btn-wrapper ${pageDraft.lightRagDocumentName ? "active" : ""}`}
+				>
+					<span onClick={toggleLightRagDocument} className="lightrag-btn-label">
+						{(pageDraft as any)?.lightRagDocumentName ? "Synced" : "Sync to KB"}
+					</span>
+					<button
+						className="icon_square-btn lightrag-toggle-btn"
+						onClick={toggleLightRagDocument}
+						title={
+							(pageDraft as any)?.lightRagDocumentName
+								? "Remove from LightRag"
+								: "Save to LightRag"
+						}
+						style={{ opacity: 0.6 }}
+					>
+						{pageDraft?.lightRagDocumentName ? (
+							<GlobeSimpleXIcon size={20} />
+						) : (
+							<GlobeSimpleIcon size={20} />
+						)}
+					</button>
+				</div>
+			)}
+
 			{isLoadingPage && (
 				<div style={{ padding: 16, opacity: 0.7 }}>Loading…</div>
 			)}
@@ -620,69 +687,69 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 					</h1>
 					{((pageDraft as any).type === "campaign" ||
 						(pageDraft as any).type === "history") && (
-							<div className="campaignWorldDate loreDetail">
-								<DatePicker
-									ts={timeSystem}
-									format="yearMonthDay"
-									editable={isDM}
-									positionAbove={true}
-									timeLabelFormatter={(h?: string | null, m?: string | null) =>
-										timeOfDayLabel(
-											h !== undefined && h !== null && h !== ""
-												? Number(h)
-												: undefined,
-											m !== undefined && m !== null && m !== ""
-												? Number(m)
-												: undefined,
-										)
-									}
-									value={
-										(pageDraft as any).worldDate
+						<div className="campaignWorldDate loreDetail">
+							<DatePicker
+								ts={timeSystem}
+								format="yearMonthDay"
+								editable={isDM}
+								positionAbove={true}
+								timeLabelFormatter={(h?: string | null, m?: string | null) =>
+									timeOfDayLabel(
+										h !== undefined && h !== null && h !== ""
+											? Number(h)
+											: undefined,
+										m !== undefined && m !== null && m !== ""
+											? Number(m)
+											: undefined,
+									)
+								}
+								value={
+									(pageDraft as any).worldDate
+										? {
+												eraId: (pageDraft as any).worldDate.eraId,
+												year: String((pageDraft as any).worldDate.year ?? ""),
+												monthIndex: String(
+													(pageDraft as any).worldDate.monthIndex ?? "0",
+												),
+												day: String((pageDraft as any).worldDate.day ?? "1"),
+												hour:
+													(pageDraft as any).worldDate.hour !== undefined &&
+													(pageDraft as any).worldDate.hour !== null
+														? String((pageDraft as any).worldDate.hour)
+														: "",
+												minute:
+													(pageDraft as any).worldDate.minute !== undefined &&
+													(pageDraft as any).worldDate.minute !== null
+														? String((pageDraft as any).worldDate.minute)
+														: "",
+											}
+										: null
+								}
+								onChange={(parts: PickerValue | null) => {
+									setPageDraft((prev: any) => ({
+										...prev,
+										worldDate: parts
 											? {
-													eraId: (pageDraft as any).worldDate.eraId,
-													year: String((pageDraft as any).worldDate.year ?? ""),
-													monthIndex: String(
-														(pageDraft as any).worldDate.monthIndex ?? "0",
-													),
-													day: String((pageDraft as any).worldDate.day ?? "1"),
+													eraId: parts.eraId,
+													year: parseInt(parts.year || "0", 10) || 0,
+													monthIndex:
+														parseInt(parts.monthIndex || "0", 10) || 0,
+													day: parseInt(parts.day || "1", 10) || 1,
 													hour:
-														(pageDraft as any).worldDate.hour !== undefined &&
-														(pageDraft as any).worldDate.hour !== null
-															? String((pageDraft as any).worldDate.hour)
-															: "",
+														parts.hour !== undefined && parts.hour !== ""
+															? parseInt(parts.hour, 10) || 0
+															: null,
 													minute:
-														(pageDraft as any).worldDate.minute !== undefined &&
-														(pageDraft as any).worldDate.minute !== null
-															? String((pageDraft as any).worldDate.minute)
-															: "",
+														parts.minute !== undefined && parts.minute !== ""
+															? parseInt(parts.minute, 10) || 0
+															: null,
 												}
-											: null
-									}
-									onChange={(parts: PickerValue | null) => {
-										setPageDraft((prev: any) => ({
-											...prev,
-											worldDate: parts
-												? {
-														eraId: parts.eraId,
-														year: parseInt(parts.year || "0", 10) || 0,
-														monthIndex:
-															parseInt(parts.monthIndex || "0", 10) || 0,
-														day: parseInt(parts.day || "1", 10) || 1,
-														hour:
-															parts.hour !== undefined && parts.hour !== ""
-																? parseInt(parts.hour, 10) || 0
-																: null,
-														minute:
-															parts.minute !== undefined && parts.minute !== ""
-																? parseInt(parts.minute, 10) || 0
-																: null,
-													}
-												: null,
-										}));
-									}}
-								/>
-							</div>
-						)}
+											: null,
+									}));
+								}}
+							/>
+						</div>
+					)}
 					<Divider />
 					<h4 className="pageSubtitle">
 						{isDM ? (

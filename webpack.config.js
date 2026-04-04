@@ -1,13 +1,15 @@
 const path = require('path');
 const webpack = require('webpack');
 const Dotenv = require('dotenv-webpack');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
 	entry: './src/index.tsx',
 	output: {
 		path: path.resolve(__dirname, 'dist'),
-		filename: 'bundle.js',
+		filename: 'bundle.[contenthash].js',
 		publicPath: '/',
+		clean: true,
 	},
 	devServer: {
 		static: {
@@ -62,6 +64,10 @@ module.exports = {
 		],
 	},
 	plugins: [
+		new HtmlWebpackPlugin({
+			template: './public/index.html',
+			inject: 'body',
+		}),
 		// DefinePlugin can be extended later for env vars
 		new Dotenv({
 			path: path.resolve(

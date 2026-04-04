@@ -1,6 +1,6 @@
 @use 'sass:color';
-@use '../styles/variables' as *;
-@use '../styles/mixins' as *;
+@use './variables' as *;
+@use './mixins' as *;
 
 .modal__content--kb-export {
   min-height: auto !important;
@@ -109,7 +109,7 @@
     transition: background 0.2s, border-color 0.2s;
 
     &:hover {
-      background: color.adjust(#1b1d1f, $lightness: 8%);
+      background: color.adjust($color-dark-gray, $lightness: 8%);
       border-color: $color-gold;
     }
   }

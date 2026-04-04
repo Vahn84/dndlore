@@ -29,6 +29,8 @@ jobs:
         env:
           FRONTEND_API_BASE_URL: ${{ secrets.REACT_APP_API_BASE_URL }}
           REACT_APP_FVTT_URL: ${{ secrets.REACT_APP_FVTT_URL }}
+          REACT_APP_WHICH_RAG_ENABLED: ${{ secrets.REACT_APP_WHICH_RAG_ENABLED }}
+          REACT_APP_GOOGLE_DOC_URL: ${{ secrets.REACT_APP_GOOGLE_DOC_URL }}
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v2

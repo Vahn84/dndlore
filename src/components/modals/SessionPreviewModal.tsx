@@ -5,10 +5,39 @@ import { useAppStore } from '../../store/appStore';
 import DatePicker from '../DatePicker';
 import AssetsManagerModal from '../AssetsManagerModal';
 import { TrashIcon } from '@phosphor-icons/react/dist/icons/Trash';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Bold from '@tiptap/extension-bold';
+import Underline from '@tiptap/extension-underline';
+import '../../styles/RichTextEditor.scss';
+
+/** Minimal TipTap editor for the summary preview — mounts only when content is ready */
+const SummaryRichEditor: React.FC<{
+  content: any;
+  onChange: (json: any) => void;
+}> = ({ content, onChange }) => {
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({ code: false, codeBlock: false }),
+      Bold,
+      Underline,
+    ],
+    content,
+    editable: true,
+    editorProps: {
+      attributes: { class: 'rt-content' },
+    },
+    onUpdate: ({ editor }) => onChange(editor.getJSON()),
+  });
+
+  if (!editor) return null;
+  return <EditorContent editor={editor} />;
+};
 
 interface SessionPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onPageCreated?: () => void;
   previewStep: number;
   setPreviewStep: (value: number) => void;
   availableDates: Array<{ date: string; content: string }>;
@@ -36,6 +65,7 @@ interface SessionPreviewModalProps {
 const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
   isOpen,
   onClose,
+  onPageCreated,
   previewStep,
   setPreviewStep,
   availableDates,
@@ -64,6 +94,13 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
   const user = useAppStore((s) => s.user);
   const timeSystem = useAppStore((s) => s.data.timeSystem.data);
   const loadTimeSystem = useAppStore((s) => s.loadTimeSystem);
+
+  // Track the edited TipTap JSON for the summary (starts from summaryRich, mutated by DM edits)
+  const [editedSummaryRich, setEditedSummaryRich] = React.useState<any>(null);
+
+  useEffect(() => {
+    if (previewData?.summaryRich) setEditedSummaryRich(previewData.summaryRich);
+  }, [previewData?.summaryRich]);
 
   // Load time system when modal opens
   useEffect(() => {
@@ -136,6 +173,7 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
       toast.success('Summary ready', { id: tId });
       setPreviewData({
         summary: data.summary,
+        summaryRich: data.summaryRich,
         sessionDate: selectedDate,
         suggestedTitle:
           data.suggestedTitle || `Session ${selectedDate}`,
@@ -166,6 +204,7 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
           },
           body: JSON.stringify({
             summary: previewData.summary,
+            summaryRich: editedSummaryRich ?? previewData.summaryRich,
             sessionDate: previewData.sessionDate,
             title: titleInput.trim() || previewData.suggestedTitle,
             subtitle: subtitleInput.trim(),
@@ -183,6 +222,7 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
 
       if (data?.created?._id) {
         toast.success('Draft page created', { id: tId });
+        onPageCreated?.();
         onClose();
         // Reset state
         setTitleInput('');
@@ -381,6 +421,7 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
                 }
                 ts={timeSystem}
                 placeholder="Select world date"
+                editable
               />
             ) : (
               <div
@@ -427,10 +468,16 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
             )}
 
             <label className="lcfab__modal__label">
-              AI Summary Preview
+              AI Summary
             </label>
-            <div className="lcfab__modal__preview">
-              {previewData.summary || 'No content'}
+            <div className="lcfab__modal__preview lcfab__modal__preview--editor">
+              {editedSummaryRich && (
+                <SummaryRichEditor
+                  key={previewData.sessionDate}
+                  content={editedSummaryRich}
+                  onChange={setEditedSummaryRich}
+                />
+              )}
             </div>
 
             <div className="lcfab__modal__actions">

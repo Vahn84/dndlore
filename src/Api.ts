@@ -465,6 +465,44 @@ class Api {
     return resp.data;
   }
 
+  /**
+   * Batch sync all unsynced pages of a given type to LightRAG.
+   * Returns { total, synced, failed, failedPages }
+   */
+  static async batchSyncToLightRag(type: string) {
+    const resp = await Api.client.post("/pages/batch-lightrag", { type });
+    return resp.data;
+  }
+
+  static async getLightRagPipelineStatus() {
+    const resp = await Api.client.get("/lightrag/pipeline-status");
+    return resp.data;
+  }
+
+  static async getLightRagFailedDocuments() {
+    const resp = await Api.client.get("/lightrag/failed-documents");
+    return resp.data;
+  }
+
+  // -------------------------------------------------------------------------
+  // DM Settings
+  // -------------------------------------------------------------------------
+  static async getSettings() {
+    const resp = await Api.client.get("/settings");
+    return resp.data;
+  }
+
+  static async updateSettings(data: {
+    systemPrompt?: string;
+    temperature?: number;
+    maxTokens?: number;
+    model?: string;
+    lightragMode?: "mix" | "local" | "global";
+  }) {
+    const resp = await Api.client.put("/settings", data);
+    return resp.data;
+  }
+
   // -------------------------------------------------------------------------
   // Open WebUI Knowledge Base Integration
   // -------------------------------------------------------------------------

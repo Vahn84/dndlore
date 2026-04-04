@@ -1,0 +1,205 @@
+@use './variables' as *;
+@use 'sass:color';
+
+.dm-settings {
+  min-height: 100vh;
+  background: $color-dark;
+  padding: 2rem 1.5rem 4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.dm-settings__header {
+  width: 100%;
+  max-width: 720px;
+  margin-top: $navbar-height-half;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid rgba($color-dark-gold, 0.3);
+  padding-bottom: 1rem;
+  position: relative;
+}
+
+.dm-settings__title {
+  font-family: $font-family-title;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: $color-gold;
+  margin: 0 0 0.25rem;
+}
+
+.dm-settings__subtitle {
+  font-family: $font-family-title;
+  font-size: 0.7rem;
+  color: rgba($color-light-gray, 0.45);
+  margin: 0;
+}
+
+.dm-settings__card {
+  width: 100%;
+  max-width: 720px;
+  background: $color-dark-gray;
+  border: 1px solid rgba($color-dark-gold, 0.2);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.dm-settings__card-title {
+  font-family: $font-family-title;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: $color-gold;
+  margin: 0 0 1.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid rgba($color-dark-gold, 0.15);
+}
+
+.dm-settings__field {
+  margin-bottom: 1.25rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.dm-settings__label {
+  display: block;
+  font-family: $font-family-title;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba($color-light-gray, 0.6);
+  margin-bottom: 0.4rem;
+}
+
+.dm-settings__hint {
+  font-family: $font-family-title;
+  font-size: 0.62rem;
+  color: rgba($color-light-gray, 0.35);
+  margin-top: 0.3rem;
+  display: block;
+}
+
+.dm-settings__textarea {
+  width: 100%;
+  background: color.adjust($color-dark, $lightness: 2%);
+  border: 1px solid rgba($color-dark-gold, 0.25);
+  border-radius: 4px;
+  color: $color-light;
+  font-family: $font-family-text;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  padding: 0.6rem 0.75rem;
+  resize: vertical;
+  min-height: 140px;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+
+  &:focus {
+    outline: none;
+    border-color: rgba($color-gold, 0.5);
+  }
+}
+
+.dm-settings__input {
+  width: 100%;
+  background: color.adjust($color-dark, $lightness: 2%);
+  border: 1px solid rgba($color-dark-gold, 0.25);
+  border-radius: 4px;
+  color: $color-light;
+  font-family: $font-family-title;
+  font-size: 0.8rem;
+  padding: 0.5rem 0.75rem;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+
+  &:focus {
+    outline: none;
+    border-color: rgba($color-gold, 0.5);
+  }
+
+  &::placeholder {
+    color: rgba($color-light-gray, 0.25);
+  }
+}
+
+.dm-settings__select {
+  width: 100%;
+  background: color.adjust($color-dark, $lightness: 2%);
+  border: 1px solid rgba($color-dark-gold, 0.25);
+  border-radius: 4px;
+  color: $color-light;
+  font-family: $font-family-title;
+  font-size: 0.8rem;
+  padding: 0.5rem 0.75rem;
+  box-sizing: border-box;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23998745' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2rem;
+
+  &:focus {
+    outline: none;
+    border-color: rgba($color-gold, 0.5);
+  }
+}
+
+.dm-settings__range-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.dm-settings__range {
+  flex: 1;
+  accent-color: $color-gold;
+  cursor: pointer;
+}
+
+.dm-settings__range-value {
+  font-family: $font-family-title;
+  font-size: 0.78rem;
+  color: $color-gold;
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+.dm-settings__actions {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.dm-settings__save-btn {
+  font-family: $font-family-title;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: $color-gold;
+  background: transparent;
+  border: 1px solid rgba($color-gold, 0.4);
+  border-radius: 4px;
+  padding: 0.5rem 1.5rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+  &:hover:not(:disabled) {
+    background: rgba($color-gold, 0.08);
+    border-color: $color-gold;
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+}

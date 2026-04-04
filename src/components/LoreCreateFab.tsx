@@ -3,10 +3,11 @@ import { GlobeHemisphereWestIcon } from "@phosphor-icons/react/dist/csr/GlobeHem
 import { SparkleIcon } from "@phosphor-icons/react/dist/csr/Sparkle";
 import { UsersThreeIcon } from "@phosphor-icons/react/dist/csr/UsersThree";
 import { CloudArrowDownIcon } from "@phosphor-icons/react/dist/csr/CloudArrowDown";
+import { ShareNetworkIcon } from "@phosphor-icons/react/dist/csr/ShareNetwork";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { DiscordLogoIcon } from "@phosphor-icons/react/dist/csr/DiscordLogo";
 import React, { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Api from "../Api";
 import { toast } from "react-hot-toast";
 import { useAppStore } from "../store/appStore";
@@ -15,11 +16,15 @@ import AssetsManagerModal from "./AssetsManagerModal";
 import DiscordEventModal from "./DiscordEventModal";
 import SyncFromGoogleDocsModal from "./modals/SyncFromGoogleDocsModal";
 import SessionPreviewModal from "./modals/SessionPreviewModal";
-import KnowledgeBaseExportModal from "./KnowledgeBaseExportModal";
 
 type LoreType = "history" | "campaign" | "people" | "myth";
 
-const LoreCreateFab: React.FC = () => {
+interface LoreCreateFabProps {
+  currentType?: string;
+  onPageCreated?: () => void;
+}
+
+const LoreCreateFab: React.FC<LoreCreateFabProps> = ({ currentType = "campaign", onPageCreated }) => {
   const [open, setOpen] = useState(false);
   const [syncOpen, setSyncOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -53,14 +58,6 @@ const LoreCreateFab: React.FC = () => {
   const [worldDate, setWorldDate] = useState<any>(null);
   const [bannerUrl, setBannerUrl] = useState<string>("");
   const [assetOpen, setAssetOpen] = useState<boolean>(false);
-  const [exportModalOpen, setExportModalOpen] = useState(false);
-  const [exporting, setExporting] = useState(false);
-  const [exportProgress, setExportProgress] = useState({
-    total: 0,
-    uploaded: 0,
-    failed: 0,
-    updated: 0,
-  });
 
   const surfaceRef = useRef<HTMLDivElement | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
@@ -160,49 +157,24 @@ const LoreCreateFab: React.FC = () => {
 
   // handleCreateFromPreview function moved to SessionPreviewModal component
 
-  const handleExportToKnowledge = async () => {
-    const { type } = useParams();
-    const currentType = type || "campaign";
-
-    setExportModalOpen(true);
-    setOpen(false);
-    setExporting(true);
-    setExportProgress({ total: 0, uploaded: 0, failed: 0, updated: 0 });
-
+  const handleBatchSyncToLightRag = async () => {
+    const toastId = toast.loading(`Queuing ${currentType} pages for LightRAG…`);
     try {
-      const pages = await Api.getPages(currentType);
-      setExportProgress((prev) => ({ ...prev, total: pages.length }));
-
-      const result = await Api.exportToKnowledge(
-        "individual",
-        undefined,
-        [currentType]
-      );
-
-      const uploadedArray = result.uploaded || [];
-      const updatedCount = uploadedArray.filter(
-        (p: any) => p.action === "update"
-      ).length;
-
-      const failedCount = result.failed || 0;
-
-      setExportProgress({
-        total: result.total,
-        uploaded: uploadedArray.length,
-        failed: result.failed,
-        updated: updatedCount,
-      });
-
+      const result = await Api.batchSyncToLightRag(currentType);
+      toast.dismiss(toastId);
+      if (result.total === 0) {
+        toast("All pages already synced", { icon: "✓" });
+        return;
+      }
+      useAppStore.getState().triggerLightRagSync();
       if (result.failed > 0) {
-        toast.error(`Exported ${uploadedArray.length} pages, ${result.failed} failed`);
+        toast.error(`Sent ${result.synced}/${result.total} — ${result.failed} failed`);
       } else {
-        toast.success(`Successfully exported ${uploadedArray.length} pages`);
+        toast.success(`${result.synced} pages queued for processing`);
       }
     } catch (error) {
-      console.error("Export failed:", error);
-      toast.error("Export failed");
-    } finally {
-      setExporting(false);
+      toast.dismiss(toastId);
+      toast.error("LightRAG batch sync failed");
     }
   };
 
@@ -295,16 +267,16 @@ const LoreCreateFab: React.FC = () => {
                   <div
                     className="lcfab__content_wrapper--option export-kb-option"
                     onClick={() => {
-                      handleExportToKnowledge();
                       setOpen(false);
+                      handleBatchSyncToLightRag();
                     }}
-                    title="Export current type pages to Knowledge Base"
+                    title="Sync all unsynced pages of this type to LightRAG"
                   >
-                    <CloudArrowDownIcon
+                    <ShareNetworkIcon
                       size={22}
                       className="lcfab__content_wrapper--option-icon"
                     />
-                    Export to KB
+                    Sync to KB
                   </div>
                   <div
                     className="lcfab__content_wrapper--option discord-option"
@@ -350,6 +322,7 @@ const LoreCreateFab: React.FC = () => {
       <SessionPreviewModal
         isOpen={previewOpen}
         onClose={() => setPreviewOpen(false)}
+        onPageCreated={onPageCreated}
         previewStep={previewStep}
         setPreviewStep={(value: number) => setPreviewStep(value)}
         availableDates={availableDates}
@@ -379,12 +352,6 @@ const LoreCreateFab: React.FC = () => {
         onClose={() => setDiscordEventOpen(false)}
       />
 
-      <KnowledgeBaseExportModal
-        isOpen={exportModalOpen}
-        onClose={() => setExportModalOpen(false)}
-        exporting={exporting}
-        progress={exportProgress}
-      />
     </>
   );
 };

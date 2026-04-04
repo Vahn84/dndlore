@@ -15,11 +15,13 @@ import Home from './pages/Home';
 import Campaign from './pages/Campaign';
 import History from './pages/History';
 import ToasterHost from './components/ToasterHost';
+import LightRagSyncBar from './components/LightRagSyncBar';
 import Api from './Api';
 import { useAppStore } from './store/appStore';
 import LoreHome from './pages/LoreHome';
 import LoreDetail from './pages/LoreDetail';
 import TestSvg from './pages/TestSvg';
+import DmSettings from './pages/DmSettings';
 
 /**
  * The main application component. This version uses React Router to provide
@@ -190,6 +192,7 @@ const AppContent: React.FC = () => {
 					<Route path="/campaign" element={<Campaign />} />
 					<Route path="/timeline" element={<History />} />
 					<Route path="/test-svg" element={<TestSvg />} />
+					<Route path="/dm/settings" element={<DmSettings />} />
 					<Route path="/lore" element={<LoreHome />} />
 					<Route
 						path="/lore/:type/new"
@@ -205,6 +208,7 @@ const AppContent: React.FC = () => {
 
 			{/* Global navigation bar */}
 			<NavBar />
+			<LightRagSyncBar />
 			<ToasterHost />
 		</>
 	);

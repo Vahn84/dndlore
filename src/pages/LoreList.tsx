@@ -85,7 +85,7 @@ const LoreList: React.FC<LoreListProps> = ({ isDM }) => {
 					{pages.length === 0 && <p>No pages found.</p>}
 				</ul>
 			)}
-			<LoreCreateFab />
+			<LoreCreateFab onPageCreated={() => { if (type) Api.getPages(type).then(setPages).catch(console.error); }} />
 		</div>
 	);
 };

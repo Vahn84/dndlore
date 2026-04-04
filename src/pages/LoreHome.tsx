@@ -9,6 +9,7 @@ import { Page } from "../types";
 import { FileDashedIcon } from "@phosphor-icons/react/dist/csr/FileDashed";
 import { TrashIcon } from "@phosphor-icons/react/dist/csr/Trash";
 import { DotsSixVerticalIcon } from "@phosphor-icons/react/dist/csr/DotsSixVertical";
+import { ShareNetworkIcon } from "@phosphor-icons/react/dist/csr/ShareNetwork";
 import { useAppStore } from "../store/appStore";
 import ConfirmModal from "../components/ConfirmModal";
 import { toast } from "react-hot-toast";
@@ -111,13 +112,23 @@ const SortablePageItem: React.FC<SortablePageItemProps> = ({
 						</button>
 					)}
 				</div>
-				{page.draft && isDM && (
-					<span className="draftBadge">
-						<FileDashedIcon size={18} />
+				{isDM && (
+				<div className="pageBadges">
+					{page.draft && (
+						<span className="draftBadge">
+							<FileDashedIcon size={18} />
+						</span>
+					)}
+					<span
+						className={`lightragBadge ${page.lightRagDocumentName ? "lightragBadge--synced" : "lightragBadge--unsynced"}`}
+						title={page.lightRagDocumentName ? "Synced to LightRAG" : "Not synced to LightRAG"}
+					>
+						<ShareNetworkIcon size={14} weight={page.lightRagDocumentName ? "fill" : "regular"} />
 					</span>
-				)}
-			</div>
-		</li>
+				</div>
+			)}
+		</div>
+	</li>
 	);
 };
 
@@ -414,18 +425,6 @@ const LoreHome: React.FC = () => {
 						? `url(${Constants.LORE_BG[selectedCategory]})`
 						: "none",
 			}}
-			ref={overflowRef}
-			onScroll={(e) => {
-				handleScroll();
-
-				// Save scroll position on each scroll event
-
-				console.log("Scroll position:", e.currentTarget.scrollTop);
-				sessionStorage.setItem(
-					`lore-scroll-${searchParams.get("category") || "campaign"}`,
-					String(e.currentTarget.scrollTop),
-				);
-			}}
 		>
 			{/* Left Categories Menu - Always visible */}
 			<CategoriesMenu
@@ -451,7 +450,17 @@ const LoreHome: React.FC = () => {
 
 			{/* Hide overflow container when viewing places category */}
 			{selectedCategory !== "place" && (
-				<div className="overflow-container">
+				<div
+					className="overflow-container"
+					ref={overflowRef}
+					onScroll={(e) => {
+						handleScroll();
+						sessionStorage.setItem(
+							`lore-scroll-${searchParams.get("category") || "campaign"}`,
+							String(e.currentTarget.scrollTop),
+						);
+					}}
+				>
 					<div className="contentContainer">
 						<h1 className="loreTitle">The Great Library of Morne</h1>
 						<p className="loreSubtitle">
@@ -529,10 +538,20 @@ const LoreHome: React.FC = () => {
 															</h4>
 														)}
 													</div>
-													{page.draft && isDM && (
-														<span className="draftBadge">
-															<FileDashedIcon size={18} />
-														</span>
+													{isDM && (
+														<div className="pageBadges">
+															{page.draft && (
+																<span className="draftBadge">
+																	<FileDashedIcon size={18} />
+																</span>
+															)}
+															<span
+																className={`lightragBadge ${page.lightRagDocumentName ? "lightragBadge--synced" : "lightragBadge--unsynced"}`}
+																title={page.lightRagDocumentName ? "Synced to LightRAG" : "Not synced to LightRAG"}
+															>
+																<ShareNetworkIcon size={14} weight={page.lightRagDocumentName ? "fill" : "regular"} />
+															</span>
+														</div>
 													)}
 												</div>
 											</li>
@@ -547,7 +566,7 @@ const LoreHome: React.FC = () => {
 					</div>
 				</div>
 			)}
-			{isDM && selectedCategory !== "place" && <LoreCreateFab />}
+			{isDM && selectedCategory !== "place" && <LoreCreateFab currentType={selectedCategory} />}
 
 			<ConfirmModal
 				isOpen={deleteModalOpen}
