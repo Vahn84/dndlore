@@ -19,11 +19,8 @@ RUN npm run build
 # Production stage - Serve with nginx
 FROM nginx:alpine
 
-# Copy built files from builder stage
+# Copy built files from builder stage (includes HtmlWebpackPlugin-generated index.html)
 COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Copy index.html from public folder to serve directory
-COPY --from=builder /app/public/index.html /usr/share/nginx/html/index.html
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
