@@ -10,6 +10,7 @@ import { ImageIcon } from "@phosphor-icons/react/dist/csr/Image";
 import { GlobeSimpleIcon } from "@phosphor-icons/react/dist/csr/GlobeSimple";
 import { GlobeSimpleXIcon } from "@phosphor-icons/react/dist/csr/GlobeSimpleX";
 import { CheckCircleIcon } from "@phosphor-icons/react/dist/csr/CheckCircle";
+import { DiscordLogoIcon } from "@phosphor-icons/react/dist/csr/DiscordLogo";
 import AssetsManagerModal from "../components/AssetsManagerModal";
 import Modal from "react-modal";
 import Api from "../Api";
@@ -27,7 +28,6 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 	const whichRAG: string | undefined =
 		process.env.REACT_APP_WHICH_RAG_ENABLED || undefined;
 	const isOWUI = () => whichRAG === "owui";
-	const isLightRAG = () => whichRAG === "lightRAG";
 	const navigate = useNavigate();
 	const { type, id } = useParams<{ type: string; id?: string }>();
 	const creatingRef = useRef(false);
@@ -44,6 +44,7 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 	const updateEvent = useAppStore((s) => s.updateEvent);
 
 	const [assetOpen, setAssetOpen] = useState(false);
+	const [isPublishingDiscord, setIsPublishingDiscord] = useState(false);
 
 	// --- Background blur on scroll -------------------------------------------
 	const overflowRef = useRef<HTMLDivElement | null>(null);
@@ -543,11 +544,29 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 					...prev,
 					lightRagDocumentName: null,
 				}));
-				toast.success("Document removed from LightRag");
+				if (data?.warning) {
+					toast(data.warning, { icon: "⚠️" });
+				} else {
+					toast.success("Document removed from LightRag");
+				}
 			}
 		} catch (error) {
 			console.error("LightRag operation failed:", error);
 			toast.error("Failed to process LightRag operation");
+		}
+	};
+
+	const publishToDiscord = async () => {
+		if (!id || isPublishingDiscord) return;
+		setIsPublishingDiscord(true);
+		try {
+			const result = await Api.publishToDiscord(id);
+			setPageDraft((prev: any) => ({ ...prev, discordPostId: result.discordPostId }));
+			toast.success("Published to Discord forum");
+		} catch (e: any) {
+			toast.error(e?.response?.data?.error || "Failed to publish to Discord");
+		} finally {
+			setIsPublishingDiscord(false);
 		}
 	};
 
@@ -620,7 +639,7 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 			)}
 
 			{/* LightRag button - positioned slightly to the left of the publish button */}
-			{isDM && isLightRAG() && (
+			{isDM && id && (
 				<div
 					className={`lightrag-btn-wrapper ${pageDraft.lightRagDocumentName ? "active" : ""}`}
 				>
@@ -646,7 +665,31 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 				</div>
 			)}
 
-			{isLoadingPage && (
+			{/* Discord Forum publish button */}
+			{isDM && id && (
+				<div
+					className={`discord-publish-btn-wrapper ${(pageDraft as any)?.discordPostId ? "active" : ""}`}
+				>
+					<span onClick={publishToDiscord} className="discord-publish-btn-label">
+						{(pageDraft as any)?.discordPostId ? "On Discord" : "Post to Discord"}
+					</span>
+					<button
+						className="icon_square-btn discord-publish-toggle-btn"
+						onClick={publishToDiscord}
+						disabled={isPublishingDiscord}
+						title={(pageDraft as any)?.discordPostId ? "Already published to Discord" : "Post to Discord forum"}
+						style={{ opacity: 0.6 }}
+					>
+						{(pageDraft as any)?.discordPostId ? (
+							<CheckCircleIcon size={20} weight="bold" />
+						) : (
+							<DiscordLogoIcon size={20} />
+						)}
+					</button>
+				</div>
+			)}
+
+		{isLoadingPage && (
 				<div style={{ padding: 16, opacity: 0.7 }}>Loading…</div>
 			)}
 			<div

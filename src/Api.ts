@@ -498,9 +498,20 @@ class Api {
     maxTokens?: number;
     model?: string;
     lightragMode?: "mix" | "local" | "global";
+    discordForumChannelId?: string;
   }) {
     const resp = await Api.client.put("/settings", data);
     return resp.data;
+  }
+
+  static async publishToDiscord(pageId: string) {
+    const resp = await Api.client.post(`/pages/${pageId}/discord-publish`);
+    return resp.data as { discordPostId: string; url: string };
+  }
+
+  static async getDiscordForumChannels() {
+    const resp = await Api.client.get("/integrations/discord/forum-channels");
+    return resp.data.channels as Array<{ id: string; name: string }>;
   }
 
   // -------------------------------------------------------------------------

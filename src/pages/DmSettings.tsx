@@ -11,6 +11,7 @@ interface Settings {
   maxTokens: number;
   model: string;
   lightragMode: "mix" | "local" | "global";
+  discordForumChannelId: string;
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -19,6 +20,7 @@ const DEFAULT_SETTINGS: Settings = {
   maxTokens: 64000,
   model: "",
   lightragMode: "mix",
+  discordForumChannelId: "",
 };
 
 const DmSettings: React.FC = () => {
@@ -28,6 +30,8 @@ const DmSettings: React.FC = () => {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [forumChannels, setForumChannels] = useState<Array<{ id: string; name: string }>>([]);
+  const [loadingChannels, setLoadingChannels] = useState(false);
 
   useEffect(() => {
     if (!isDM) {
@@ -42,10 +46,17 @@ const DmSettings: React.FC = () => {
           maxTokens: data.maxTokens ?? 64000,
           model: data.model ?? "",
           lightragMode: data.lightragMode ?? "mix",
+          discordForumChannelId: data.discordForumChannelId ?? "",
         });
       })
       .catch(() => toast.error("Failed to load settings"))
       .finally(() => setLoading(false));
+
+    setLoadingChannels(true);
+    Api.getDiscordForumChannels()
+      .then(setForumChannels)
+      .catch(() => {/* Discord not configured — silently ignore */})
+      .finally(() => setLoadingChannels(false));
   }, [isDM, navigate]);
 
   const handleSave = async () => {
@@ -145,6 +156,34 @@ const DmSettings: React.FC = () => {
               </select>
               <span className="dm-settings__hint">
                 Controls how LightRAG retrieves lore context from the knowledge graph.
+              </span>
+            </div>
+          </div>
+
+          {/* Discord */}
+          <div className="dm-settings__card">
+            <h2 className="dm-settings__card-title">Discord Integration</h2>
+
+            <div className="dm-settings__field">
+              <label className="dm-settings__label">Forum Channel for Page Publishing</label>
+              {loadingChannels ? (
+                <p className="dm-settings__hint">Loading channels…</p>
+              ) : forumChannels.length === 0 ? (
+                <p className="dm-settings__hint">No forum channels found (check Discord bot configuration).</p>
+              ) : (
+                <select
+                  className="dm-settings__select"
+                  value={settings.discordForumChannelId}
+                  onChange={(e) => set("discordForumChannelId", e.target.value)}
+                >
+                  <option value="">— Select a forum channel —</option>
+                  {forumChannels.map((ch) => (
+                    <option key={ch.id} value={ch.id}>{ch.name}</option>
+                  ))}
+                </select>
+              )}
+              <span className="dm-settings__hint">
+                Pages will be published as new posts in this Discord forum channel.
               </span>
             </div>
           </div>

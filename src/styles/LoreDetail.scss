@@ -144,6 +144,57 @@
         }
     }
 
+    // Discord forum publish button
+    .discord-publish-btn-wrapper {
+        position: fixed;
+        top: calc(130px + 7rem);
+        right: 1.2rem;
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+
+        .discord-publish-btn-label {
+            @include thin-font();
+            font-size: 0.85rem;
+            color: $color-dim;
+            margin-right: 0.5rem;
+            text-transform: uppercase;
+            display: none;
+        }
+
+        .discord-publish-toggle-btn {
+            background: $color-dark-translucent;
+            opacity: 0.2 !important;
+        }
+
+        &:hover {
+            &.active {
+                .discord-publish-btn-label {
+                    color: #5865F2; // Discord blurple
+                }
+
+                .discord-publish-toggle-btn {
+                    border-color: #5865F2;
+                }
+            }
+            .discord-publish-btn-label {
+                display: inline;
+            }
+            .discord-publish-toggle-btn {
+                opacity: 1 !important;
+                background: $color-dark-gray;
+            }
+        }
+
+        &.active {
+            .discord-publish-toggle-btn {
+                opacity: 0.6 !important;
+                color: #5865F2;
+            }
+        }
+    }
+
     &.offset-container {
         height: auto;
         min-height: 100%;

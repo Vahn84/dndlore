@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 import { useAppStore } from "../store/appStore";
 import Api from "../Api";
 import "../styles/LightRagSyncBar.scss";
 
 const POLL_INTERVAL = 3000;
+const POLL_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes max before giving up
 
 interface FailedDoc {
   filePath: string;
@@ -36,24 +38,45 @@ const LightRagSyncBar: React.FC = () => {
     }
   }, []);
 
+  const checkFailuresOnStop = useCallback(async () => {
+    try {
+      const data = await Api.getLightRagFailedDocuments();
+      const failures = data?.failed ?? [];
+      if (failures.length > 0) {
+        // Update the pipeline status bar to reflect actual failure count
+        setPipelineStatus((prev: any) => ({ ...prev, busy: false, request_failed: failures.length }));
+        toast.error(
+          `LightRAG: ${failures.length} document${failures.length > 1 ? "s" : ""} failed processing. Check the sync bar for details.`,
+          { duration: 8000 }
+        );
+      } else {
+        setVisible(false);
+      }
+    } catch {
+      setVisible(false);
+    }
+  }, []);
+
   const startPolling = useCallback(() => {
     stopPolling();
+    const startedAt = Date.now();
     intervalRef.current = setInterval(async () => {
       try {
         const status = await Api.getLightRagPipelineStatus();
         setPipelineStatus(status);
-        if (!status?.busy) {
+        const timedOut = Date.now() - startedAt > POLL_TIMEOUT_MS;
+        if (!status?.busy || timedOut) {
           stopPolling();
-          if ((status?.request_failed ?? 0) === 0) {
-            setVisible(false);
+          if (timedOut && status?.busy) {
+            toast.error("LightRAG is taking too long — check for failures in the sync bar.", { duration: 8000 });
           }
-          // if there are failures, keep bar visible for review
+          await checkFailuresOnStop();
         }
       } catch (err) {
         console.error("[LightRagSyncBar] poll error:", err);
       }
     }, POLL_INTERVAL);
-  }, [stopPolling]);
+  }, [stopPolling, checkFailuresOnStop]);
 
   // On mount: single call — show and start polling only if already busy
   useEffect(() => {
