@@ -575,7 +575,7 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 		<div
 			className="loreDetail offset-container"
 			style={{
-				background: `url(${
+				backgroundImage: `url(${
 					pageDraft.bannerUrl
 						? Api.resolveAssetUrl(pageDraft.bannerUrl)
 						: "transparent"

@@ -3,14 +3,13 @@
 
 .loreDetail {
     background-size: cover !important;
-    background-position: center 130px !important;
+    background-position: center $navbar-height-half !important;
 
     .bgLayer {
         position: absolute;
         inset: 0;
         background: inherit;
         background-size: cover;
-        background-position: center;
         pointer-events: none;
         filter: blur(0px); // inline style overrides this
         transform: translate3d(0, -1rem, 0);
