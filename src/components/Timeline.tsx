@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { DetailLevel, Event, Group, TimeSystemConfig, Era } from "../types";
 import "../styles/Timeline.scss";
@@ -6,7 +6,6 @@ import TimeSystemModal from "./TimeSystemModal";
 import GroupModal from "./GroupModal";
 import EventModal from "./EventModal";
 import { useAppStore } from "../store/appStore";
-import { Virtuoso } from "react-virtuoso";
 import { ICONS } from "./Icons";
 import { CalendarBlankIcon } from "@phosphor-icons/react/dist/csr/CalendarBlank";
 import Api from "../Api";
@@ -27,31 +26,9 @@ const Timeline: React.FC<TimelineProps> = () => {
 	// Refs for the currently open menu (only one menu can be open)
 	const menuRootRef = useRef<HTMLDivElement | null>(null);
 	const menuButtonRef = useRef<HTMLButtonElement | null>(null);
-	// Measure first rendered item to tune overscan
-	const firstItemRef = useRef<HTMLDivElement | null>(null);
-	const [overscan, setOverscan] = useState<{ top: number; bottom: number }>({
-		top: 2000,
-		bottom: 2000,
-	});
-
 	// Delete confirmation state
 	const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 	const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
-	const [itemHeight, setItemHeight] = useState<number>(180);
-
-	// Dynamically compute overscan based on viewport & average item height
-	useEffect(() => {
-		const compute = () => {
-			const itemH = firstItemRef.current?.getBoundingClientRect().height || 210; // sensible default
-			setItemHeight(itemH)
-		};
-		compute();
-
-		window.addEventListener("resize", compute);
-		return () => {
-			window.removeEventListener("resize", compute);
-		};
-	}, []);
 	// Close menu on outside click or ESC
 	useEffect(() => {
 		if (!menuOpenFor) return;
@@ -89,6 +66,8 @@ const Timeline: React.FC<TimelineProps> = () => {
 	const saveTimeSystem = useAppStore((s) => s.saveTimeSystem);
 	const setGroupsFilter = useAppStore((s) => s.setGroupsFilter);
 	const setShowHidden = useAppStore((s) => s.setShowHidden);
+	const savedScrollTop = useAppStore((s) => s.ui.timelineScrollTop);
+	const setTimelineScrollTop = useAppStore((s) => s.setTimelineScrollTop);
 
 	// Read query string on mount to set group filters (e.g., ?groups=id1,id2 or ?groups=Campaign,Main)
 	useEffect(() => {
@@ -733,6 +712,10 @@ const Timeline: React.FC<TimelineProps> = () => {
 		const openLinkedPage = async (pageId?: string) => {
 			if (!pageId) return;
 			try {
+				// Save scroll position before navigating away
+				if (timelineRef.current) {
+					setTimelineScrollTop(timelineRef.current.scrollTop);
+				}
 				const page = await Api.getPage(pageId);
 				if (page && page._id && page.type) {
 					navigate(`/lore/${page.type}/${page._id}`, {
@@ -752,7 +735,6 @@ const Timeline: React.FC<TimelineProps> = () => {
 		return (
 			<div
 				key={ev._id}
-				ref={index === 0 ? firstItemRef : undefined}
 				className="timeline-event-wrapper"
 			>
 				<div
@@ -986,8 +968,18 @@ const Timeline: React.FC<TimelineProps> = () => {
 		);
 	};
 
+	const timelineRef = useRef<HTMLDivElement | null>(null);
+
+	// Restore scroll position when returning from a detail page
+	useEffect(() => {
+		if (savedScrollTop && timelineRef.current) {
+			timelineRef.current.scrollTop = savedScrollTop;
+			setTimelineScrollTop(0);
+		}
+	}, []); // eslint-disable-line react-hooks/exhaustive-deps
+
 	return (
-		<div className="timeline offset-container">
+		<div ref={timelineRef} className="timeline offset-container">
 			{" "}
 			{/* Header with actions (not including nav) */}
 			<header className={`timelineHeader ${isDM ? "with-dm-tools" : ""}`}>

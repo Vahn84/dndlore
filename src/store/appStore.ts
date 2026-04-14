@@ -41,6 +41,7 @@ type DataState = {
 type UIState = {
   showHidden: boolean;
   activeGroupIds: string[];
+  timelineScrollTop: number;
 };
 
 
@@ -62,6 +63,7 @@ type AppState = {
   setShowHidden: (v: boolean) => void;
   toggleGroup: (id: string) => void;
   setGroupsFilter: (ids: string[]) => void;
+  setTimelineScrollTop: (v: number) => void;
 
   // --- load (API) ---
   loadGroups: () => Promise<void>;
@@ -139,7 +141,7 @@ export const useAppStore = create<AppState>()(
       immer((set, get) => ({
         // --- initial state ---
         user: null,
-        ui: { showHidden: false, activeGroupIds: [] },
+        ui: { showHidden: false, activeGroupIds: [], timelineScrollTop: 0 },
         data: {
           groups: initialLoadable<Group[]>([]),
           events: initialLoadable<Event[]>([]),
@@ -187,6 +189,10 @@ export const useAppStore = create<AppState>()(
               (x): x is string => typeof x === "string" && !!x,
             );
             s.ui.activeGroupIds = Array.from(new Set(cleaned));
+          }),
+        setTimelineScrollTop: (v) =>
+          set((s) => {
+            s.ui.timelineScrollTop = v;
           }),
 
         // --- loaders ---
@@ -596,7 +602,8 @@ export const useAppStore = create<AppState>()(
         migrate: (state: any, version) => {
           // Ensure root objects exist
           if (!state) return state as any;
-          if (!state.ui) state.ui = { showHidden: false, activeGroupIds: [] };
+          if (!state.ui) state.ui = { showHidden: false, activeGroupIds: [], timelineScrollTop: 0 };
+          if (state.ui.timelineScrollTop === undefined) state.ui.timelineScrollTop = 0;
           if (!state.data) {
             state.data = {
               groups: initialLoadable([]),
