@@ -95,10 +95,16 @@
 }
 
 .virtuoso-timeline {
+	height: 100% !important;
 	div[data-testid="virtuoso-item-list"] {
 		padding-bottom: 7rem !important;
 		padding-top: $navbar-height-half !important;
 	}
+}
+
+.timeline-list {
+	padding-bottom: 10rem;
+	padding-top: $navbar-height-half;
 }
 
 .timeline-event-wrapper {
@@ -553,6 +559,10 @@
 			padding-bottom: 8rem !important;
 			padding-top: 0 !important;
 		}
+	}
+	.timeline-list {
+		padding-bottom: 8rem;
+		padding-top: 0;
 	}
 	.timeline-event-wrapper {
 		.event {

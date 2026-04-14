@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { DetailLevel, Event, Group, TimeSystemConfig, Era } from "../types";
 import "../styles/Timeline.scss";
@@ -183,23 +183,62 @@ const Timeline: React.FC<TimelineProps> = () => {
 			? !!selectedExclusiveGroup.orderAscending
 			: true;
 
-	const orderedEvents = _events
-		.filter((e) =>
-			activeGroupIds.length ? activeGroupIds.includes(e.groupId) : false,
-		)
-		.filter((e) => (showHidden ? true : !e.hidden))
-		.sort((a, b) => {
-			const kb = buildSortKey(b);
-			const ka = buildSortKey(a);
-			if (ka !== kb) {
-				return sortAscending ? ka - kb : kb - ka;
+	const visibleEvents = useMemo(() => {
+		const sorted = _events
+			.filter((e) =>
+				activeGroupIds.length ? activeGroupIds.includes(e.groupId) : true,
+			)
+			.filter((e) => (showHidden ? true : !e.hidden))
+			.sort((a, b) => {
+				const kb = buildSortKey(b);
+				const ka = buildSortKey(a);
+				if (ka !== kb) {
+					return sortAscending ? ka - kb : kb - ka;
+				}
+				return (a.order ?? 0) - (b.order ?? 0);
+			});
+
+		// Pre-compute diffLabel and group for each event so renderEvent
+		// doesn't depend on the full list (avoids Virtuoso recycling glitch)
+		return sorted.map((ev, i) => {
+			const prev = i > 0 ? sorted[i - 1] : null;
+			let diffLabel = "";
+			if (prev && timeSystem) {
+				const prevTs = toAbsoluteMinutes(prev, timeSystem);
+				const currTs = toAbsoluteMinutes(ev, timeSystem);
+				if (prevTs !== null && currTs !== null) {
+					const minutesPerDay =
+						(timeSystem.hoursPerDay || 24) * (timeSystem.minutesPerHour || 60);
+					const yearDays = getYearLengthDays(timeSystem);
+					const avgMonthDays =
+						yearDays && timeSystem.months?.length
+							? yearDays / timeSystem.months.length
+							: 30;
+					const delta = currTs - prevTs;
+					const absDays = Math.floor(Math.abs(delta) / minutesPerDay);
+					if (absDays >= 1) {
+						let value = 0;
+						let unit = "";
+						if (yearDays && absDays >= yearDays) {
+							value = Math.floor(absDays / yearDays);
+							unit = value === 1 ? "year" : "years";
+						} else if (absDays >= Math.max(1, Math.round(avgMonthDays))) {
+							value = Math.floor(absDays / Math.max(1, Math.round(avgMonthDays)));
+							unit = value === 1 ? "month" : "months";
+						} else {
+							value = absDays;
+							unit = value === 1 ? "day" : "days";
+						}
+						const direction = delta > 0 ? "later" : "before";
+						diffLabel = `${value.toLocaleString()} ${unit} ${direction}`;
+					}
+				}
 			}
-			return (a.order ?? 0) - (b.order ?? 0); // tie-breaker: explicit order
+			const group = groups.find((g) => g._id === ev.groupId);
+			return { ...ev, _diffLabel: diffLabel, _group: group };
 		});
-	// Final, visible list for rendering (virtualized)
-	const visibleEvents = orderedEvents.filter((e) =>
-		activeGroupIds.length ? activeGroupIds.includes(e.groupId) : true,
-	);
+	}, [_events, activeGroupIds, showHidden, sortAscending, timeSystem, groups]);
+
 
 	// --- Helpers to ensure startDate/endDate strings exist when saving ---
 	const ordinal = (n: number) => {
@@ -682,44 +721,9 @@ const Timeline: React.FC<TimelineProps> = () => {
 		}
 	};
 
-	const renderEvent = (ev: Event, index: number) => {
-		// compute difference from previous event for caption (era-aware, down to days)
-		const prev = index > 0 ? visibleEvents[index - 1] : null;
-		let diffLabel = "";
-		if (prev && timeSystem) {
-			const prevTs = toAbsoluteMinutes(prev, timeSystem);
-			const currTs = toAbsoluteMinutes(ev, timeSystem);
-			if (prevTs !== null && currTs !== null) {
-				const minutesPerDay =
-					(timeSystem.hoursPerDay || 24) * (timeSystem.minutesPerHour || 60);
-				const yearDays = getYearLengthDays(timeSystem);
-				const avgMonthDays =
-					yearDays && timeSystem.months?.length
-						? yearDays / timeSystem.months.length
-						: 30;
-				let delta = currTs - prevTs; // positive if curr is later in time than prev
-				const absDays = Math.floor(Math.abs(delta) / minutesPerDay);
-				if (absDays >= 1) {
-					let value = 0;
-					let unit = "";
-					if (yearDays && absDays >= yearDays) {
-						value = Math.floor(absDays / yearDays);
-						unit = value === 1 ? "year" : "years";
-					} else if (absDays >= Math.max(1, Math.round(avgMonthDays))) {
-						value = Math.floor(absDays / Math.max(1, Math.round(avgMonthDays)));
-						unit = value === 1 ? "month" : "months";
-					} else {
-						value = absDays;
-						unit = value === 1 ? "day" : "days";
-					}
-					// Direction wording depends on sort order
-					// Direction is purely temporal relative to previous event, independent of list sort order
-					const direction = delta > 0 ? "later" : "before";
-					diffLabel = `${value.toLocaleString()} ${unit} ${direction}`;
-				}
-			}
-		}
-		const group = groups.find((g) => g._id === ev.groupId);
+	const renderEvent = (ev: Event & { _diffLabel: string; _group?: Group }, index: number) => {
+		const diffLabel = ev._diffLabel;
+		const group = ev._group;
 		function onEditEvent(ev: Event): void {
 			setEditingEvent(ev);
 			setEventModalOpen(true);
@@ -747,11 +751,11 @@ const Timeline: React.FC<TimelineProps> = () => {
 		// exists it will occupy the right side of the card.
 		return (
 			<div
+				key={ev._id}
 				ref={index === 0 ? firstItemRef : undefined}
 				className="timeline-event-wrapper"
 			>
 				<div
-					key={ev._id}
 					className="event"
 					style={
 						{
@@ -1067,14 +1071,13 @@ const Timeline: React.FC<TimelineProps> = () => {
 				)}
 			</header>
 			<div className={`timeline-wrapper ${isDM ? "with-dm-tools" : ""}`}>
-				<Virtuoso
-					totalCount={visibleEvents.length}
-					data={visibleEvents}
-					itemContent={(index, ev) => renderEvent(ev, index)}
-					increaseViewportBy={overscan}
-					className="virtuoso-timeline"
-					itemSize={() => itemHeight}
-				/>
+				<div className="timeline-list">
+					{visibleEvents.map((ev, index) => (
+						<React.Fragment key={ev._id}>
+							{renderEvent(ev, index)}
+						</React.Fragment>
+					))}
+				</div>
 			</div>
 			{isEventModalOpen && (
 				<EventModal
