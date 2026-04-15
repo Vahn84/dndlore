@@ -566,7 +566,7 @@ const LoreHome: React.FC = () => {
 					</div>
 				</div>
 			)}
-			{isDM && selectedCategory !== "place" && <LoreCreateFab currentType={selectedCategory} />}
+			{isDM && selectedCategory !== "place" && <LoreCreateFab currentType={selectedCategory} onPageCreated={() => loadPages(selectedCategory as any)} />}
 
 			<ConfirmModal
 				isOpen={deleteModalOpen}
