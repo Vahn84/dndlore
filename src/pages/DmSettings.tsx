@@ -10,7 +10,6 @@ interface Settings {
   temperature: number;
   maxTokens: number;
   model: string;
-  lightragMode: "mix" | "local" | "global";
   discordForumChannelId: string;
 }
 
@@ -19,7 +18,6 @@ const DEFAULT_SETTINGS: Settings = {
   temperature: 0.5,
   maxTokens: 64000,
   model: "",
-  lightragMode: "mix",
   discordForumChannelId: "",
 };
 
@@ -45,7 +43,6 @@ const DmSettings: React.FC = () => {
           temperature: data.temperature ?? 0.5,
           maxTokens: data.maxTokens ?? 64000,
           model: data.model ?? "",
-          lightragMode: data.lightragMode ?? "mix",
           discordForumChannelId: data.discordForumChannelId ?? "",
         });
       })
@@ -143,21 +140,6 @@ const DmSettings: React.FC = () => {
               />
             </div>
 
-            <div className="dm-settings__field">
-              <label className="dm-settings__label">LightRAG Query Mode</label>
-              <select
-                className="dm-settings__select"
-                value={settings.lightragMode}
-                onChange={(e) => set("lightragMode", e.target.value as Settings["lightragMode"])}
-              >
-                <option value="mix">Mix (recommended)</option>
-                <option value="local">Local</option>
-                <option value="global">Global</option>
-              </select>
-              <span className="dm-settings__hint">
-                Controls how LightRAG retrieves lore context from the knowledge graph.
-              </span>
-            </div>
           </div>
 
           {/* Discord */}
