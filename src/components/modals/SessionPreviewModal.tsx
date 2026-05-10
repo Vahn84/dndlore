@@ -342,31 +342,18 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
               className="lcfab__modal__field"
               style={{ marginTop: 12 }}
             >
-              <label className="lcfab__modal__label">
-                Audience
-              </label>
+              <label className="lcfab__modal__label">Audience</label>
               <div
                 role="radiogroup"
                 aria-label="Audience"
-                style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}
+                className="lcfab__modal__audience"
               >
                 <label
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    cursor: 'pointer',
-                    padding: '6px 10px',
-                    borderRadius: 6,
-                    border:
-                      audience === 'player'
-                        ? '1px solid var(--accent, #c9a96e)'
-                        : '1px solid var(--muted-border, #444)',
-                    background:
-                      audience === 'player'
-                        ? 'rgba(201,169,110,0.08)'
-                        : 'transparent',
-                  }}
+                  className={`lcfab__modal__audience-option${
+                    audience === 'player'
+                      ? ' lcfab__modal__audience-option--selected'
+                      : ''
+                  }`}
                 >
                   <input
                     type="radio"
@@ -376,30 +363,19 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
                     onChange={() => setAudience('player')}
                     disabled={isLoadingSummary}
                   />
-                  <span>
-                    <strong>Pubblico</strong>{' '}
-                    <span style={{ opacity: 0.7, fontSize: '0.85em' }}>
-                      — recap narrativo, spoiler esclusi
-                    </span>
+                  <span className="lcfab__modal__audience-title">
+                    Pubblico
+                  </span>
+                  <span className="lcfab__modal__audience-desc">
+                    Recap narrativo, spoiler esclusi.
                   </span>
                 </label>
                 <label
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    cursor: 'pointer',
-                    padding: '6px 10px',
-                    borderRadius: 6,
-                    border:
-                      audience === 'dm'
-                        ? '1px solid var(--accent, #c9a96e)'
-                        : '1px solid var(--muted-border, #444)',
-                    background:
-                      audience === 'dm'
-                        ? 'rgba(201,169,110,0.08)'
-                        : 'transparent',
-                  }}
+                  className={`lcfab__modal__audience-option${
+                    audience === 'dm'
+                      ? ' lcfab__modal__audience-option--selected'
+                      : ''
+                  }`}
                 >
                   <input
                     type="radio"
@@ -409,11 +385,11 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
                     onChange={() => setAudience('dm')}
                     disabled={isLoadingSummary}
                   />
-                  <span>
-                    <strong>DM-prep</strong>{' '}
-                    <span style={{ opacity: 0.7, fontSize: '0.85em' }}>
-                      — analisi strutturata, lore completa
-                    </span>
+                  <span className="lcfab__modal__audience-title">
+                    DM-prep
+                  </span>
+                  <span className="lcfab__modal__audience-desc">
+                    Analisi strutturata, lore completa.
                   </span>
                 </label>
               </div>
