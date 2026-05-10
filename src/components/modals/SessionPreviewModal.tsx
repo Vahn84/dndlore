@@ -98,6 +98,12 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
   // Track the edited TipTap JSON for the summary (starts from summaryRich, mutated by DM edits)
   const [editedSummaryRich, setEditedSummaryRich] = React.useState<any>(null);
 
+  // Audience picker — affects which AppSettings prompt + temperature the
+  // backend uses, and whether wiki-server includes spoiler-tagged pages.
+  // 'player' (default): public-facing recap, spoilers excluded.
+  // 'dm':              structured analysis, full lore access.
+  const [audience, setAudience] = React.useState<'player' | 'dm'>('player');
+
   useEffect(() => {
     if (previewData?.summaryRich) setEditedSummaryRich(previewData.summaryRich);
   }, [previewData?.summaryRich]);
@@ -160,6 +166,7 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
           body: JSON.stringify({
             rawText: selectedSession.content,
             sessionDate: selectedDate,
+            audience,
           }),
         }
       );
@@ -331,6 +338,87 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
               )?.content || 'No content'}
             </div>
 
+            <div
+              className="lcfab__modal__field"
+              style={{ marginTop: 12 }}
+            >
+              <label className="lcfab__modal__label">
+                Audience
+              </label>
+              <div
+                role="radiogroup"
+                aria-label="Audience"
+                style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}
+              >
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    cursor: 'pointer',
+                    padding: '6px 10px',
+                    borderRadius: 6,
+                    border:
+                      audience === 'player'
+                        ? '1px solid var(--accent, #c9a96e)'
+                        : '1px solid var(--muted-border, #444)',
+                    background:
+                      audience === 'player'
+                        ? 'rgba(201,169,110,0.08)'
+                        : 'transparent',
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="audience"
+                    value="player"
+                    checked={audience === 'player'}
+                    onChange={() => setAudience('player')}
+                    disabled={isLoadingSummary}
+                  />
+                  <span>
+                    <strong>Pubblico</strong>{' '}
+                    <span style={{ opacity: 0.7, fontSize: '0.85em' }}>
+                      — recap narrativo, spoiler esclusi
+                    </span>
+                  </span>
+                </label>
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    cursor: 'pointer',
+                    padding: '6px 10px',
+                    borderRadius: 6,
+                    border:
+                      audience === 'dm'
+                        ? '1px solid var(--accent, #c9a96e)'
+                        : '1px solid var(--muted-border, #444)',
+                    background:
+                      audience === 'dm'
+                        ? 'rgba(201,169,110,0.08)'
+                        : 'transparent',
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="audience"
+                    value="dm"
+                    checked={audience === 'dm'}
+                    onChange={() => setAudience('dm')}
+                    disabled={isLoadingSummary}
+                  />
+                  <span>
+                    <strong>DM-prep</strong>{' '}
+                    <span style={{ opacity: 0.7, fontSize: '0.85em' }}>
+                      — analisi strutturata, lore completa
+                    </span>
+                  </span>
+                </label>
+              </div>
+            </div>
+
             <div className="lcfab__modal__actions">
               <button
                 className="modal__btn cancel"
@@ -352,7 +440,9 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
               >
                 {isLoadingSummary
                   ? 'Summarizing…'
-                  : 'Summarize with AI →'}
+                  : audience === 'dm'
+                  ? 'Genera analisi DM →'
+                  : 'Genera recap pubblico →'}
               </button>
             </div>
           </>
