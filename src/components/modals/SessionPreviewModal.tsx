@@ -193,40 +193,50 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
       let accumulated = '';
 
       // SSE frames: "event: NAME\n" + "data: JSON\n\n"
+      const processFrame = (frame: string) => {
+        const lines = frame.split('\n');
+        let eventName = 'message';
+        let dataStr = '';
+        for (const line of lines) {
+          if (line.startsWith('event:')) eventName = line.slice(6).trim();
+          else if (line.startsWith('data:')) dataStr += line.slice(5).trim();
+        }
+        if (!dataStr) return;
+
+        let payload: any;
+        try { payload = JSON.parse(dataStr); } catch { return; }
+
+        if (eventName === 'pass1_done') {
+          setStreamingStatus(
+            `Sintesi su ${payload.selected?.length ?? '?'} pagine…`
+          );
+        } else if (eventName === 'delta') {
+          accumulated += payload.text || '';
+          setStreamingText(accumulated);
+        } else if (eventName === 'summary') {
+          finalPayload = payload;
+        } else if (eventName === 'error') {
+          throw new Error(payload.message || 'wiki-server error');
+        }
+      };
+
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          // Flush whatever's left in the buffer — the last `summary` event
+          // may not have a trailing \n\n if the server closed the socket
+          // right after writing it.
+          buffer += decoder.decode();
+          if (buffer.trim()) processFrame(buffer);
+          buffer = '';
+          break;
+        }
         buffer += decoder.decode(value, { stream: true });
 
         const frames = buffer.split(/\n\n/);
         buffer = frames.pop() ?? '';
 
-        for (const frame of frames) {
-          const lines = frame.split('\n');
-          let eventName = 'message';
-          let dataStr = '';
-          for (const line of lines) {
-            if (line.startsWith('event:')) eventName = line.slice(6).trim();
-            else if (line.startsWith('data:')) dataStr += line.slice(5).trim();
-          }
-          if (!dataStr) continue;
-
-          let payload: any;
-          try { payload = JSON.parse(dataStr); } catch { continue; }
-
-          if (eventName === 'pass1_done') {
-            setStreamingStatus(
-              `Sintesi su ${payload.selected?.length ?? '?'} pagine…`
-            );
-          } else if (eventName === 'delta') {
-            accumulated += payload.text || '';
-            setStreamingText(accumulated);
-          } else if (eventName === 'summary') {
-            finalPayload = payload;
-          } else if (eventName === 'error') {
-            throw new Error(payload.message || 'wiki-server error');
-          }
-        }
+        for (const frame of frames) processFrame(frame);
       }
 
       if (!finalPayload) {
