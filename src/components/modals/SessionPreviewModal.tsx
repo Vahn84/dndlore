@@ -104,6 +104,10 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
   // 'dm':              structured analysis, full lore access.
   const [audience, setAudience] = React.useState<'player' | 'dm'>('player');
 
+  // Streaming state for the summarize SSE flow.
+  const [streamingText, setStreamingText] = React.useState<string>('');
+  const [streamingStatus, setStreamingStatus] = React.useState<string>('');
+
   useEffect(() => {
     if (previewData?.summaryRich) setEditedSummaryRich(previewData.summaryRich);
   }, [previewData?.summaryRich]);
@@ -148,19 +152,21 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
     }
 
     setIsLoadingSummary(true);
+    setStreamingText('');
+    setStreamingStatus('Selezione pagine wiki…');
+
+    const tId = toast.loading('Generazione recap in corso…', {
+      id: 'summarize',
+    });
 
     try {
-      const tId = toast.loading('Summarizing with AI…', {
-        id: 'summarize',
-      });
-
-      // Step 2: Call summarize endpoint
       const resp = await fetch(
-        `${Api.getBaseUrl()}/sync/campaign/summarize`,
+        `${Api.getBaseUrl()}/sync/campaign/summarize/stream`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            Accept: 'text/event-stream',
             Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
           },
           body: JSON.stringify({
@@ -170,28 +176,82 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
           }),
         }
       );
-      const data = await resp.json();
 
-      if (!resp.ok) {
-        throw new Error(data?.error || 'Summarization failed');
+      if (!resp.ok || !resp.body) {
+        let errMsg = 'Summarization failed';
+        try {
+          const j = await resp.json();
+          errMsg = j?.error || errMsg;
+        } catch {}
+        throw new Error(errMsg);
       }
 
-      // Success - move to step 2 with summary
-      toast.success('Summary ready', { id: tId });
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let finalPayload: any = null;
+      let accumulated = '';
+
+      // SSE frames: "event: NAME\n" + "data: JSON\n\n"
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const frames = buffer.split(/\n\n/);
+        buffer = frames.pop() ?? '';
+
+        for (const frame of frames) {
+          const lines = frame.split('\n');
+          let eventName = 'message';
+          let dataStr = '';
+          for (const line of lines) {
+            if (line.startsWith('event:')) eventName = line.slice(6).trim();
+            else if (line.startsWith('data:')) dataStr += line.slice(5).trim();
+          }
+          if (!dataStr) continue;
+
+          let payload: any;
+          try { payload = JSON.parse(dataStr); } catch { continue; }
+
+          if (eventName === 'pass1_done') {
+            setStreamingStatus(
+              `Sintesi su ${payload.selected?.length ?? '?'} pagine…`
+            );
+          } else if (eventName === 'delta') {
+            accumulated += payload.text || '';
+            setStreamingText(accumulated);
+          } else if (eventName === 'summary') {
+            finalPayload = payload;
+          } else if (eventName === 'error') {
+            throw new Error(payload.message || 'wiki-server error');
+          }
+        }
+      }
+
+      if (!finalPayload) {
+        throw new Error('Stream ended without summary payload');
+      }
+
+      toast.success('Recap pronto', { id: tId });
       setPreviewData({
-        summary: data.summary,
-        summaryRich: data.summaryRich,
+        summary: finalPayload.summary,
+        summaryRich: finalPayload.summaryRich,
         sessionDate: selectedDate,
         suggestedTitle:
-          data.suggestedTitle || `Session ${selectedDate}`,
+          finalPayload.suggestedTitle || `Session ${selectedDate}`,
         rawText: selectedSession.content,
       });
-      setTitleInput(data.suggestedTitle || `Session ${selectedDate}`);
+      setTitleInput(
+        finalPayload.suggestedTitle || `Session ${selectedDate}`
+      );
       setPreviewStep(2);
     } catch (e: any) {
-      toast.error(e?.message || 'Summarization failed');
+      toast.error(e?.message || 'Summarization failed', { id: tId });
     } finally {
       setIsLoadingSummary(false);
+      setStreamingText('');
+      setStreamingStatus('');
     }
   };
 
@@ -324,7 +384,9 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
             </div>
 
             <label className="lcfab__modal__label">
-              Raw Notes Preview
+              {isLoadingSummary && streamingText
+                ? 'Generazione in corso…'
+                : 'Raw Notes Preview'}
             </label>
             <div
               className="lcfab__modal__preview"
@@ -332,10 +394,39 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
                 maxHeight: '400px',
                 overflowY: 'auto',
               }}
+              ref={(el) => {
+                // Auto-scroll to bottom as tokens stream in
+                if (el && isLoadingSummary && streamingText) {
+                  el.scrollTop = el.scrollHeight;
+                }
+              }}
             >
-              {availableDates.find(
-                (d) => d.date === selectedDate
-              )?.content || 'No content'}
+              {isLoadingSummary && streamingText ? (
+                <>
+                  {streamingStatus && (
+                    <div
+                      style={{
+                        opacity: 0.6,
+                        fontSize: '0.8rem',
+                        marginBottom: 8,
+                        fontStyle: 'italic',
+                      }}
+                    >
+                      {streamingStatus}
+                    </div>
+                  )}
+                  {streamingText}
+                  <span style={{ opacity: 0.4 }}>▍</span>
+                </>
+              ) : isLoadingSummary ? (
+                <em style={{ opacity: 0.7 }}>
+                  {streamingStatus || 'Selezione pagine wiki…'}
+                </em>
+              ) : (
+                availableDates.find(
+                  (d) => d.date === selectedDate
+                )?.content || 'No content'
+              )}
             </div>
 
             <div
