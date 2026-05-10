@@ -234,6 +234,10 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
       }
 
       toast.success('Recap pronto', { id: tId });
+      // Important: set editedSummaryRich BEFORE switching step so the editor
+      // mounts on first render with content (the useEffect-driven update
+      // would otherwise leave the conditional render empty for one tick).
+      setEditedSummaryRich(finalPayload.summaryRich);
       setPreviewData({
         summary: finalPayload.summary,
         summaryRich: finalPayload.summaryRich,
