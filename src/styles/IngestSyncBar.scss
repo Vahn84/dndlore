@@ -407,9 +407,13 @@ $bar-height: 28px;
   border: 1px solid rgba($color-dark-gold, 0.25);
   border-radius: 3px;
   padding: 8px 10px;
-  // No max-height: let the panel scroll, not each pane. Otherwise the
-  // proposed/existing diffs are unreadable.
-  overflow: visible;
+  // Self-scroll inside each pane, so an expanded card doesn't push siblings
+  // off-screen. 50vh gives plenty of room without eating the panel.
+  max-height: 50vh;
+  overflow: auto;
+  // Force wrap on long unbreakable tokens (URLs, slug-strings, etc).
+  word-break: break-word;
+  overflow-wrap: anywhere;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.72rem;
   line-height: 1.45;
