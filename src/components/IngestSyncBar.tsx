@@ -40,6 +40,8 @@ const IngestSyncBar: React.FC = () => {
 
     (async () => {
       try {
+        // eslint-disable-next-line no-console
+        console.log("[IngestSyncBar] starting SSE fetch", new Date().toISOString());
         const resp = await fetch(
           `${Api.getBaseUrl()}/sync/wiki/ingest/dry-run/stream`,
           {
@@ -53,6 +55,8 @@ const IngestSyncBar: React.FC = () => {
             signal: ac.signal,
           }
         );
+        // eslint-disable-next-line no-console
+        console.log("[IngestSyncBar] response received", resp.status, new Date().toISOString());
         if (!resp.ok || !resp.body) {
           let msg = "Ingest failed";
           try {
@@ -121,13 +125,19 @@ const IngestSyncBar: React.FC = () => {
           for (const f of frames) processFrame(f);
         }
       } catch (err: any) {
+        // eslint-disable-next-line no-console
+        console.log("[IngestSyncBar] caught error", err?.name, err?.message, new Date().toISOString());
         if (err?.name === "AbortError") return;
         setIngestState({ state: "error", error: err?.message || "Stream failed" });
         toast.error(err?.message || "Ingest fallito");
       }
     })();
 
-    return () => ac.abort();
+    return () => {
+      // eslint-disable-next-line no-console
+      console.log("[IngestSyncBar] effect cleanup → aborting AC", new Date().toISOString());
+      ac.abort();
+    };
   }, [ingestTick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Cleanup on unmount
