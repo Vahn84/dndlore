@@ -28,6 +28,7 @@ const IngestReviewPanel: React.FC = () => {
 
   const [approved, setApproved] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [applying, setApplying] = useState(false);
 
   // Default-approve every proposal that came through without error
   React.useEffect(() => {
@@ -65,8 +66,6 @@ const IngestReviewPanel: React.FC = () => {
       return next;
     });
   };
-
-  const [applying, setApplying] = useState(false);
 
   const onApply = async () => {
     if (approved.size === 0) return;
