@@ -11,6 +11,7 @@ import { GlobeSimpleIcon } from "@phosphor-icons/react/dist/csr/GlobeSimple";
 import { GlobeSimpleXIcon } from "@phosphor-icons/react/dist/csr/GlobeSimpleX";
 import { CheckCircleIcon } from "@phosphor-icons/react/dist/csr/CheckCircle";
 import { DiscordLogoIcon } from "@phosphor-icons/react/dist/csr/DiscordLogo";
+import { BrainIcon } from "@phosphor-icons/react/dist/csr/Brain";
 import AssetsManagerModal from "../components/AssetsManagerModal";
 import Modal from "react-modal";
 import Api from "../Api";
@@ -556,6 +557,33 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 		}
 	};
 
+	const triggerWikiIngest = () => {
+		if (!id) {
+			toast.error("Page ID missing");
+			return;
+		}
+		// Concatenate plainText from all rich blocks. Sessions/lore pages store
+		// the canonical text body inside rich blocks; wiki-server's ingest works
+		// off raw markdown-ish prose.
+		const blocks = (pageDraft as any)?.blocks || [];
+		const rawText = blocks
+			.filter((b: any) => b && b.type === "rich" && !b.hidden)
+			.map((b: any) => (typeof b.plainText === "string" ? b.plainText.trim() : ""))
+			.filter(Boolean)
+			.join("\n\n");
+		if (!rawText) {
+			toast.error("Nessun testo da ingerire — la pagina è vuota.");
+			return;
+		}
+		useAppStore.getState().triggerIngest({
+			rawText,
+			sourceTitle: (pageDraft as any)?.title || "Pagina senza titolo",
+			sourceDate: (pageDraft as any)?.sessionDate,
+			sourceKind: (pageDraft as any)?.type === "campaign" ? "session" : "lore",
+		});
+		toast.success("Ingest dry-run avviato — guarda la barra in basso");
+	};
+
 	const publishToDiscord = async () => {
 		if (!id || isPublishingDiscord) return;
 		setIsPublishingDiscord(true);
@@ -661,6 +689,23 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 						) : (
 							<GlobeSimpleIcon size={20} />
 						)}
+					</button>
+				</div>
+			)}
+
+			{/* Wiki Ingest button — mirrors LightRag button, runs Karpathy dry-run on this page */}
+			{isDM && id && (
+				<div className="lightrag-btn-wrapper">
+					<span onClick={triggerWikiIngest} className="lightrag-btn-label">
+						Wiki Ingest
+					</span>
+					<button
+						className="icon_square-btn lightrag-toggle-btn"
+						onClick={triggerWikiIngest}
+						title="Esegui Karpathy ingest (dry-run) — niente scrive finché non approvi le proposte"
+						style={{ opacity: 0.6 }}
+					>
+						<BrainIcon size={20} />
 					</button>
 				</div>
 			)}

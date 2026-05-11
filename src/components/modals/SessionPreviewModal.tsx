@@ -93,7 +93,6 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
   const user = useAppStore((s) => s.user);
   const timeSystem = useAppStore((s) => s.data.timeSystem.data);
   const loadTimeSystem = useAppStore((s) => s.loadTimeSystem);
-  const triggerIngest = useAppStore((s) => s.triggerIngest);
 
   // Track the edited TipTap JSON for the summary (starts from summaryRich, mutated by DM edits)
   const [editedSummaryRich, setEditedSummaryRich] = React.useState<any>(null);
@@ -660,30 +659,6 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
                 }}
               >
                 ← Back
-              </button>
-              <button
-                className="modal__btn"
-                style={{
-                  background: 'transparent',
-                  border: '1px solid var(--accent, #c9a96e)',
-                  color: 'var(--accent, #c9a96e)',
-                }}
-                onClick={() => {
-                  if (!previewData?.rawText) return;
-                  triggerIngest({
-                    rawText: previewData.rawText,
-                    sourceTitle:
-                      titleInput.trim() ||
-                      previewData.suggestedTitle ||
-                      `Session ${previewData.sessionDate || ''}`,
-                    sourceDate: previewData.sessionDate,
-                    sourceKind: 'session',
-                  });
-                  onClose();
-                }}
-                title="Esegui ingest dry-run nel wiki — niente scrive finché non approvi"
-              >
-                Wiki Ingest (dry-run)
               </button>
               <button
                 className="modal__btn primary"
