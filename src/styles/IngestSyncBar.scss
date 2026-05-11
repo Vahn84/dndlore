@@ -6,7 +6,7 @@ $bar-height: 28px;
 
 .ingest-sync-bar {
   position: fixed;
-  bottom: 28px; // sit above any LightRAG bar
+  bottom: 0;
   left: 0;
   right: 0;
   height: $bar-height;
