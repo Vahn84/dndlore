@@ -327,12 +327,11 @@ $bar-height: 28px;
   }
 }
 
-// Approve toggle — absolutely positioned, vertically centered in card.
+// Approve toggle — pinned to the header line (NOT the card center).
 .ingest-card__check {
   position: absolute;
-  top: 50%;
+  top: 9px;            // 36px header / 2 - 18px/2 = 9px from top
   right: 10px;
-  transform: translateY(-50%);
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
@@ -408,8 +407,9 @@ $bar-height: 28px;
   border: 1px solid rgba($color-dark-gold, 0.25);
   border-radius: 3px;
   padding: 8px 10px;
-  max-height: 360px;
-  overflow: auto;
+  // No max-height: let the panel scroll, not each pane. Otherwise the
+  // proposed/existing diffs are unreadable.
+  overflow: visible;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.72rem;
   line-height: 1.45;
