@@ -16,6 +16,7 @@ import Campaign from './pages/Campaign';
 import History from './pages/History';
 import ToasterHost from './components/ToasterHost';
 import LightRagSyncBar from './components/LightRagSyncBar';
+import IngestSyncBar from './components/IngestSyncBar';
 import Api from './Api';
 import { useAppStore } from './store/appStore';
 import LoreHome from './pages/LoreHome';
@@ -209,6 +210,7 @@ const AppContent: React.FC = () => {
 			{/* Global navigation bar */}
 			<NavBar />
 			<LightRagSyncBar />
+			<IngestSyncBar />
 			<ToasterHost />
 		</>
 	);

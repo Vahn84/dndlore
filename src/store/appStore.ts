@@ -127,6 +127,36 @@ type AppState = {
   lightRagSyncTick: number;
   triggerLightRagSync: () => void;
 
+  // --- wiki ingest (dry-run pipeline) ---
+  ingestTick: number;
+  ingestRequest: null | {
+    rawText: string;
+    sourceTitle?: string;
+    sourceDate?: string;
+    sourceKind?: string;
+  };
+  ingestSession: {
+    state: "idle" | "planning" | "proposing" | "ready" | "error";
+    plan?: any;
+    proposals: any[];
+    currentSlug?: string;
+    currentIndex?: number;
+    total?: number;
+    error?: string;
+    panelOpen: boolean;
+  };
+  triggerIngest: (input: {
+    rawText: string;
+    sourceTitle?: string;
+    sourceDate?: string;
+    sourceKind?: string;
+  }) => void;
+  setIngestState: (patch: Partial<AppState["ingestSession"]>) => void;
+  pushIngestProposal: (p: any) => void;
+  openIngestPanel: () => void;
+  closeIngestPanel: () => void;
+  resetIngest: () => void;
+
 };
 
 const initialLoadable = <T>(data: T): Loadable<T> => ({
@@ -594,6 +624,45 @@ export const useAppStore = create<AppState>()(
             s.lightRagSyncTick += 1;
           }),
 
+        // Wiki ingest pipeline
+        ingestTick: 0,
+        ingestRequest: null,
+        ingestSession: {
+          state: "idle",
+          proposals: [],
+          panelOpen: false,
+        },
+        triggerIngest: ({ rawText, sourceTitle, sourceDate, sourceKind }) =>
+          set((s) => {
+            s.ingestRequest = { rawText, sourceTitle, sourceDate, sourceKind };
+            s.ingestTick += 1;
+            s.ingestSession = {
+              state: "planning",
+              proposals: [],
+              panelOpen: false,
+            };
+          }),
+        setIngestState: (patch) =>
+          set((s) => {
+            Object.assign(s.ingestSession, patch);
+          }),
+        pushIngestProposal: (p) =>
+          set((s) => {
+            s.ingestSession.proposals.push(p);
+          }),
+        openIngestPanel: () =>
+          set((s) => {
+            s.ingestSession.panelOpen = true;
+          }),
+        closeIngestPanel: () =>
+          set((s) => {
+            s.ingestSession.panelOpen = false;
+          }),
+        resetIngest: () =>
+          set((s) => {
+            s.ingestSession = { state: "idle", proposals: [], panelOpen: false };
+            s.ingestRequest = null;
+          }),
 
       })),
       {
