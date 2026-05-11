@@ -13,6 +13,12 @@ type Proposal = {
   unresolved_new?: string[];
   unresolved_known_stubs?: string[];
   frontmatter_restored?: string[];
+  trust_score?: number;
+  trust_level?: "green" | "yellow" | "red";
+  trust_reasons?: string[];
+  grounding_score?: number | null;
+  judge_verdict?: "trust" | "review" | "reject";
+  judge_concerns?: Array<{ quote: string; reason: string }>;
   error?: string;
 };
 
@@ -219,6 +225,31 @@ const IngestReviewPanel: React.FC = () => {
               >
                 solo update
               </a>
+              <span style={{ opacity: 0.4 }}>·</span>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  // Safe = trust ≥ 80 AND (grounding ≥ 85 OR no judge yet but
+                  // trust very high — fallback rule for fast workflows).
+                  setApproved(
+                    new Set(
+                      proposals
+                        .filter((p) => {
+                          if (p.error) return false;
+                          if ((p.trust_score ?? 0) < 80) return false;
+                          if (p.grounding_score == null) return false;
+                          return p.grounding_score >= 85;
+                        })
+                        .map((p) => p.slug)
+                    )
+                  );
+                }}
+                style={{ color: "#a4e3bd", fontWeight: 600 }}
+                title="Trust ≥80 AND Grounding ≥85"
+              >
+                ✓ solo sicure
+              </a>
             </div>
           )}
 
@@ -270,14 +301,49 @@ const ProposalCard: React.FC<{
         <span className={`ingest-card__badge ingest-card__badge--${p.action}`}>
           {p.action}
         </span>
+
+        {/* Trust score (cheap signals) */}
+        {!isErr && typeof p.trust_score === "number" && (
+          <span
+            className={`ingest-card__score ingest-card__score--${p.trust_level || "yellow"}`}
+            title={(p.trust_reasons || []).join(" · ") || "trust score from validator signals"}
+          >
+            T {p.trust_score}
+          </span>
+        )}
+
+        {/* Grounding score (LLM judge) */}
         {!isErr && (
-          <label className="ingest-card__check">
+          <span
+            className={`ingest-card__score ingest-card__score--${
+              p.grounding_score == null
+                ? "pending"
+                : p.grounding_score >= 85
+                ? "green"
+                : p.grounding_score >= 50
+                ? "yellow"
+                : "red"
+            }`}
+            title={
+              p.grounding_score == null
+                ? "valutazione in corso…"
+                : `verdict: ${p.judge_verdict || "?"}`
+            }
+          >
+            G {p.grounding_score ?? "…"}
+          </span>
+        )}
+
+        {!isErr && (
+          <label
+            className="ingest-card__check"
+            title={isApproved ? "Applicato" : "Approva"}
+          >
             <input
               type="checkbox"
               checked={isApproved}
               onChange={onToggleApprove}
             />
-            <span>Applica</span>
           </label>
         )}
       </div>
@@ -294,6 +360,20 @@ const ProposalCard: React.FC<{
               <> · {(p.existing_md.length ?? 0).toLocaleString()} esistenti</>
             )}
           </div>
+
+          {p.judge_concerns && p.judge_concerns.length > 0 && (
+            <div className="ingest-card__concerns">
+              <strong style={{ fontSize: "0.7rem", color: "#f0c674" }}>
+                ⚠ Claims non grounded:
+              </strong>
+              {p.judge_concerns.map((c, i) => (
+                <div className="concern" key={i}>
+                  <blockquote>"{c.quote}"</blockquote>
+                  <span className="reason">→ {c.reason}</span>
+                </div>
+              ))}
+            </div>
+          )}
 
           {p.frontmatter_restored && p.frontmatter_restored.length > 0 && (
             <div

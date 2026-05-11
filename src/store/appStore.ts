@@ -153,6 +153,7 @@ type AppState = {
   }) => void;
   setIngestState: (patch: Partial<AppState["ingestSession"]>) => void;
   pushIngestProposal: (p: any) => void;
+  mergeIngestJudgment: (slug: string, judgment: any) => void;
   openIngestPanel: () => void;
   closeIngestPanel: () => void;
   resetIngest: () => void;
@@ -649,6 +650,15 @@ export const useAppStore = create<AppState>()(
         pushIngestProposal: (p) =>
           set((s) => {
             s.ingestSession.proposals.push(p);
+          }),
+        mergeIngestJudgment: (slug, judgment) =>
+          set((s) => {
+            const idx = s.ingestSession.proposals.findIndex(
+              (p: any) => p.slug === slug
+            );
+            if (idx >= 0) {
+              Object.assign(s.ingestSession.proposals[idx], judgment);
+            }
           }),
         openIngestPanel: () =>
           set((s) => {

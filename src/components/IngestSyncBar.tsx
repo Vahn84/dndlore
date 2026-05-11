@@ -21,6 +21,7 @@ const IngestSyncBar: React.FC = () => {
   const session = useAppStore((s) => s.ingestSession);
   const setIngestState = useAppStore((s) => s.setIngestState);
   const pushIngestProposal = useAppStore((s) => s.pushIngestProposal);
+  const mergeIngestJudgment = useAppStore((s) => s.mergeIngestJudgment);
   const openIngestPanel = useAppStore((s) => s.openIngestPanel);
   const resetIngest = useAppStore((s) => s.resetIngest);
 
@@ -100,6 +101,12 @@ const IngestSyncBar: React.FC = () => {
             });
           } else if (eventName === "page_done") {
             pushIngestProposal(payload);
+          } else if (eventName === "page_judged") {
+            mergeIngestJudgment(payload.slug, {
+              grounding_score: payload.grounding_score,
+              judge_verdict: payload.verdict,
+              judge_concerns: payload.concerns,
+            });
           } else if (eventName === "done") {
             setIngestState({ state: "ready" });
             toast.success("Proposte di ingest pronte — apri il pannello per revisionare", {

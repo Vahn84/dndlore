@@ -252,6 +252,45 @@ $bar-height: 28px;
   }
 }
 
+// Trust + grounding score pills
+.ingest-card__score {
+  flex: 0 0 auto;
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+
+  &--green  { background: rgba(#6fcf97, 0.18); color: #a4e3bd; border-color: rgba(#6fcf97, 0.4); }
+  &--yellow { background: rgba(#f0c674, 0.18); color: #f0c674; border-color: rgba(#f0c674, 0.4); }
+  &--red    { background: rgba(#e74c3c, 0.18); color: #f3a09a; border-color: rgba(#e74c3c, 0.4); }
+  &--pending{ background: rgba(180,180,180,0.12); color: rgba($color-light,0.5); border-color: rgba(180,180,180,0.25); }
+}
+
+.ingest-card__concerns {
+  margin-top: 6px;
+  font-size: 0.72rem;
+  color: rgba(#f3a09a, 0.9);
+  border-left: 2px solid rgba(#e74c3c, 0.4);
+  padding-left: 8px;
+
+  .concern {
+    margin: 4px 0;
+    blockquote {
+      margin: 0;
+      padding: 0;
+      font-style: italic;
+      color: rgba($color-light, 0.8);
+    }
+    .reason {
+      display: block;
+      color: rgba(#f0c674, 0.9);
+      font-size: 0.68rem;
+    }
+  }
+}
+
 // Approve toggle — absolutely positioned in the card corner, never overflows.
 .ingest-card__check {
   position: absolute;
