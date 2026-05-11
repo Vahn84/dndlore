@@ -123,7 +123,7 @@ $bar-height: 28px;
   background: #1a1c1e;            // solid, no translucency
   color: $color-light;
   border-left: 1px solid $color-dark-gold;
-  z-index: 1200;
+  z-index: 11000;   // above LoreDetail floating toolbar (z-index 10000)
   display: flex;
   flex-direction: column;
   box-shadow: -10px 0 40px rgba(0, 0, 0, 0.7);
@@ -140,7 +140,7 @@ $bar-height: 28px;
   inset: 0;
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(2px);
-  z-index: 1199;
+  z-index: 10999;   // just below panel, above LoreDetail toolbar
 }
 
 .ingest-panel__header {
@@ -195,28 +195,11 @@ $bar-height: 28px;
   position: relative;
   border: 1px solid rgba($color-dark-gold, 0.3);
   border-radius: 4px;
-  padding: 0 38px 0 12px;   // vertical padding handled by min-height + flex centering
-  min-height: 36px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  padding: 8px 38px 8px 12px;
   background: rgba(0, 0, 0, 0.35);
   overflow: hidden;
   transition: border-color 0.15s ease, background 0.15s ease;
   line-height: 1.35;
-
-  // Add inner padding only when there's body content under the header
-  &:has(.ingest-card__meta),
-  &:has(.ingest-card__fixes),
-  &:has(.ingest-card__unresolved),
-  &:has(.ingest-card__concerns),
-  &:has(.ingest-card__diff),
-  &:has(.ingest-card__toggle) {
-    padding-top: 8px;
-    padding-bottom: 8px;
-    min-height: 0;
-    justify-content: flex-start;
-  }
 
   &--approved {
     border-color: rgba(#6fcf97, 0.5);
@@ -299,19 +282,6 @@ $bar-height: 28px;
 }
 
 // Adjust approve toggle position for tighter padding
-.ingest-card__check {
-  top: 50%;
-  transform: translateY(-50%);
-  right: 8px;
-  width: 18px;
-  height: 18px;
-
-  &::before {
-    width: 8px;
-    height: 8px;
-  }
-}
-
 .ingest-card__concerns {
   margin-top: 6px;
   font-size: 0.72rem;
@@ -335,16 +305,21 @@ $bar-height: 28px;
   }
 }
 
-// Approve toggle — absolutely positioned in the card corner, never overflows.
+// Approve toggle — absolutely positioned, vertically centered in card.
 .ingest-card__check {
   position: absolute;
-  top: 10px;
+  top: 50%;
   right: 10px;
+  transform: translateY(-50%);
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  max-width: 18px;
+  flex: 0 0 18px;
   border-radius: 50%;
   border: 1px solid rgba($color-dark-gold, 0.5);
   cursor: pointer;
@@ -360,11 +335,12 @@ $bar-height: 28px;
 
   &::before {
     content: "";
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background: transparent;
     transition: background 0.15s ease;
+    flex: 0 0 8px;
   }
 
   // .ingest-card--approved triggers the filled state via parent class
