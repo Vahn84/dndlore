@@ -667,7 +667,14 @@ export const useAppStore = create<AppState>()(
       })),
       {
         name: "dndlore-state",
-        version: 4,
+        version: 5,
+        // Exclude transient pipeline state (ingest, lightrag tick) from
+        // localStorage so reloads start clean instead of resurrecting stale
+        // proposals or stuck progress bars.
+        partialize: (state: any) => {
+          const { ingestSession, ingestRequest, ingestTick, ...rest } = state;
+          return rest;
+        },
         migrate: (state: any, version) => {
           // Ensure root objects exist
           if (!state) return state as any;
@@ -695,6 +702,14 @@ export const useAppStore = create<AppState>()(
           // Reset group filters on migrate to honor new default-selection logic
           if (version < 4 && state.ui) {
             state.ui.activeGroupIds = [];
+          }
+
+          // v5: drop any stale ingest state that may have been persisted
+          // before we excluded it via partialize.
+          if (version < 5) {
+            delete state.ingestSession;
+            delete state.ingestRequest;
+            delete state.ingestTick;
           }
 
           // Ensure assets slice exists after rehydrate from older versions
