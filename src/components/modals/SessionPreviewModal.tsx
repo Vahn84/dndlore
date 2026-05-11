@@ -202,9 +202,16 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
           else if (line.startsWith('data:')) dataStr += line.slice(5).trim();
         }
         if (!dataStr) return;
+        // eslint-disable-next-line no-console
+        console.debug('[SSE]', eventName, 'dataLen=', dataStr.length);
 
         let payload: any;
-        try { payload = JSON.parse(dataStr); } catch { return; }
+        try { payload = JSON.parse(dataStr); }
+        catch (parseErr) {
+          // eslint-disable-next-line no-console
+          console.warn('[SSE] JSON parse fail', eventName, parseErr, dataStr.slice(0, 200));
+          return;
+        }
 
         if (eventName === 'pass1_done') {
           setStreamingStatus(
