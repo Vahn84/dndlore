@@ -25,6 +25,7 @@ type Proposal = {
 const IngestReviewPanel: React.FC = () => {
   const session = useAppStore((s) => s.ingestSession);
   const closeIngestPanel = useAppStore((s) => s.closeIngestPanel);
+  const resetIngest = useAppStore((s) => s.resetIngest);
 
   const [approved, setApproved] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -107,8 +108,9 @@ const IngestReviewPanel: React.FC = () => {
         // eslint-disable-next-line no-console
         console.warn("[ingest/apply] errors:", data.errors);
       }
-      // Close panel on success (full or partial).
+      // Close panel + clear ingest session so the bottom bar disappears too.
       closeIngestPanel();
+      resetIngest();
     } catch (e: any) {
       toast.error(e?.message || "Apply fallito", { id: tId });
     } finally {
