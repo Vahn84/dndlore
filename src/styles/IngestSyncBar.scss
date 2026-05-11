@@ -196,7 +196,7 @@ $bar-height: 28px;
   border: 1px solid rgba($color-dark-gold, 0.3);
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.35);
-  overflow: hidden;
+  overflow: visible;
   transition: border-color 0.15s ease, background 0.15s ease;
   line-height: 1.35;
 
