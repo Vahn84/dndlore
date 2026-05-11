@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { toast } from "react-hot-toast";
 import { useAppStore } from "../store/appStore";
+import Api from "../Api";
 
 type Proposal = {
   slug: string;
@@ -59,12 +60,55 @@ const IngestReviewPanel: React.FC = () => {
     });
   };
 
-  const onApply = () => {
-    // /ingest/apply not built yet — surface as not-implemented.
-    toast(
-      `Apply non ancora implementato. ${approved.size} proposte verranno scritte quando wireremo /ingest/apply.`,
-      { duration: 6000 }
-    );
+  const [applying, setApplying] = useState(false);
+
+  const onApply = async () => {
+    if (approved.size === 0) return;
+    const toApply = proposals
+      .filter((p) => approved.has(p.slug) && !p.error && p.proposed_md)
+      .map((p) => ({
+        slug: p.slug,
+        action: p.action,
+        proposed_md: p.proposed_md,
+      }));
+    if (toApply.length === 0) {
+      toast.error("Nessuna proposta valida da applicare");
+      return;
+    }
+    setApplying(true);
+    const tId = toast.loading(`Scrittura ${toApply.length} pagine…`, {
+      id: "ingest-apply",
+    });
+    try {
+      const resp = await fetch(`${Api.getBaseUrl()}/sync/wiki/ingest/apply`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
+        body: JSON.stringify({ proposals: toApply }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data?.error || "Apply failed");
+      const ok = data.applied?.length ?? 0;
+      const fail = data.errors?.length ?? 0;
+      if (fail === 0) {
+        toast.success(`✓ ${ok} pagine scritte sul wiki`, { id: tId });
+      } else {
+        toast.error(
+          `${ok} scritte, ${fail} errori — vedi console`,
+          { id: tId, duration: 8000 }
+        );
+        // eslint-disable-next-line no-console
+        console.warn("[ingest/apply] errors:", data.errors);
+      }
+      // Close panel on success (full or partial).
+      closeIngestPanel();
+    } catch (e: any) {
+      toast.error(e?.message || "Apply fallito", { id: tId });
+    } finally {
+      setApplying(false);
+    }
   };
 
   return (
@@ -120,6 +164,64 @@ const IngestReviewPanel: React.FC = () => {
             </div>
           )}
 
+          {/* Bulk approve toggles */}
+          {proposals.length > 0 && (
+            <div
+              style={{
+                display: "flex",
+                gap: "0.5rem",
+                fontSize: "0.78rem",
+                opacity: 0.85,
+                paddingBottom: 4,
+              }}
+            >
+              <span style={{ opacity: 0.6 }}>Approvazione rapida:</span>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setApproved(
+                    new Set(
+                      proposals.filter((p) => !p.error).map((p) => p.slug)
+                    )
+                  );
+                }}
+                style={{ color: "var(--accent, #c9a96e)" }}
+              >
+                tutte
+              </a>
+              <span style={{ opacity: 0.4 }}>·</span>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setApproved(new Set());
+                }}
+                style={{ color: "var(--accent, #c9a96e)" }}
+              >
+                nessuna
+              </a>
+              <span style={{ opacity: 0.4 }}>·</span>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  // only updates (existing pages, safer)
+                  setApproved(
+                    new Set(
+                      proposals
+                        .filter((p) => !p.error && p.action === "update")
+                        .map((p) => p.slug)
+                    )
+                  );
+                }}
+                style={{ color: "var(--accent, #c9a96e)" }}
+              >
+                solo update
+              </a>
+            </div>
+          )}
+
           {/* Per-proposal cards */}
           {proposals.map((p) => (
             <ProposalCard
@@ -140,9 +242,11 @@ const IngestReviewPanel: React.FC = () => {
           <button
             className="ingest-panel__apply"
             onClick={onApply}
-            disabled={approved.size === 0}
+            disabled={approved.size === 0 || applying}
           >
-            Applica {approved.size > 0 ? `${approved.size} proposte` : ""}
+            {applying
+              ? "Applicando…"
+              : `Applica ${approved.size > 0 ? `${approved.size} proposte` : ""}`}
           </button>
         </footer>
       </aside>
