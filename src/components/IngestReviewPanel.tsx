@@ -294,8 +294,21 @@ const ProposalCard: React.FC<{
   const isErr = !!p.error;
 
   return (
-    <div className={`ingest-card${isApproved && !isErr ? " ingest-card--approved" : ""}`}>
-      <div className="ingest-card__header">
+    <div
+      className={`ingest-card${isApproved && !isErr ? " ingest-card--approved" : ""}${
+        isExpanded ? " ingest-card--expanded" : ""
+      }${isErr ? " ingest-card--error" : ""}`}
+    >
+      <div
+        className="ingest-card__header"
+        onClick={isErr ? undefined : onToggleExpand}
+        role="button"
+        tabIndex={isErr ? -1 : 0}
+        aria-expanded={isExpanded}
+      >
+        <span className="ingest-card__chevron" aria-hidden>
+          {isExpanded ? "▾" : "▸"}
+        </span>
         <span className="ingest-card__title">{p.slug}</span>
         <span className={`ingest-card__badge ingest-card__badge--${p.action}`}>
           {p.action}
@@ -337,6 +350,7 @@ const ProposalCard: React.FC<{
           <label
             className="ingest-card__check"
             title={isApproved ? "Applicato" : "Approva"}
+            onClick={(e) => e.stopPropagation()}
           >
             <input
               type="checkbox"
@@ -347,12 +361,14 @@ const ProposalCard: React.FC<{
         )}
       </div>
 
-      {isErr ? (
+      {isErr && (
         <div className="ingest-card__meta" style={{ color: "#f3a09a" }}>
           Errore: {p.error}
         </div>
-      ) : (
-        <>
+      )}
+
+      {!isErr && isExpanded && (
+        <div className="ingest-card__body">
           <div className="ingest-card__meta">
             {(p.proposed_md?.length ?? 0).toLocaleString()} caratteri
             {p.existing_md != null && (
@@ -386,30 +402,26 @@ const ProposalCard: React.FC<{
           {p.link_fixes && p.link_fixes.length > 0 && (
             <div className="ingest-card__fixes">
               ✓ {p.link_fixes.length} link auto-corretti
-              {isExpanded && (
-                <ul style={{ margin: "4px 0 0 16px", padding: 0 }}>
-                  {p.link_fixes.map((f, i) => (
-                    <li key={i}>
-                      <code>{f.from}</code> → <code>{f.to}</code> <em>({f.reason})</em>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <ul style={{ margin: "4px 0 0 16px", padding: 0 }}>
+                {p.link_fixes.map((f, i) => (
+                  <li key={i}>
+                    <code>{f.from}</code> → <code>{f.to}</code> <em>({f.reason})</em>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
           {p.unresolved_new && p.unresolved_new.length > 0 && (
             <div className="ingest-card__unresolved">
               ⚠ {p.unresolved_new.length} nuovi non risolti (Gemma)
-              {isExpanded && (
-                <ul style={{ margin: "4px 0 0 16px", padding: 0 }}>
-                  {p.unresolved_new.map((u, i) => (
-                    <li key={i}>
-                      <code>{u}</code>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <ul style={{ margin: "4px 0 0 16px", padding: 0 }}>
+                {p.unresolved_new.map((u, i) => (
+                  <li key={i}>
+                    <code>{u}</code>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
@@ -419,37 +431,29 @@ const ProposalCard: React.FC<{
               style={{ color: "rgba(180,180,180,0.7)" }}
             >
               ◦ {p.unresolved_known_stubs.length} stub già nel wiki (backlog)
-              {isExpanded && (
-                <ul style={{ margin: "4px 0 0 16px", padding: 0 }}>
-                  {p.unresolved_known_stubs.map((u, i) => (
-                    <li key={i}>
-                      <code>{u}</code>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <ul style={{ margin: "4px 0 0 16px", padding: 0 }}>
+                {p.unresolved_known_stubs.map((u, i) => (
+                  <li key={i}>
+                    <code>{u}</code>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
-          <button className="ingest-card__toggle" onClick={onToggleExpand}>
-            {isExpanded ? "Nascondi diff ▲" : "Mostra diff ▼"}
-          </button>
-
-          {isExpanded && (
-            <div className="ingest-card__diff">
-              {p.action === "update" && (
-                <div>
-                  <span className="ingest-card__pane-label">Esistente</span>
-                  <pre className="ingest-card__pane">{p.existing_md || "(vuoto)"}</pre>
-                </div>
-              )}
-              <div style={p.action === "create" ? { gridColumn: "1 / -1" } : undefined}>
-                <span className="ingest-card__pane-label">Proposta</span>
-                <pre className="ingest-card__pane">{p.proposed_md}</pre>
+          <div className="ingest-card__diff">
+            {p.action === "update" && (
+              <div>
+                <span className="ingest-card__pane-label">Esistente</span>
+                <pre className="ingest-card__pane">{p.existing_md || "(vuoto)"}</pre>
               </div>
+            )}
+            <div style={p.action === "create" ? { gridColumn: "1 / -1" } : undefined}>
+              <span className="ingest-card__pane-label">Proposta</span>
+              <pre className="ingest-card__pane">{p.proposed_md}</pre>
             </div>
-          )}
-        </>
+          </div>
+        </div>
       )}
     </div>
   );

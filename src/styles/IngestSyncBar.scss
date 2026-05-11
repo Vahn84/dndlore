@@ -195,7 +195,6 @@ $bar-height: 28px;
   position: relative;
   border: 1px solid rgba($color-dark-gold, 0.3);
   border-radius: 4px;
-  padding: 8px 38px 8px 12px;
   background: rgba(0, 0, 0, 0.35);
   overflow: hidden;
   transition: border-color 0.15s ease, background 0.15s ease;
@@ -217,8 +216,17 @@ $bar-height: 28px;
   align-items: center;
   gap: 0.35rem;
   font-size: 0.82rem;
-  min-width: 0;        // allow children to truncate
+  min-width: 0;
   flex-wrap: nowrap;
+  padding: 8px 38px 8px 10px;
+  cursor: pointer;
+  user-select: none;
+  height: 36px;
+  box-sizing: border-box;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.02);
+  }
 
   & > .ingest-card__title {
     overflow: hidden;
@@ -226,6 +234,20 @@ $bar-height: 28px;
     white-space: nowrap;
     min-width: 0;
   }
+}
+
+.ingest-card__chevron {
+  flex: 0 0 auto;
+  width: 12px;
+  color: rgba($color-dark-gold, 0.7);
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.ingest-card__body {
+  padding: 0 12px 10px 12px;
+  border-top: 1px solid rgba($color-dark-gold, 0.12);
+  padding-top: 8px;
 }
 
 .ingest-card__title {
