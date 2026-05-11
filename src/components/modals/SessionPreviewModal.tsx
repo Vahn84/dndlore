@@ -7,7 +7,6 @@ import AssetsManagerModal from '../AssetsManagerModal';
 import { TrashIcon } from '@phosphor-icons/react/dist/icons/Trash';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Bold from '@tiptap/extension-bold';
 import Underline from '@tiptap/extension-underline';
 import '../../styles/RichTextEditor.scss';
 
@@ -18,8 +17,8 @@ const SummaryRichEditor: React.FC<{
 }> = ({ content, onChange }) => {
   const editor = useEditor({
     extensions: [
+      // StarterKit already includes Bold; we just add Underline.
       StarterKit.configure({ code: false, codeBlock: false }),
-      Bold,
       Underline,
     ],
     content,
@@ -202,16 +201,9 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
           else if (line.startsWith('data:')) dataStr += line.slice(5).trim();
         }
         if (!dataStr) return;
-        // eslint-disable-next-line no-console
-        console.debug('[SSE]', eventName, 'dataLen=', dataStr.length);
 
         let payload: any;
-        try { payload = JSON.parse(dataStr); }
-        catch (parseErr) {
-          // eslint-disable-next-line no-console
-          console.warn('[SSE] JSON parse fail', eventName, parseErr, dataStr.slice(0, 200));
-          return;
-        }
+        try { payload = JSON.parse(dataStr); } catch { return; }
 
         if (eventName === 'pass1_done') {
           setStreamingStatus(
