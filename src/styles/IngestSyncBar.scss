@@ -194,10 +194,11 @@ $bar-height: 28px;
   position: relative;
   border: 1px solid rgba($color-dark-gold, 0.3);
   border-radius: 4px;
-  padding: 10px 44px 10px 12px;   // extra right pad reserved for the approve pill
+  padding: 6px 38px 6px 10px;   // tighter; right pad reserves room for approve pill
   background: rgba($color-dark, 0.55);
   overflow: hidden;
   transition: border-color 0.15s ease, background 0.15s ease;
+  line-height: 1.35;
 
   &--approved {
     border-color: rgba(#6fcf97, 0.5);
@@ -213,14 +214,16 @@ $bar-height: 28px;
 .ingest-card__header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
+  gap: 0.35rem;
+  font-size: 0.82rem;
   min-width: 0;        // allow children to truncate
+  flex-wrap: nowrap;
 
   & > .ingest-card__title {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    min-width: 0;
   }
 }
 
@@ -229,16 +232,21 @@ $bar-height: 28px;
   font-weight: 600;
   color: $color-light;
   letter-spacing: 0.02em;
+  flex: 0 1 auto;
 }
 
 .ingest-card__badge {
   flex: 0 0 auto;
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  padding: 1px 6px;
+  padding: 0 5px;
+  height: 16px;
+  line-height: 16px;
   border-radius: 2px;
   border: 1px solid;
+  display: inline-flex;
+  align-items: center;
 
   &--create {
     background: rgba(#6fcf97, 0.12);
@@ -252,20 +260,38 @@ $bar-height: 28px;
   }
 }
 
-// Trust + grounding score pills
+// Trust + grounding score pills — group them tightly
 .ingest-card__score {
   flex: 0 0 auto;
-  font-size: 0.65rem;
-  padding: 1px 6px;
+  font-size: 0.6rem;
+  padding: 0 5px;
+  height: 16px;
+  line-height: 16px;
   border-radius: 8px;
   border: 1px solid transparent;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
+  display: inline-flex;
+  align-items: center;
 
   &--green  { background: rgba(#6fcf97, 0.18); color: #a4e3bd; border-color: rgba(#6fcf97, 0.4); }
   &--yellow { background: rgba(#f0c674, 0.18); color: #f0c674; border-color: rgba(#f0c674, 0.4); }
   &--red    { background: rgba(#e74c3c, 0.18); color: #f3a09a; border-color: rgba(#e74c3c, 0.4); }
   &--pending{ background: rgba(180,180,180,0.12); color: rgba($color-light,0.5); border-color: rgba(180,180,180,0.25); }
+}
+
+// Adjust approve toggle position for tighter padding
+.ingest-card__check {
+  top: 50%;
+  transform: translateY(-50%);
+  right: 8px;
+  width: 18px;
+  height: 18px;
+
+  &::before {
+    width: 8px;
+    height: 8px;
+  }
 }
 
 .ingest-card__concerns {
@@ -334,17 +360,17 @@ $bar-height: 28px;
 }
 
 .ingest-card__meta {
-  font-size: 0.72rem;
-  opacity: 0.7;
-  margin-top: 4px;
+  font-size: 0.68rem;
+  opacity: 0.65;
+  margin-top: 2px;
 }
 
 .ingest-card__toggle {
-  margin-top: 6px;
+  margin-top: 4px;
   background: none;
   border: none;
   color: $color-dark-gold;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   cursor: pointer;
   padding: 0;
   &:hover { text-decoration: underline; }
@@ -385,8 +411,8 @@ $bar-height: 28px;
 }
 
 .ingest-card__fixes {
-  margin-top: 6px;
-  font-size: 0.72rem;
+  margin-top: 4px;
+  font-size: 0.68rem;
   color: rgba(#a4e3bd, 0.85);
 
   code {
@@ -397,8 +423,8 @@ $bar-height: 28px;
 }
 
 .ingest-card__unresolved {
-  margin-top: 4px;
-  font-size: 0.72rem;
+  margin-top: 2px;
+  font-size: 0.68rem;
   color: rgba(#f0c674, 0.9);
 
   code {
