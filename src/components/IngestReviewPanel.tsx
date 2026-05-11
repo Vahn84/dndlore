@@ -9,6 +9,8 @@ type Proposal = {
   existing_md?: string | null;
   link_fixes?: Array<{ from: string; to: string; reason: string }>;
   unresolved_links?: string[];
+  unresolved_new?: string[];
+  unresolved_known_stubs?: string[];
   error?: string;
 };
 
@@ -203,12 +205,30 @@ const ProposalCard: React.FC<{
             </div>
           )}
 
-          {p.unresolved_links && p.unresolved_links.length > 0 && (
+          {p.unresolved_new && p.unresolved_new.length > 0 && (
             <div className="ingest-card__unresolved">
-              ⚠ {p.unresolved_links.length} link non risolti
+              ⚠ {p.unresolved_new.length} nuovi non risolti (Gemma)
               {isExpanded && (
                 <ul style={{ margin: "4px 0 0 16px", padding: 0 }}>
-                  {p.unresolved_links.map((u, i) => (
+                  {p.unresolved_new.map((u, i) => (
+                    <li key={i}>
+                      <code>{u}</code>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          {p.unresolved_known_stubs && p.unresolved_known_stubs.length > 0 && (
+            <div
+              className="ingest-card__unresolved"
+              style={{ color: "rgba(180,180,180,0.7)" }}
+            >
+              ◦ {p.unresolved_known_stubs.length} stub già nel wiki (backlog)
+              {isExpanded && (
+                <ul style={{ margin: "4px 0 0 16px", padding: 0 }}>
+                  {p.unresolved_known_stubs.map((u, i) => (
                     <li key={i}>
                       <code>{u}</code>
                     </li>
