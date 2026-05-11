@@ -11,6 +11,7 @@ type Proposal = {
   unresolved_links?: string[];
   unresolved_new?: string[];
   unresolved_known_stubs?: string[];
+  frontmatter_restored?: string[];
   error?: string;
 };
 
@@ -189,6 +190,15 @@ const ProposalCard: React.FC<{
               <> · {(p.existing_md.length ?? 0).toLocaleString()} esistenti</>
             )}
           </div>
+
+          {p.frontmatter_restored && p.frontmatter_restored.length > 0 && (
+            <div
+              className="ingest-card__fixes"
+              style={{ color: "rgba(174, 213, 255, 0.85)" }}
+            >
+              🛡 frontmatter protetto: <code>{p.frontmatter_restored.join(", ")}</code>
+            </div>
+          )}
 
           {p.link_fixes && p.link_fixes.length > 0 && (
             <div className="ingest-card__fixes">
