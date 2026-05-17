@@ -575,9 +575,15 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 			toast.error("Nessun testo da ingerire — la pagina è vuota.");
 			return;
 		}
+		// The session number lives in the page SUBTITLE (e.g. "Sessione #96"),
+		// not the title. wiki-server's planIngest rule 5b extracts the number
+		// from the source title, so send subtitle + title combined.
+		const _title = (pageDraft as any)?.title || "Pagina senza titolo";
+		const _subtitle = ((pageDraft as any)?.subtitle || "").trim();
+		const _sourceTitle = _subtitle ? `${_subtitle} — ${_title}` : _title;
 		useAppStore.getState().triggerIngest({
 			rawText,
-			sourceTitle: (pageDraft as any)?.title || "Pagina senza titolo",
+			sourceTitle: _sourceTitle,
 			sourceDate: (pageDraft as any)?.sessionDate,
 			sourceKind: (pageDraft as any)?.type === "campaign" ? "session" : "lore",
 			pageId: (pageDraft as any)?._id || id,
