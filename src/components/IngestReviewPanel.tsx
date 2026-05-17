@@ -77,6 +77,12 @@ const IngestReviewPanel: React.FC = () => {
         slug: p.slug,
         action: p.action,
         proposed_md: p.proposed_md,
+        // Sent so the server-side groundedness gate can enforce. NO force:
+        // even a bulk "tutte" approval cannot write a judge-rejected or
+        // unresolved-link proposal — the gate blocks it server-side and
+        // reports it in `gated`.
+        judge_verdict: p.judge_verdict,
+        unresolved_new: (p as any).unresolved_new,
       }));
     if (toApply.length === 0) {
       toast.error("Nessuna proposta valida da applicare");
@@ -99,15 +105,24 @@ const IngestReviewPanel: React.FC = () => {
       if (!resp.ok) throw new Error(data?.error || "Apply failed");
       const ok = data.applied?.length ?? 0;
       const fail = data.errors?.length ?? 0;
+      const gated = data.gated?.length ?? 0;
+      const gatedNote = gated > 0 ? ` · ${gated} bloccate dal gate (non grounded)` : "";
       if (fail === 0) {
-        toast.success(`✓ ${ok} pagine scritte sul wiki`, { id: tId });
+        toast.success(`✓ ${ok} pagine scritte sul wiki${gatedNote}`, {
+          id: tId,
+          duration: gated > 0 ? 8000 : 4000,
+        });
       } else {
         toast.error(
-          `${ok} scritte, ${fail} errori — vedi console`,
+          `${ok} scritte, ${fail} errori${gatedNote} — vedi console`,
           { id: tId, duration: 8000 }
         );
         // eslint-disable-next-line no-console
         console.warn("[ingest/apply] errors:", data.errors);
+      }
+      if (gated > 0) {
+        // eslint-disable-next-line no-console
+        console.warn("[ingest/apply] gated (judge/unresolved):", data.gated);
       }
       // Close panel + clear ingest session so the bottom bar disappears too.
       closeIngestPanel();
@@ -232,23 +247,27 @@ const IngestReviewPanel: React.FC = () => {
                 href="#"
                 onClick={(e) => {
                   e.preventDefault();
-                  // Safe = trust ≥ 80 AND (grounding ≥ 85 OR no judge yet but
-                  // trust very high — fallback rule for fast workflows).
+                  // Safe = judge passed it (verdict "trust") AND no
+                  // unresolved new links. The judge actually read the
+                  // source — this is the same criterion the server-side
+                  // gate enforces, so "solo sicure" never gets blocked.
+                  // trust_score is only a secondary tiebreaker, not a gate.
                   setApproved(
                     new Set(
                       proposals
                         .filter((p) => {
                           if (p.error) return false;
-                          if ((p.trust_score ?? 0) < 80) return false;
-                          if (p.grounding_score == null) return false;
-                          return p.grounding_score >= 85;
+                          if (p.judge_verdict !== "trust") return false;
+                          if (((p as any).unresolved_new || []).length > 0)
+                            return false;
+                          return true;
                         })
                         .map((p) => p.slug)
                     )
                   );
                 }}
                 style={{ color: "#a4e3bd", fontWeight: 600 }}
-                title="Trust ≥80 AND Grounding ≥85"
+                title='Judge verdict "trust" AND nessun link non risolto'
               >
                 ✓ solo sicure
               </a>
