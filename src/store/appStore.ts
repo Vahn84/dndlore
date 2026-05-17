@@ -134,6 +134,7 @@ type AppState = {
     sourceTitle?: string;
     sourceDate?: string;
     sourceKind?: string;
+    pageId?: string;
   };
   ingestSession: {
     state: "idle" | "planning" | "proposing" | "ready" | "error";
@@ -150,6 +151,7 @@ type AppState = {
     sourceTitle?: string;
     sourceDate?: string;
     sourceKind?: string;
+    pageId?: string;
   }) => void;
   setIngestState: (patch: Partial<AppState["ingestSession"]>) => void;
   pushIngestProposal: (p: any) => void;
@@ -633,9 +635,9 @@ export const useAppStore = create<AppState>()(
           proposals: [],
           panelOpen: false,
         },
-        triggerIngest: ({ rawText, sourceTitle, sourceDate, sourceKind }) =>
+        triggerIngest: ({ rawText, sourceTitle, sourceDate, sourceKind, pageId }) =>
           set((s) => {
-            s.ingestRequest = { rawText, sourceTitle, sourceDate, sourceKind };
+            s.ingestRequest = { rawText, sourceTitle, sourceDate, sourceKind, pageId };
             s.ingestTick += 1;
             s.ingestSession = {
               state: "planning",

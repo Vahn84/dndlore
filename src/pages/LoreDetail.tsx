@@ -580,6 +580,7 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 			sourceTitle: (pageDraft as any)?.title || "Pagina senza titolo",
 			sourceDate: (pageDraft as any)?.sessionDate,
 			sourceKind: (pageDraft as any)?.type === "campaign" ? "session" : "lore",
+			pageId: (pageDraft as any)?._id || id,
 		});
 		toast.success("Ingest dry-run avviato — guarda la barra in basso");
 	};
@@ -707,6 +708,15 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 					>
 						<BrainIcon size={20} />
 					</button>
+					{(pageDraft as any)?.wikiIngested && (
+						<span
+							className="lightrag-btn-label"
+							title="Questa pagina è già stata ingerita nel wiki Aetherium"
+							style={{ color: "#4ade80", fontWeight: 600 }}
+						>
+							✓ Ingerito nel wiki
+						</span>
+					)}
 				</div>
 			)}
 

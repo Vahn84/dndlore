@@ -24,6 +24,7 @@ type Proposal = {
 
 const IngestReviewPanel: React.FC = () => {
   const session = useAppStore((s) => s.ingestSession);
+  const ingestPageId = useAppStore((s) => s.ingestRequest?.pageId);
   const closeIngestPanel = useAppStore((s) => s.closeIngestPanel);
   const resetIngest = useAppStore((s) => s.resetIngest);
 
@@ -92,7 +93,7 @@ const IngestReviewPanel: React.FC = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
         },
-        body: JSON.stringify({ proposals: toApply }),
+        body: JSON.stringify({ proposals: toApply, pageId: ingestPageId }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data?.error || "Apply failed");
