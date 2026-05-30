@@ -192,6 +192,8 @@ export interface Page {
   owuiFileId?: string;
   /** LightRag document name (deprecated, kept for reference) */
   lightRagDocumentName?: string;
+  /** True once this page has been ingested into the Aetherium wiki. */
+  wikiIngested?: boolean;
 }
 
 declare module "./types" {

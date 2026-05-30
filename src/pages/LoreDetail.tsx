@@ -518,45 +518,6 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 		}
 	};
 
-	const toggleLightRagDocument = async () => {
-		try {
-			if (!id) {
-				console.error("Page ID is undefined");
-				toast.error("Failed to process LightRag operation: Invalid page ID");
-				return;
-			}
-
-			const alreadySynced = !!(pageDraft as any)?.lightRagDocumentName;
-			const action = alreadySynced ? "remove" : "save";
-
-			const data = await useAppStore
-				.getState()
-				.toggleLightRagDocument(id, action);
-
-			if (action === "save") {
-				setPageDraft((prev: any) => ({
-					...prev,
-					lightRagDocumentName: data?.lightRagDocumentName ?? null,
-				}));
-				useAppStore.getState().triggerLightRagSync();
-				toast.success("Document saved to LightRag");
-			} else {
-				setPageDraft((prev: any) => ({
-					...prev,
-					lightRagDocumentName: null,
-				}));
-				if (data?.warning) {
-					toast(data.warning, { icon: "⚠️" });
-				} else {
-					toast.success("Document removed from LightRag");
-				}
-			}
-		} catch (error) {
-			console.error("LightRag operation failed:", error);
-			toast.error("Failed to process LightRag operation");
-		}
-	};
-
 	const triggerWikiIngest = () => {
 		if (!id) {
 			toast.error("Page ID missing");
@@ -668,33 +629,6 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 							<CheckCircleIcon size={20} weight="bold" />
 						) : (
 							<GlobeSimpleIcon size={20} weight="bold" />
-						)}
-					</button>
-				</div>
-			)}
-
-			{/* LightRag button - positioned slightly to the left of the publish button */}
-			{isDM && id && (
-				<div
-					className={`lightrag-btn-wrapper ${pageDraft.lightRagDocumentName ? "active" : ""}`}
-				>
-					<span onClick={toggleLightRagDocument} className="lightrag-btn-label">
-						{(pageDraft as any)?.lightRagDocumentName ? "Synced" : "Sync to KB"}
-					</span>
-					<button
-						className="icon_square-btn lightrag-toggle-btn"
-						onClick={toggleLightRagDocument}
-						title={
-							(pageDraft as any)?.lightRagDocumentName
-								? "Remove from LightRag"
-								: "Save to LightRag"
-						}
-						style={{ opacity: 0.6 }}
-					>
-						{pageDraft?.lightRagDocumentName ? (
-							<GlobeSimpleXIcon size={20} />
-						) : (
-							<GlobeSimpleIcon size={20} />
 						)}
 					</button>
 				</div>

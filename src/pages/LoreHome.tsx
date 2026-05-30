@@ -120,10 +120,10 @@ const SortablePageItem: React.FC<SortablePageItemProps> = ({
 						</span>
 					)}
 					<span
-						className={`lightragBadge ${page.lightRagDocumentName ? "lightragBadge--synced" : "lightragBadge--unsynced"}`}
-						title={page.lightRagDocumentName ? "Synced to LightRAG" : "Not synced to LightRAG"}
+						className={`lightragBadge ${page.wikiIngested ? "lightragBadge--synced" : "lightragBadge--unsynced"}`}
+						title={page.wikiIngested ? "Ingerito nel wiki" : "Non ingerito nel wiki"}
 					>
-						<ShareNetworkIcon size={14} weight={page.lightRagDocumentName ? "fill" : "regular"} />
+						<ShareNetworkIcon size={14} weight={page.wikiIngested ? "fill" : "regular"} />
 					</span>
 				</div>
 			)}
