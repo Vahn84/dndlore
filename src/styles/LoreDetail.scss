@@ -143,10 +143,61 @@
         }
     }
 
+    // Wiki Ingest button - Karpathy dry-run, own slot below the LightRag/OWUI button
+    .wiki-ingest-btn-wrapper {
+        position: fixed;
+        top: calc(130px + 7rem);
+        right: 1.2rem;
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+
+        .wiki-ingest-btn-label {
+            @include thin-font();
+            font-size: 0.85rem;
+            color: $color-dim;
+            margin-right: 0.5rem;
+            text-transform: uppercase;
+            display: none;
+        }
+
+        .wiki-ingest-toggle-btn {
+            background: $color-dark-translucent;
+            opacity: 0.2 !important;
+        }
+
+        &:hover {
+            &.active {
+                .wiki-ingest-btn-label {
+                    color: #4ade80;
+                }
+
+                .wiki-ingest-toggle-btn {
+                    border-color: #4ade80;
+                }
+            }
+            .wiki-ingest-btn-label {
+                display: inline;
+            }
+            .wiki-ingest-toggle-btn {
+                opacity: 1 !important;
+                background: $color-dark-gray;
+            }
+        }
+
+        &.active {
+            .wiki-ingest-toggle-btn {
+                opacity: 0.6 !important;
+                color: #4ade80;
+            }
+        }
+    }
+
     // Discord forum publish button
     .discord-publish-btn-wrapper {
         position: fixed;
-        top: calc(130px + 7rem);
+        top: calc(130px + 10rem);
         right: 1.2rem;
         z-index: 10000;
         display: flex;

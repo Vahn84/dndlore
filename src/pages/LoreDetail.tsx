@@ -700,29 +700,30 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 				</div>
 			)}
 
-			{/* Wiki Ingest button — mirrors LightRag button, runs Karpathy dry-run on this page */}
+			{/* Wiki Ingest button — mirrors Discord button, runs Karpathy dry-run on this page */}
 			{isDM && id && (
-				<div className="lightrag-btn-wrapper">
-					<span onClick={triggerWikiIngest} className="lightrag-btn-label">
-						Wiki Ingest
+				<div
+					className={`wiki-ingest-btn-wrapper ${(pageDraft as any)?.wikiIngested ? "active" : ""}`}
+				>
+					<span onClick={triggerWikiIngest} className="wiki-ingest-btn-label">
+						{(pageDraft as any)?.wikiIngested ? "Ingerito nel wiki" : "Wiki Ingest"}
 					</span>
 					<button
-						className="icon_square-btn lightrag-toggle-btn"
+						className="icon_square-btn wiki-ingest-toggle-btn"
 						onClick={triggerWikiIngest}
-						title="Esegui Karpathy ingest (dry-run) — niente scrive finché non approvi le proposte"
+						title={
+							(pageDraft as any)?.wikiIngested
+								? "Questa pagina è già stata ingerita nel wiki Aetherium"
+								: "Esegui Karpathy ingest (dry-run) — niente scrive finché non approvi le proposte"
+						}
 						style={{ opacity: 0.6 }}
 					>
-						<BrainIcon size={20} />
+						{(pageDraft as any)?.wikiIngested ? (
+							<CheckCircleIcon size={20} weight="bold" />
+						) : (
+							<BrainIcon size={20} />
+						)}
 					</button>
-					{(pageDraft as any)?.wikiIngested && (
-						<span
-							className="lightrag-btn-label"
-							title="Questa pagina è già stata ingerita nel wiki Aetherium"
-							style={{ color: "#4ade80", fontWeight: 600 }}
-						>
-							✓ Ingerito nel wiki
-						</span>
-					)}
 				</div>
 			)}
 
