@@ -20,6 +20,45 @@ const helpers = load('../src/imageGeneration.ts');
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree) ? tree.flatMap(nodes) : [tree, ...nodes(tree.props?.children)];
 const button = (tree, label) => nodes(tree).find(node => node.type === 'button' && node.props.children === label);
 
+test('asset cards retain filenames below images except in the pinned references view', () => {
+  const asset = { _id: 'a', url: '/uploads/original-portrait.webp', name: 'Image display name', reference: { kind: 'character', label: 'Obyron' } };
+  const store = { isDM: () => true, data: { assets: { data: [asset] }, assetFolders: { data: [] } } };
+  const Modal = Object.assign(() => null, { setAppElement() {} });
+  const Manager = load('../src/components/AssetsManagerModal.tsx', {
+    react: { ...React, useState: initial => [initial, () => {}], useRef: initial => ({ current: initial }), useEffect() {} },
+    'react-modal': Modal,
+    ...Object.fromEntries(['X', 'Folder', 'ArrowLeft', 'Trash'].map(name => [`@phosphor-icons/react/dist/csr/${name}`, { [`${name}Icon`]: () => null }])),
+    '../store/appStore': { useAppStore: select => select(store) },
+    '../styles/AssetsManager.scss': {}, '../styles/ImageStudio.scss': {},
+    '../Api': { resolveAssetUrl: url => url },
+    './ConfirmModal': () => null, './AssetGenerationPanel': () => null, './AssetReferenceEditor': () => null,
+    '../imageGeneration': helpers, '../store/imageJobsStore': {},
+  }).default;
+  for (const tab of ['library', 'references', 'drafts']) {
+    asset.reviewStatus = tab === 'drafts' ? 'draft' : 'approved';
+    const tree = Manager({ isOpen: true, onClose() {}, initialTab: tab });
+    const card = nodes(tree).find(n => n.props?.className?.startsWith('assetmgr__card '));
+    assert.ok(card);
+    const children = card.props.children;
+    assert.equal(children[0].props.className, 'assetmgr__thumbWrap');
+    assert.equal(children[1].props.className, 'assetmgr__meta');
+    const caption = nodes(card).find(n => n.props?.className === 'assetmgr__name');
+    assert.equal(caption.props.children, tab === 'references' ? 'Obyron' : 'original-portrait.webp');
+  }
+});
+
+test('asset gallery keeps uniform widths and the existing ellipsized caption style', () => {
+  const css = sass.compile(new URL('../src/styles/AssetsManager.scss', import.meta.url).pathname).css;
+  const card = css.match(/\.assetmgr__card \{([^}]+)\}/g).join('\n');
+  assert.match(card, /flex: 0 0 30%/);
+  assert.match(card, /min-width: 0/);
+  assert.match(card, /flex-direction: column/);
+  const caption = css.match(/\.assetmgr__name \{([^}]+)\}/)[1];
+  assert.match(caption, /text-overflow: ellipsis/);
+  assert.match(caption, /white-space: nowrap/);
+  assert.match(caption, /overflow: hidden/);
+});
+
 function panelHarness({ assets = [], jobs = [], submit = async () => jobs[0] } = {}) {
   const state = []; let cursor = 0;
   const hooks = { ...React,

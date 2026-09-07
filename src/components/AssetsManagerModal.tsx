@@ -406,7 +406,7 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect, genera
 												</div>
 												<div className="assetmgr__meta">
 													<span className="assetmgr__name">
-														{a.reference?.label || a.name || a.url.split('/').pop()}
+														{(tab === 'references' && a.reference?.label) || a.url.split('/').pop()}
 													</span>
 												</div>
 											</button>

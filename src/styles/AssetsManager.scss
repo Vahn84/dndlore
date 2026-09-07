@@ -79,6 +79,8 @@
 	transition: border-color 0.15s ease, box-shadow 0.15s ease,
 		background 0.15s ease;
 	max-width: 30%;
+	flex: 0 0 30%;
+	min-width: 0;
 }
 .assetmgr__card:hover {
 	border-color: $color-dark-gray;
