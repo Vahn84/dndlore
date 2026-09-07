@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { useAppStore } from "../store/appStore";
 import Api from "../Api";
+import GlobalProgressBar from './GlobalProgressBar';
 import "../styles/LightRagSyncBar.scss";
 
 const POLL_INTERVAL = 3000;
@@ -146,10 +147,7 @@ const LightRagSyncBar: React.FC = () => {
   const isBusy     = pipelineStatus?.busy ?? true;
 
   return (
-    <div className="lr-sync-bar">
-      <div className="lr-sync-bar__track">
-        {isBusy && <div className="lr-sync-bar__fill lr-sync-bar__fill--animated" />}
-      </div>
+    <GlobalProgressBar busy={isBusy}>
 
       <div className="lr-sync-bar__label">
         <span className="lr-sync-bar__caption">LightRAG</span>
@@ -221,7 +219,7 @@ const LightRagSyncBar: React.FC = () => {
       >
         ×
       </button>
-    </div>
+    </GlobalProgressBar>
   );
 };
 

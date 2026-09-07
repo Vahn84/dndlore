@@ -1,0 +1,54 @@
+@use './variables' as *;
+
+.image-studio {
+  color: $color-light;
+  font: 0.85rem/1.5 $font-family-title;
+  min-width: 0;
+  h3 { color: $color-gold; font-size: 0.85rem; letter-spacing: 0.06em; margin: 0 0 0.75rem; }
+  p { margin: 0.6rem 0; overflow-wrap: anywhere; }
+  label { display: flex; flex-direction: column; gap: 0.4rem; color: $color-dim; margin: 0.8rem 0; font-size: 0.78rem; }
+  input, textarea, select {
+    box-sizing: border-box; width: 100%; min-width: 0; padding: 0.65rem;
+    color: $color-light; background: $color-dark; border: 1px solid rgba($color-gold, 0.3);
+    border-radius: 5px; font: inherit; color-scheme: dark;
+  }
+  textarea { resize: vertical; line-height: 1.6; font-size: 0.88rem; }
+  button {
+    color: $color-gold; background: $color-dark; border: 1px solid rgba($color-gold, 0.45);
+    border-radius: 5px; padding: 0.55rem 0.8rem; font: inherit; cursor: pointer; margin: 0;
+    &:hover:not(:disabled), &[aria-pressed='true'] { background: rgba($color-gold, 0.12); border-color: $color-gold; }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+  }
+  button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid $color-gold; outline-offset: 3px; }
+  summary { cursor: pointer; color: $color-gold; margin: 0.75rem 0; }
+  &__muted { color: $color-dim; font-size: 0.78rem; }
+  &__error { color: #ff9b94; border-left: 2px solid #ff9b94; padding-left: 0.7rem; }
+  &__status { color: $color-gold; }
+  &__layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; overflow-y: auto; padding: 0.25rem 0.5rem 1.5rem; }
+  &__compose, &__review { min-width: 0; }
+  &__options { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+  &__actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.8rem 0; }
+  &__tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  &__preview { display: block; width: 100%; max-height: 420px; object-fit: contain; background: $color-dark; border: 1px solid rgba($color-gold, 0.25); border-radius: 6px; }
+  &__references { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.5rem; max-height: 280px; overflow-y: auto; margin-bottom: 1rem; }
+  button.image-studio__reference { padding: 0; text-align: left; overflow: hidden;
+    img { display: block; width: 100%; height: 90px; object-fit: cover; }
+    span { display: block; padding: 0.4rem; overflow-wrap: anywhere; }
+    small { display: block; color: $color-dim; }
+  }
+  &__history { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 1rem; max-height: 250px; overflow-y: auto;
+    button { text-align: left; }
+    span { display: block; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+    small { color: $color-dim; }
+  }
+  &__pin { margin: 1rem 0; padding-top: 1rem; border-top: 1px solid rgba($color-gold, 0.25); }
+  @media (max-width: 760px) { &__layout { grid-template-columns: 1fr; } }
+}
+
+// All existing global strips share one stack instead of covering one another.
+.global-progress-stack {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 1101; display: flex; flex-direction: column;
+  > .lr-sync-bar, > .ingest-sync-bar { position: relative; bottom: auto; box-sizing: border-box; flex-shrink: 0; }
+  .lr-sync-bar__label { color: $color-light; }
+}
+.image-progress__review { color: $color-gold; background: transparent; border: 0; font: 0.75rem $font-family-title; cursor: pointer; white-space: nowrap; margin-left: auto; }

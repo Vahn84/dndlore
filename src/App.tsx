@@ -17,6 +17,7 @@ import History from './pages/History';
 import ToasterHost from './components/ToasterHost';
 import LightRagSyncBar from './components/LightRagSyncBar';
 import IngestSyncBar from './components/IngestSyncBar';
+import ImageSyncBar from './components/ImageSyncBar';
 import Api from './Api';
 import { useAppStore } from './store/appStore';
 import LoreHome from './pages/LoreHome';
@@ -209,8 +210,11 @@ const AppContent: React.FC = () => {
 
 			{/* Global navigation bar */}
 			<NavBar />
-			<LightRagSyncBar />
-			<IngestSyncBar />
+			<div className="global-progress-stack">
+				<LightRagSyncBar />
+				<IngestSyncBar />
+				<ImageSyncBar />
+			</div>
 			<ToasterHost />
 		</>
 	);

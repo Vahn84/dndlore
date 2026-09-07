@@ -11,6 +11,10 @@ export type Asset = {
   thumb_url?: string;
   createdAt?: string;
   folderId?: string | null;
+  name?: string;
+  reviewStatus?: 'draft' | 'approved' | 'rejected';
+  generationJobId?: string;
+  reference?: import('../imageGeneration').ImageReference;
 };
 export type AssetFolder = { _id: string; name: string; createdAt?: string };
 

@@ -13,6 +13,7 @@ import { CheckCircleIcon } from "@phosphor-icons/react/dist/csr/CheckCircle";
 import { DiscordLogoIcon } from "@phosphor-icons/react/dist/csr/DiscordLogo";
 import { BrainIcon } from "@phosphor-icons/react/dist/csr/Brain";
 import AssetsManagerModal from "../components/AssetsManagerModal";
+import { imageContextText } from '../imageGeneration';
 import Modal from "react-modal";
 import Api from "../Api";
 import Divider from "../components/Divider";
@@ -899,6 +900,7 @@ const LoreDetail: React.FC<{ isDM: boolean }> = ({ isDM }) => {
 			</div>
 			<AssetsManagerModal
 				isOpen={assetOpen}
+				generationContext={{ title: pageDraft.title || '', text: imageContextText(pageDraft.blocks) }}
 				onClose={() => setAssetOpen(false)}
 				onSelect={(asset) => {
 					setPageDraft((prev) => ({

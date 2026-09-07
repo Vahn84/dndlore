@@ -9,16 +9,26 @@ import '../styles/AssetsManager.scss';
 import Api from '../Api';
 import { toast } from 'react-hot-toast';
 import ConfirmModal from './ConfirmModal';
+import AssetGenerationPanel from './AssetGenerationPanel';
+import AssetReferenceEditor from './AssetReferenceEditor';
+import { imageOperationError, isApprovedAsset, type ImageContext } from '../imageGeneration';
+import { updateImageAsset, useImageJobsStore } from '../store/imageJobsStore';
+import '../styles/ImageStudio.scss';
 
 Modal.setAppElement('#root');
 
 type Props = {
 	isOpen: boolean;
 	onClose: () => void;
-	onSelect: (asset: Asset) => void;
+	onSelect?: (asset: Asset) => void;
+	generationContext?: ImageContext;
+	initialTab?: 'library' | 'generate' | 'references' | 'drafts';
 };
 
-const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
+const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect, generationContext, initialTab = 'library' }) => {
+	const isDM = useAppStore((s) => s.isDM());
+	const [tab, setTab] = useState(initialTab);
+	const [reviewBusy, setReviewBusy] = useState(false);
 	// --- store selectors (split to avoid object identity churn) ---
 	const assets = useAppStore((s) => s.data.assets);
 	const folders = useAppStore((s) => s.data.assetFolders);
@@ -52,6 +62,8 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 
 	useEffect(() => {
 		if (isOpen) {
+			setTab(initialTab);
+			if (isDM) void useImageJobsStore.getState().refresh();
 			setSelectedId(null);
 			setUrlInput('');
 			setCurrentFolderId(null);
@@ -73,9 +85,8 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 	const loading = !!assets?.loading || !!folders?.loading;
 
 	// Filter assets by current folder
-	const filteredAssets = items.filter((a) =>
-		currentFolderId ? a.folderId === currentFolderId : !a.folderId
-	);
+	const filteredAssets = items.filter((a) => isDM && tab === 'drafts' ? a.reviewStatus === 'draft' : isApprovedAsset(a) && (tab === 'references'
+		? !!a.reference?.kind : (currentFolderId ? a.folderId === currentFolderId : !a.folderId)));
 
 	const selected = selectedId
 		? items.find((a) => a._id === selectedId) ?? null
@@ -106,10 +117,17 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 	};
 
 	const onUse = () => {
-		if (selected) {
+		if (selected && onSelect && isApprovedAsset(selected)) {
 			onSelect(selected);
 			onClose();
 		}
+	};
+	const reviewSelected = async (status: 'approved' | 'rejected') => {
+		if (!selected) return;
+		setReviewBusy(true);
+		try { updateImageAsset(await Api.reviewImageAsset(selected._id, status)); }
+		catch (error) { toast.error(imageOperationError(error)); }
+		finally { setReviewBusy(false); }
 	};
 
 	// Confirm modal state
@@ -254,11 +272,19 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 									</div>
 								</div>
 							</header>
+							{isDM && <nav className="image-studio image-studio__tabs" aria-label="Asset tools">
+								<button type="button" aria-pressed={tab === 'library'} onClick={() => setTab('library')}>Library</button>
+								<button type="button" aria-pressed={tab === 'generate'} onClick={() => setTab('generate')}>Generate & review</button>
+								<button type="button" aria-pressed={tab === 'drafts'} onClick={() => setTab('drafts')}>Drafts ({items.filter(a => a.reviewStatus === 'draft').length})</button>
+								<button type="button" aria-pressed={tab === 'references'} onClick={() => setTab('references')}>Pinned references</button>
+							</nav>}
+							{isDM && isOpen && <div style={tab === 'generate' ? undefined : { display: 'none' }}><AssetGenerationPanel context={generationContext} folderId={currentFolderId}
+								onSelect={onSelect ? asset => { onSelect(asset); onClose(); } : undefined} /></div>}
 
-							<div className="asset-manager-columns-container">
+							<div className="asset-manager-columns-container" style={isDM && tab === 'generate' ? { display: 'none' } : undefined}>
 								<div className="assetmgr__sidebar assetmgr__sidebar--left">
 									{/* Breadcrumb navigation */}
-									<div className="assetmgr__breadcrumb">
+									<div className="assetmgr__breadcrumb" style={tab !== 'library' ? { display: 'none' } : undefined}>
 										{currentFolderId ? (
 											<>
 												<button
@@ -292,7 +318,7 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 									{/* LEFT: scrollable gallery area */}
 									<div className="assetmgr__grid assetmgr__grid--scroll">
 										{/* Show folders only when in root */}
-										{!currentFolderId &&
+										{tab === 'library' && !currentFolderId &&
 											foldersList.map((folder) => (
 												<button
 													key={folder._id}
@@ -347,8 +373,7 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 												}
 												onDoubleClick={() => {
 													setSelectedId(a._id);
-													onSelect(a);
-													onClose();
+													if (onSelect && isApprovedAsset(a)) { onSelect(a); onClose(); }
 												}}
 												aria-pressed={
 													selectedId === a._id
@@ -381,7 +406,7 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 												</div>
 												<div className="assetmgr__meta">
 													<span className="assetmgr__name">
-														{a.url.split('/').pop()}
+														{a.reference?.label || a.name || a.url.split('/').pop()}
 													</span>
 												</div>
 											</button>
@@ -576,6 +601,8 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 											<div className="assetmgr__actions">
 												<button
 													type="button"
+													hidden={!onSelect}
+													disabled={!isApprovedAsset(selected)}
 													className="draggable__btn"
 													onClick={onUse}
 												>
@@ -598,6 +625,11 @@ const AssetsManagerModal: React.FC<Props> = ({ isOpen, onClose, onSelect }) => {
 											</div>
 
 											{/* Move asset dropdown */}
+											{isDM && selected.reviewStatus === 'draft' && <div className="image-studio image-studio__actions">
+												<button type="button" disabled={reviewBusy} onClick={() => void reviewSelected('approved')}>Approve image</button>
+												<button type="button" disabled={reviewBusy} onClick={() => void reviewSelected('rejected')}>Reject</button>
+											</div>}
+											{isDM && <AssetReferenceEditor key={selected._id} asset={selected} />}
 											<div className="assetmgr__move">
 												<label className="assetmgr__move-label">
 													Move to folder:

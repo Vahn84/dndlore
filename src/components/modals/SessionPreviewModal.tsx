@@ -4,6 +4,7 @@ import Api from '../../Api';
 import { useAppStore } from '../../store/appStore';
 import DatePicker from '../DatePicker';
 import AssetsManagerModal from '../AssetsManagerModal';
+import { imageContextText } from '../../imageGeneration';
 import { TrashIcon } from '@phosphor-icons/react/dist/icons/Trash';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -533,6 +534,7 @@ const SessionPreviewModal: React.FC<SessionPreviewModalProps> = ({
               {assetOpen && (
                 <AssetsManagerModal
                   isOpen={assetOpen}
+                  generationContext={{ title: titleInput || previewData.suggestedTitle || '', text: imageContextText(editedSummaryRich || previewData.summary) }}
                   onClose={() => setAssetOpen(false)}
                   onSelect={(asset) => {
                     setBannerUrl(asset.url);

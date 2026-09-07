@@ -1,5 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { Page } from "./types";
+import type { ImageRequest, ImageJob, ImageJobsResponse, ImageReference } from './imageGeneration';
+import type { Asset } from './store/appStore';
 
 /**
  * Centralised API client. All HTTP calls to the backend should go through
@@ -286,6 +288,19 @@ class Api {
   static async getAssets() {
     const resp = await Api.client.get("/assets");
     return resp.data;
+  }
+
+  static async getImageJobs(): Promise<ImageJobsResponse> {
+    return (await Api.client.get('/image-jobs', { timeout: 15000 })).data;
+  }
+  static async createImageJob(request: ImageRequest): Promise<ImageJob> {
+    return (await Api.client.post('/image-jobs', request, { timeout: 20000 })).data;
+  }
+  static async reviewImageAsset(id: string, status: 'approved' | 'rejected'): Promise<Asset> {
+    return (await Api.client.patch(`/assets/${id}/review`, { status })).data;
+  }
+  static async pinImageReference(id: string, reference: ImageReference | null): Promise<Asset> {
+    return (await Api.client.patch(`/assets/${id}/reference`, reference || { kind: null })).data;
   }
 
   /**
