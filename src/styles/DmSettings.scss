@@ -41,6 +41,7 @@
   width: 100%;
   max-width: 720px;
   background: $color-dark-gray;
+  color: $color-light;
   border: 1px solid rgba($color-dark-gold, 0.2);
   border-radius: 8px;
   padding: 1.5rem;
@@ -78,12 +79,94 @@
   margin-bottom: 0.4rem;
 }
 
+// Reuse the shared checkbox's track/thumb; keep its native input keyboard-accessible.
+.dm-settings__checkbox.checkbox-wrapper {
+  position: relative;
+
+  .input-checkbox {
+    display: block;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    clip-path: inset(50%);
+  }
+
+  .input-checkbox-btn {
+    flex-shrink: 0;
+  }
+
+  .input-checkbox:focus-visible + .input-checkbox-btn {
+    outline: 2px solid $color-gold;
+    outline-offset: 5px;
+  }
+
+  .form-label {
+    font-family: $font-family-title;
+    color: rgba($color-light-gray, 0.85);
+    margin-bottom: 0;
+    cursor: pointer;
+  }
+}
+
 .dm-settings__hint {
   font-family: $font-family-title;
   font-size: 0.62rem;
   color: rgba($color-light-gray, 0.35);
   margin-top: 0.3rem;
   display: block;
+}
+
+.dm-settings__status {
+  font-family: $font-family-title;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: $color-gold;
+  background: rgba($color-gold, 0.04);
+  border-left: 2px solid rgba($color-gold, 0.5);
+  padding: 0.65rem 0.8rem;
+  margin: 1rem 0 0;
+}
+
+.dm-settings__output {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: $font-family-text;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.dm-settings__error,
+.dm-settings__rejections {
+  font-family: $font-family-title;
+  font-size: 0.72rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  padding: 0.75rem 0.9rem;
+  margin: 1rem 0;
+  border-radius: 4px;
+}
+
+.dm-settings__error {
+  color: #ffb4ab;
+  background: rgba(#ffb4ab, 0.06);
+  border: 1px solid rgba(#ffb4ab, 0.35);
+}
+
+.dm-settings__rejections {
+  color: $color-light;
+  background: rgba($color-gold, 0.04);
+  border: 1px solid rgba($color-gold, 0.25);
+
+  ul { margin: 0.5rem 0 0; padding-left: 1.2rem; }
+  li + li { margin-top: 0.65rem; }
+}
+
+.dm-settings__rejection-slug {
+  color: $color-gold;
+  font-weight: 600;
 }
 
 .dm-settings__textarea {
