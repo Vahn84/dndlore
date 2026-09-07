@@ -1,13 +1,14 @@
 import React, { useState, useMemo } from "react";
 import { toast } from "react-hot-toast";
 import { useAppStore } from "../store/appStore";
-import Api from "../Api";
+import { wikiTask } from "../utils/wikiTask";
 
 type Proposal = {
   slug: string;
   action: "create" | "update";
   proposed_md?: string;
   existing_md?: string | null;
+  base_hash?: string | null;
   link_fixes?: Array<{ from: string; to: string; reason: string }>;
   unresolved_links?: string[];
   unresolved_new?: string[];
@@ -31,15 +32,19 @@ const IngestReviewPanel: React.FC = () => {
   const [approved, setApproved] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [applying, setApplying] = useState(false);
+  const [applyErrors, setApplyErrors] = useState<string[]>([]);
+  const [appliedSlugs, setAppliedSlugs] = useState<Set<string>>(new Set());
+
+  React.useEffect(() => { setAppliedSlugs(new Set()); setApplyErrors([]); }, [session.plan]);
 
   // Default-approve every proposal that came through without error
   React.useEffect(() => {
     if (!session.panelOpen) return;
     const okSlugs = session.proposals
-      .filter((p: Proposal) => !p.error)
+      .filter((p: Proposal) => !p.error && !appliedSlugs.has(p.slug))
       .map((p: Proposal) => p.slug);
     setApproved(new Set(okSlugs));
-  }, [session.panelOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [session.panelOpen, session.plan]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const plan = session.plan;
   const proposals = (session.proposals || []) as Proposal[];
@@ -72,11 +77,12 @@ const IngestReviewPanel: React.FC = () => {
   const onApply = async () => {
     if (approved.size === 0) return;
     const toApply = proposals
-      .filter((p) => approved.has(p.slug) && !p.error && p.proposed_md)
+      .filter((p) => approved.has(p.slug) && !appliedSlugs.has(p.slug) && !p.error && p.proposed_md)
       .map((p) => ({
         slug: p.slug,
         action: p.action,
         proposed_md: p.proposed_md,
+        base_hash: p.base_hash,
         // Sent so the server-side groundedness gate can enforce. NO force:
         // even a bulk "tutte" approval cannot write a judge-rejected or
         // unresolved-link proposal — the gate blocks it server-side and
@@ -93,21 +99,15 @@ const IngestReviewPanel: React.FC = () => {
       id: "ingest-apply",
     });
     try {
-      const resp = await fetch(`${Api.getBaseUrl()}/sync/wiki/ingest/apply`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-        },
-        body: JSON.stringify({ proposals: toApply, pageId: ingestPageId }),
-      });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data?.error || "Apply failed");
+      const data = await wikiTask<any>("ingest/apply", { proposals: toApply, pageId: plan?.operation ? undefined : ingestPageId, operation: plan?.operation || "ingest" });
+      setApplyErrors((data.errors || []).map((e: any) => `${e.slug}: ${e.error}`));
+      setAppliedSlugs(prev => new Set([...prev, ...(data.applied || []).map((p: any) => p.slug)]));
+      if (data.warning) toast.error(data.warning);
       const ok = data.applied?.length ?? 0;
       const fail = data.errors?.length ?? 0;
       const gated = data.gated?.length ?? 0;
       const gatedNote = gated > 0 ? ` · ${gated} bloccate dal gate (non grounded)` : "";
-      if (fail === 0) {
+      if (fail === 0 && gated === 0 && ok > 0) {
         toast.success(`✓ ${ok} pagine scritte sul wiki${gatedNote}`, {
           id: tId,
           duration: gated > 0 ? 8000 : 4000,
@@ -124,9 +124,13 @@ const IngestReviewPanel: React.FC = () => {
         // eslint-disable-next-line no-console
         console.warn("[ingest/apply] gated (judge/unresolved):", data.gated);
       }
-      // Close panel + clear ingest session so the bottom bar disappears too.
-      closeIngestPanel();
-      resetIngest();
+      // Keep blocked/failed proposals available for inspection and regeneration.
+      if (fail === 0 && gated === 0 && ok === toApply.length) {
+        closeIngestPanel();
+        resetIngest();
+      } else {
+        setApproved(new Set(toApply.filter((p) => !(data.applied || []).some((a: any) => a.slug === p.slug)).map((p) => p.slug)));
+      }
     } catch (e: any) {
       toast.error(e?.message || "Apply fallito", { id: tId });
     } finally {
@@ -140,7 +144,7 @@ const IngestReviewPanel: React.FC = () => {
       <aside className="ingest-panel" role="dialog" aria-label="Wiki ingest review">
         <header className="ingest-panel__header">
           <div>
-            <div className="ingest-panel__title">Wiki Ingest — Dry-run</div>
+            <div className="ingest-panel__title">Wiki {plan?.operation || "ingest"} — Review</div>
             {plan?.source?.title && (
               <div className="ingest-panel__subtitle">{plan.source.title}</div>
             )}
@@ -151,6 +155,10 @@ const IngestReviewPanel: React.FC = () => {
         </header>
 
         <div className="ingest-panel__body">
+          {applyErrors.length > 0 && <div role="alert">
+            {applyErrors.map((message, i) => <p key={i}>{message}</p>)}
+            <p>Le pagine già scritte non verranno riapplicate. Per un errore indice, usa “Repair index” nelle impostazioni DM.</p>
+          </div>}
           {/* Plan summary */}
           {plan && (
             <div className="ingest-panel__summary">
@@ -281,7 +289,7 @@ const IngestReviewPanel: React.FC = () => {
               proposal={p}
               isApproved={approved.has(p.slug)}
               isExpanded={expanded.has(p.slug)}
-              onToggleApprove={() => toggleApprove(p.slug)}
+              onToggleApprove={() => { if (!appliedSlugs.has(p.slug)) toggleApprove(p.slug); }}
               onToggleExpand={() => toggleExpand(p.slug)}
             />
           ))}
@@ -436,7 +444,7 @@ const ProposalCard: React.FC<{
 
           {p.unresolved_new && p.unresolved_new.length > 0 && (
             <div className="ingest-card__unresolved">
-              ⚠ {p.unresolved_new.length} nuovi non risolti (Gemma)
+              ⚠ {p.unresolved_new.length} nuovi non risolti (agente)
               <ul style={{ margin: "4px 0 0 16px", padding: 0 }}>
                 {p.unresolved_new.map((u, i) => (
                   <li key={i}>

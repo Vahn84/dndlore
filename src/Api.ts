@@ -492,6 +492,19 @@ class Api {
     return resp.data;
   }
 
+  static async getAgentSettings() {
+    const resp = await Api.client.get("/settings/agent");
+    return resp.data as {
+      selection: { provider: "codex" | "claude"; model: string; effort?: string };
+      providers: Array<{ id: "codex" | "claude"; label: string; models: Array<{ id: string; label: string; efforts?: Array<{ id: string; label: string }> }> }>;
+    };
+  }
+
+  static async updateAgentSettings(selection: { provider: "codex" | "claude"; model: string; effort: string }) {
+    const resp = await Api.client.put("/settings/agent", selection);
+    return resp.data;
+  }
+
   static async updateSettings(data: {
     systemPrompt?: string;
     temperature?: number;

@@ -3,21 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { useAppStore } from "../store/appStore";
 import Api from "../Api";
+import WikiMaintenance from "../components/WikiMaintenance";
 import "../styles/DmSettings.scss";
 
 interface Settings {
   systemPrompt: string;
-  temperature: number;
-  maxTokens: number;
-  model: string;
   discordForumChannelId: string;
 }
 
 const DEFAULT_SETTINGS: Settings = {
   systemPrompt: "",
-  temperature: 0.5,
-  maxTokens: 64000,
-  model: "",
   discordForumChannelId: "",
 };
 
@@ -28,8 +23,24 @@ const DmSettings: React.FC = () => {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [agent, setAgent] = useState<{ provider: "codex" | "claude"; model: string; effort: string }>({ provider: "codex", model: "", effort: "" });
+  const [providers, setProviders] = useState<Awaited<ReturnType<typeof Api.getAgentSettings>>["providers"]>([]);
+  const [agentError, setAgentError] = useState("");
+  const [loadingAgent, setLoadingAgent] = useState(true);
+  const loadAgent = () => {
+    setLoadingAgent(true);
+    setAgentError("");
+    Api.getAgentSettings().then(data => {
+      setProviders(data.providers);
+      setAgent({ ...data.selection, effort: data.selection.effort ?? "" });
+    }).catch(error => setAgentError(error?.response?.data?.error || "Agent settings are unavailable."))
+      .finally(() => setLoadingAgent(false));
+  };
   const [forumChannels, setForumChannels] = useState<Array<{ id: string; name: string }>>([]);
   const [loadingChannels, setLoadingChannels] = useState(false);
+  const selectedModel = providers.find(p => p.id === agent.provider)?.models.find(m => m.id === agent.model);
+  const efforts = selectedModel?.efforts ?? [{ id: "", label: "Provider default" }];
+  const validSelection = !!selectedModel && efforts.some(e => e.id === agent.effort);
 
   useEffect(() => {
     if (!isDM) {
@@ -40,14 +51,13 @@ const DmSettings: React.FC = () => {
       .then((data) => {
         setSettings({
           systemPrompt: data.systemPrompt ?? "",
-          temperature: data.temperature ?? 0.5,
-          maxTokens: data.maxTokens ?? 64000,
-          model: data.model ?? "",
           discordForumChannelId: data.discordForumChannelId ?? "",
         });
       })
       .catch(() => toast.error("Failed to load settings"))
       .finally(() => setLoading(false));
+
+    loadAgent();
 
     setLoadingChannels(true);
     Api.getDiscordForumChannels()
@@ -58,11 +68,14 @@ const DmSettings: React.FC = () => {
 
   const handleSave = async () => {
     setSaving(true);
+    let agentSaved = false;
     try {
+      await Api.updateAgentSettings(agent);
+      agentSaved = true;
       await Api.updateSettings(settings);
       toast.success("Settings saved");
-    } catch {
-      toast.error("Failed to save settings");
+    } catch (error: any) {
+      toast.error(agentSaved ? "Agent selection saved, but narrative/Discord settings could not be saved. Please retry." : error?.response?.data?.error || "Failed to save settings");
     } finally {
       setSaving(false);
     }
@@ -82,65 +95,69 @@ const DmSettings: React.FC = () => {
 
       {loading ? null : (
         <>
+          <div className="dm-settings__card">
+            <h2 className="dm-settings__card-title">Campaign AI</h2>
+            <p className="dm-settings__hint">One agent for session recaps, wiki ingestion, and wiki questions.</p>
+            {loadingAgent ? <p className="dm-settings__hint">Loading agents and models…</p> : agentError ? (
+              <div role="alert">
+                <p className="dm-settings__hint">{agentError}</p>
+                <button type="button" className="dm-settings__save-btn" onClick={loadAgent}>Retry</button>
+              </div>
+            ) : <>
+              <div className="dm-settings__field">
+                <label className="dm-settings__label" htmlFor="agent-provider">Agent</label>
+                <select id="agent-provider" className="dm-settings__select" value={agent.provider}
+                  onChange={e => setAgent({ provider: e.target.value as "codex" | "claude", model: "", effort: "" })}>
+                  {providers.map(provider => <option key={provider.id} value={provider.id}>{provider.label}</option>)}
+                </select>
+              </div>
+              <div className="dm-settings__field">
+                <label className="dm-settings__label" htmlFor="agent-model">Model</label>
+                <select id="agent-model" className="dm-settings__select" value={agent.model}
+                  onChange={e => setAgent(prev => ({ ...prev, model: e.target.value, effort: "" }))}>
+                  {!providers.find(p => p.id === agent.provider)?.models.some(m => m.id === agent.model) &&
+                    <option value={agent.model} disabled>{agent.model || "Unavailable model"} — choose another</option>}
+                  {(providers.find(p => p.id === agent.provider)?.models || []).map(model =>
+                    <option key={model.id} value={model.id}>{model.label}</option>)}
+                </select>
+                <span className="dm-settings__hint">Models configured for the connected agent. Availability depends on its account.</span>
+              </div>
+              <div className="dm-settings__field">
+                <label className="dm-settings__label" htmlFor="agent-effort">Reasoning Effort</label>
+                <select id="agent-effort" className="dm-settings__select" value={agent.effort}
+                  onChange={e => setAgent(prev => ({ ...prev, effort: e.target.value }))}>
+                  {!efforts.some(e => e.id === agent.effort) &&
+                    <option value={agent.effort} disabled>{agent.effort} — choose another</option>}
+                  {efforts.map(effort => <option key={effort.id} value={effort.id}>{effort.label}</option>)}
+                </select>
+                <span className="dm-settings__hint">{efforts.length > 1
+                  ? "Higher effort can take longer and use more tokens. Applies to recaps, ingestion, and wiki questions."
+                  : "Only provider default is available for this model. Choose a named, supported model to adjust effort."}</span>
+              </div>
+            </>}
+          </div>
+
           {/* Summarization */}
           <div className="dm-settings__card">
             <h2 className="dm-settings__card-title">Session Summarization</h2>
 
             <div className="dm-settings__field">
-              <label className="dm-settings__label">System Prompt</label>
+              <label className="dm-settings__label" htmlFor="recap-prompt">Narrative Instructions</label>
               <textarea
+                id="recap-prompt"
                 className="dm-settings__textarea"
                 rows={8}
                 value={settings.systemPrompt}
                 onChange={(e) => set("systemPrompt", e.target.value)}
               />
               <span className="dm-settings__hint">
-                Instructions for the LLM when generating narrative summaries from session notes.
+                Your style and narration rules for session recaps. Player and DM audience rules are applied alongside these instructions.
               </span>
             </div>
 
-            <div className="dm-settings__field">
-              <label className="dm-settings__label">Temperature</label>
-              <div className="dm-settings__range-row">
-                <input
-                  type="range"
-                  className="dm-settings__range"
-                  min={0}
-                  max={1}
-                  step={0.05}
-                  value={settings.temperature}
-                  onChange={(e) => set("temperature", parseFloat(e.target.value))}
-                />
-                <span className="dm-settings__range-value">{settings.temperature.toFixed(2)}</span>
-              </div>
-              <span className="dm-settings__hint">Lower = more focused, higher = more creative.</span>
-            </div>
-
-            <div className="dm-settings__field">
-              <label className="dm-settings__label">Max Tokens</label>
-              <input
-                type="number"
-                className="dm-settings__input"
-                min={1024}
-                max={128000}
-                step={1024}
-                value={settings.maxTokens}
-                onChange={(e) => set("maxTokens", parseInt(e.target.value, 10))}
-              />
-            </div>
-
-            <div className="dm-settings__field">
-              <label className="dm-settings__label">Model</label>
-              <input
-                type="text"
-                className="dm-settings__input"
-                placeholder="Leave empty to use server default (LLM_MODEL)"
-                value={settings.model}
-                onChange={(e) => set("model", e.target.value)}
-              />
-            </div>
-
           </div>
+
+          <WikiMaintenance />
 
           {/* Discord */}
           <div className="dm-settings__card">
@@ -174,7 +191,7 @@ const DmSettings: React.FC = () => {
             <button
               className="dm-settings__save-btn"
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || loadingAgent || !!agentError || !validSelection}
             >
               {saving ? "Saving…" : "Save Settings"}
             </button>

@@ -70,6 +70,7 @@ const IngestSyncBar: React.FC = () => {
         const reader = resp.body.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
+        let terminalEvent = false;
 
         const processFrame = (frame: string) => {
           const lines = frame.split("\n");
@@ -108,11 +109,13 @@ const IngestSyncBar: React.FC = () => {
               judge_concerns: payload.concerns,
             });
           } else if (eventName === "done") {
+            terminalEvent = true;
             setIngestState({ state: "ready" });
             toast.success("Proposte di ingest pronte — apri il pannello per revisionare", {
               duration: 8000,
             });
           } else if (eventName === "error") {
+            terminalEvent = true;
             setIngestState({ state: "error", error: payload.message });
             toast.error(`Ingest fallito: ${payload.message}`);
           }
@@ -131,6 +134,7 @@ const IngestSyncBar: React.FC = () => {
           buffer = frames.pop() ?? "";
           for (const f of frames) processFrame(f);
         }
+        if (!terminalEvent) throw new Error("Connessione interrotta prima del completamento — riprova l’ingest.");
       } catch (err: any) {
         // eslint-disable-next-line no-console
         console.log("[IngestSyncBar] caught error", err?.name, err?.message, new Date().toISOString());

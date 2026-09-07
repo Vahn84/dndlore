@@ -118,8 +118,7 @@ jobs:
             echo "Frontend health check on localhost port $FRONTEND_PORT:"
             curl -sS -o /dev/null -w 'External: HTTP %{http_code}\n' "http://127.0.0.1:$FRONTEND_PORT/" || echo "External check failed - check port mapping and firewall"
 
-            # Clean up old images
-            docker image prune -af
+            # Retain previous images for rollback; do not prune other NAS projects.
 
             echo "Frontend deployment completed successfully!"
             docker ps | grep dndlore-frontend
