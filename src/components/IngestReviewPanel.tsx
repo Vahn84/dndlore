@@ -32,10 +32,13 @@ const IngestReviewPanel: React.FC = () => {
   const [approved, setApproved] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [applying, setApplying] = useState(false);
+  const applyInFlight = React.useRef(false);
+  const [applyPhase, setApplyPhase] = useState<"saving" | "index" | "idle">("idle");
   const [applyErrors, setApplyErrors] = useState<string[]>([]);
   const [appliedSlugs, setAppliedSlugs] = useState<Set<string>>(new Set());
+  const [blockedSlugs, setBlockedSlugs] = useState<Set<string>>(new Set());
 
-  React.useEffect(() => { setAppliedSlugs(new Set()); setApplyErrors([]); }, [session.plan]);
+  React.useEffect(() => { setAppliedSlugs(new Set()); setBlockedSlugs(new Set()); setApplyErrors([]); }, [session.plan]);
 
   // Default-approve every proposal that came through without error
   React.useEffect(() => {
@@ -48,6 +51,7 @@ const IngestReviewPanel: React.FC = () => {
 
   const plan = session.plan;
   const proposals = (session.proposals || []) as Proposal[];
+  const eligibleCount = proposals.filter(p => approved.has(p.slug) && !appliedSlugs.has(p.slug) && !blockedSlugs.has(p.slug) && !p.error && p.proposed_md).length;
 
   const newEntities = useMemo(
     () => (plan?.entities_touched || []).filter((e: any) => e.action === "create"),
@@ -75,9 +79,9 @@ const IngestReviewPanel: React.FC = () => {
   };
 
   const onApply = async () => {
-    if (approved.size === 0) return;
+    if (applyInFlight.current || eligibleCount === 0) return;
     const toApply = proposals
-      .filter((p) => approved.has(p.slug) && !appliedSlugs.has(p.slug) && !p.error && p.proposed_md)
+      .filter((p) => approved.has(p.slug) && !appliedSlugs.has(p.slug) && !blockedSlugs.has(p.slug) && !p.error && p.proposed_md)
       .map((p) => ({
         slug: p.slug,
         action: p.action,
@@ -94,13 +98,25 @@ const IngestReviewPanel: React.FC = () => {
       toast.error("Nessuna proposta valida da applicare");
       return;
     }
+    applyInFlight.current = true;
     setApplying(true);
+    setApplyPhase("saving");
+    setApplyErrors([]);
     const tId = toast.loading(`Scrittura ${toApply.length} pagine…`, {
       id: "ingest-apply",
     });
     try {
-      const data = await wikiTask<any>("ingest/apply", { proposals: toApply, pageId: plan?.operation ? undefined : ingestPageId, operation: plan?.operation || "ingest" });
-      setApplyErrors((data.errors || []).map((e: any) => `${e.slug}: ${e.error}`));
+      const data = await wikiTask<any>("ingest/apply", { proposals: toApply, pageId: plan?.operation ? undefined : ingestPageId, operation: plan?.operation || "ingest" }, undefined, progress => {
+        if (progress.phase !== "index") return;
+        setApplyPhase("index");
+        setAppliedSlugs(prev => new Set([...prev, ...progress.applied.map(p => p.slug)]));
+        toast.loading(`${progress.applied.length} pagine salvate — aggiornamento indice…`, { id: tId });
+      });
+      setApplyErrors([
+        ...(data.errors || []).map((e: any) => `${e.slug}: ${e.error}`),
+        ...(data.gated || []).map((e: any) => `${e.slug}: ${e.reason}`),
+      ]);
+      setBlockedSlugs(prev => new Set([...prev, ...(data.gated || []).map((p: any) => p.slug)]));
       setAppliedSlugs(prev => new Set([...prev, ...(data.applied || []).map((p: any) => p.slug)]));
       if (data.warning) toast.error(data.warning);
       const ok = data.applied?.length ?? 0;
@@ -114,7 +130,7 @@ const IngestReviewPanel: React.FC = () => {
         });
       } else {
         toast.error(
-          `${ok} scritte, ${fail} errori${gatedNote} — vedi console`,
+          `${ok} scritte, ${fail} errori${gatedNote} — dettagli nel pannello`,
           { id: tId, duration: 8000 }
         );
         // eslint-disable-next-line no-console
@@ -129,12 +145,15 @@ const IngestReviewPanel: React.FC = () => {
         closeIngestPanel();
         resetIngest();
       } else {
-        setApproved(new Set(toApply.filter((p) => !(data.applied || []).some((a: any) => a.slug === p.slug)).map((p) => p.slug)));
+        setApproved(new Set(toApply.filter((p) => !(data.applied || []).some((a: any) => a.slug === p.slug) && !(data.gated || []).some((g: any) => g.slug === p.slug)).map((p) => p.slug)));
       }
     } catch (e: any) {
+      setApplyErrors([e?.message || "Apply fallito"]);
       toast.error(e?.message || "Apply fallito", { id: tId });
     } finally {
+      applyInFlight.current = false;
       setApplying(false);
+      setApplyPhase("idle");
     }
   };
 
@@ -155,9 +174,10 @@ const IngestReviewPanel: React.FC = () => {
         </header>
 
         <div className="ingest-panel__body">
-          {applyErrors.length > 0 && <div role="alert">
+          {applyErrors.length > 0 && <div className="ingest-panel__apply-error" role="alert">
             {applyErrors.map((message, i) => <p key={i}>{message}</p>)}
             <p>Le pagine già scritte non verranno riapplicate. Per un errore indice, usa “Repair index” nelle impostazioni DM.</p>
+            {blockedSlugs.size > 0 && <p>Le proposte bloccate richiedono revisione o rigenerazione, non un nuovo clic su Applica.</p>}
           </div>}
           {/* Plan summary */}
           {plan && (
@@ -287,26 +307,31 @@ const IngestReviewPanel: React.FC = () => {
             <ProposalCard
               key={p.slug}
               proposal={p}
-              isApproved={approved.has(p.slug)}
+              isApproved={approved.has(p.slug) && !appliedSlugs.has(p.slug) && !blockedSlugs.has(p.slug)}
+              applyStatus={appliedSlugs.has(p.slug) ? "saved" : blockedSlugs.has(p.slug) ? "blocked" : undefined}
+              disabled={applying || appliedSlugs.has(p.slug) || blockedSlugs.has(p.slug)}
               isExpanded={expanded.has(p.slug)}
-              onToggleApprove={() => { if (!appliedSlugs.has(p.slug)) toggleApprove(p.slug); }}
+              onToggleApprove={() => { if (!applying && !appliedSlugs.has(p.slug) && !blockedSlugs.has(p.slug)) toggleApprove(p.slug); }}
               onToggleExpand={() => toggleExpand(p.slug)}
             />
           ))}
         </div>
 
         <footer className="ingest-panel__footer">
+          {applying && <p className="ingest-panel__apply-progress" role="status">
+            {applyPhase === "index" ? `${appliedSlugs.size} pagine salvate — aggiornamento indice in corso. Non riapplicare.` : "Scrittura delle pagine approvate…"}
+          </p>}
           <button className="ingest-panel__cancel" onClick={closeIngestPanel}>
-            Annulla
+            {applying ? "Chiudi" : "Annulla"}
           </button>
           <button
             className="ingest-panel__apply"
             onClick={onApply}
-            disabled={approved.size === 0 || applying}
+            disabled={eligibleCount === 0 || applying}
           >
             {applying
-              ? "Applicando…"
-              : `Applica ${approved.size > 0 ? `${approved.size} proposte` : ""}`}
+              ? applyPhase === "index" ? "Aggiornamento indice…" : "Salvataggio…"
+              : `Applica ${eligibleCount > 0 ? `${eligibleCount} proposte` : ""}`}
           </button>
         </footer>
       </aside>
@@ -318,9 +343,11 @@ const ProposalCard: React.FC<{
   proposal: Proposal;
   isApproved: boolean;
   isExpanded: boolean;
+  disabled?: boolean;
+  applyStatus?: "saved" | "blocked";
   onToggleApprove: () => void;
   onToggleExpand: () => void;
-}> = ({ proposal: p, isApproved, isExpanded, onToggleApprove, onToggleExpand }) => {
+}> = ({ proposal: p, isApproved, isExpanded, disabled, applyStatus, onToggleApprove, onToggleExpand }) => {
   const isErr = !!p.error;
 
   return (
@@ -340,6 +367,7 @@ const ProposalCard: React.FC<{
           {isExpanded ? "▾" : "▸"}
         </span>
         <span className="ingest-card__title">{p.slug}</span>
+        {applyStatus && <span className="ingest-card__badge">{applyStatus === "saved" ? "Salvata" : "Bloccata"}</span>}
         <span className={`ingest-card__badge ingest-card__badge--${p.action}`}>
           {p.action}
         </span>
@@ -379,12 +407,13 @@ const ProposalCard: React.FC<{
         {!isErr && (
           <label
             className="ingest-card__check"
-            title={isApproved ? "Applicato" : "Approva"}
+            title={applyStatus === "saved" ? "Già salvata" : applyStatus === "blocked" ? "Bloccata: vedi motivazione" : isApproved ? "Selezionata" : "Approva"}
             onClick={(e) => e.stopPropagation()}
           >
             <input
               type="checkbox"
               checked={isApproved}
+              disabled={disabled}
               onChange={onToggleApprove}
             />
           </label>

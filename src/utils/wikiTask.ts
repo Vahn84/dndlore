@@ -1,6 +1,8 @@
 import Api from "../Api";
 
-export async function wikiTask<T>(operation: string, body: unknown, signal?: AbortSignal): Promise<T> {
+export type WikiTaskProgress = { phase: "index"; applied: Array<{ slug: string }> };
+
+export async function wikiTask<T>(operation: string, body: unknown, signal?: AbortSignal, onProgress?: (progress: WikiTaskProgress) => void): Promise<T> {
   const response = await fetch(`${Api.getBaseUrl()}/sync/wiki/${operation}`, {
     method: "POST", signal,
     headers: { "Content-Type": "application/json", Accept: "text/event-stream", Authorization: `Bearer ${localStorage.getItem("token") || ""}` },
@@ -26,6 +28,7 @@ export async function wikiTask<T>(operation: string, body: unknown, signal?: Abo
         if (!data) continue;
         const parsed = JSON.parse(data);
         if (name === "error") throw new Error(parsed.error || parsed.message || "Wiki operation failed");
+        if (name === "progress") onProgress?.(parsed);
         if (name === "result") result = parsed;
       }
     }
